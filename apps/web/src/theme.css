@@ -1,0 +1,25 @@
+:root {
+  --bg: #0b0f14;
+  --panel: #11171e;
+  --panel-2: #161e27;
+  --border: #243040;
+  --text: #d7e0ea;
+  --muted: #8aa0b5;
+  --green: #3ddc84;
+  --amber: #ffb454;
+  --red: #ff6b6b;
+  --cyan: #5ccfe6;
+  --purple: #b78cff;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+code,
+pre {
+  font-family: 'JetBrains Mono', monospace;
+}

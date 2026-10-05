@@ -1,0 +1,10 @@
+node_modules
+dist
+*.tsbuildinfo
+coverage
+data/*.sqlite
+data/*.sqlite-journal
+*.local
+.env.production
+playwright-report
+test-results

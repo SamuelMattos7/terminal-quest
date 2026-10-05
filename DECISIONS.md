@@ -95,3 +95,11 @@ Lightweight architecture decision log. Add an entry whenever you choose between 
 
 ## Agent-added decisions
 _Append below this line. Continue numbering from D-011._
+
+### D-011 — T0.1 toolchain and lint scope
+- **Date:** 2026-10-05
+- **Status:** Accepted
+- **Context:** Host runs Node 24 + pnpm 9.15.9 (plan says Node 22 LTS); `prettier --check .` flags pre-existing docs and emitted files.
+- **Decision:** Build on the host versions (engines `>=22`); root `type: module`; `pnpm lint` checks `apps packages` + root JSON/JS/TS only, leaving hand-written docs untouched until their milestones.
+- **Alternatives considered:** Reformatting all docs; pinning Node 22.
+- **Consequences:** No drive-by doc reformats; CI must use Node >=22; revisit if a doc milestone wants full-repo prettier.
