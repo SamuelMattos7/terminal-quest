@@ -4,5 +4,6 @@ coverage
 pnpm-lock.yaml
 **/dist/**
 **/*.map
+**/db/migrations/meta/**
 apps/web/vite.config.js
 apps/web/vitest.config.js

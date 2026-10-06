@@ -7,18 +7,24 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/db/migrate.ts"
   },
   "dependencies": {
     "@terminal-quest/shared": "workspace:*",
+    "better-sqlite3": "12.2.0",
     "dockerode": "^4.0.2",
+    "drizzle-orm": "0.36.4",
     "fastify": "^5.2.0",
     "pino": "^9.5.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "7.6.12",
     "@types/dockerode": "^3.3.31",
     "@types/node": "^22.7.4",
+    "drizzle-kit": "0.28.1",
     "tsx": "^4.19.1",
     "typescript": "^5.6.3",
     "vitest": "^2.1.3"

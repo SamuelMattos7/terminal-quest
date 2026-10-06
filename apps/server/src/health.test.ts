@@ -9,6 +9,7 @@ describe('GET /healthz', () => {
       PORT: 3001,
       PUBLIC_ORIGIN: 'http://localhost:5173',
       DOCKER_SOCKET: '/nonexistent/docker.sock',
+      DB_PATH: ':memory:',
     });
 
     const res = await app.inject({ method: 'GET', url: '/healthz' });

@@ -14,7 +14,7 @@
     "test": "vitest run",
     "verify": "pnpm build && pnpm lint && pnpm test",
     "images:build": "echo \"tq-base image build not yet implemented (T1.1)\" && exit 1",
-    "db:migrate": "echo \"db:migrate not yet implemented (T0.3)\" && exit 1",
+    "db:migrate": "pnpm --filter @terminal-quest/server db:migrate",
     "levels:lint": "echo \"levels:lint not yet implemented (T2.1)\" && exit 1",
     "levels:test": "echo \"levels:test not yet implemented (T2.6)\" && exit 1",
     "e2e": "echo \"e2e not yet implemented (T5.2)\" && exit 1"
