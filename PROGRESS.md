@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** M0 → T0.2 (T0.1 done)
+**Current focus:** M0 → T0.3 (T0.2 done)
 
 ---
 
@@ -12,7 +12,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 ### M0 — Scaffold
 - [x] T0.1 Monorepo, tooling, empty skeletons build; `/healthz` works ✅ pnpm verify green, 3 tests; /healthz live {ok:true,docker:false}; web :5173 200 (Node 24 / pnpm 9.15.9)
-- [ ] T0.2 `packages/shared` zod schemas (protocol, level, checks) + tests
+- [x] T0.2 `packages/shared` zod schemas (protocol, level, checks) + tests ✅ pnpm verify green, 35 tests (34 shared: checks 17, level 7, protocol 6, api 4)
 - [ ] T0.3 DB schema + migrations + client
 - [ ] T0.4 CI workflow (`verify`, `levels`, `e2e` jobs)
 
