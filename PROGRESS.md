@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** M1 → T1.2 (T1.1 done)
+**Current focus:** M1 → T1.3 (T1.2 done)
 
 ---
 
@@ -18,7 +18,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 ### M1 — Sandbox
 - [x] T1.1 `tq-base` image + `/opt/tq` helpers (`bashrc`, `tux`, cheats) ✅ images:build ok; whoami=player, bin={tux,tldr,modeof.sh}; sudo/su denied, /opt/tq ro, secret 700; tux submit JSON ok
-- [ ] T1.2 `DockerProvider` + security profiles (+ `test:docker` script)
+- [x] T1.2 `DockerProvider` + security profiles (+ `test:docker` script) ✅ 6 docker tests green (~1s); uid 1000, net none, 256M label, destroy clean, shell echo; pnpm test Docker-free (38)
 - [ ] T1.3 `SessionManager` + reaper (idle, max-age, orphan sweep, capacity)
 
 ### M2 — Level engine

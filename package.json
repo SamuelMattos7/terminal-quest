@@ -12,6 +12,7 @@
     "build": "pnpm -r build",
     "lint": "eslint . && prettier --check apps packages *.json *.js *.ts",
     "test": "vitest run",
+    "test:docker": "pnpm --filter @terminal-quest/server test:docker",
     "verify": "pnpm build && pnpm lint && pnpm test",
     "images:build": "docker build -t tq-base -f packages/sandbox-images/base/Dockerfile packages/sandbox-images/base",
     "db:migrate": "pnpm --filter @terminal-quest/server db:migrate",
