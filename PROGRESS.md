@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** M0 → T0.4 (T0.3 done)
+**Current focus:** M1 → T1.1 (M0 done)
 
 ---
 
@@ -14,7 +14,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 - [x] T0.1 Monorepo, tooling, empty skeletons build; `/healthz` works ✅ pnpm verify green, 3 tests; /healthz live {ok:true,docker:false}; web :5173 200 (Node 24 / pnpm 9.15.9)
 - [x] T0.2 `packages/shared` zod schemas (protocol, level, checks) + tests ✅ pnpm verify green, 35 tests (34 shared: checks 17, level 7, protocol 6, api 4)
 - [x] T0.3 DB schema + migrations + client ✅ pnpm verify green, 38 tests; pnpm db:migrate creates all 8 tables (verified on scratch DB)
-- [ ] T0.4 CI workflow (`verify`, `levels`, `e2e` jobs)
+- [x] T0.4 CI workflow (`verify`, `levels`, `e2e` jobs) ✅ actionlint 1.7.7 clean, verify job defined; pnpm verify green, 38 tests
 
 ### M1 — Sandbox
 - [ ] T1.1 `tq-base` image + `/opt/tq` helpers (`bashrc`, `tux`, cheats)
@@ -168,7 +168,8 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 
 | Date | Area | Gap | Planned resolution |
 |---|---|---|---|
-| — | — | — | — |
+| 2026-10-06 | CI `levels` job | Non-blocking (`continue-on-error`) until `levels:lint`/`levels:test` exist | Make blocking in T2.6, remove TODO in `ci.yml` |
+| 2026-10-06 | CI `e2e` job | Non-blocking (`continue-on-error`) until Playwright smoke test exists | Make blocking in T5.2, remove TODO in `ci.yml` |
 
 ## Blockers
 _What is blocked, what was tried, what was done instead._
