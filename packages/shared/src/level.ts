@@ -26,6 +26,9 @@ const SandboxSchema = z
       .default({}),
     capabilities: z.array(z.string().min(1)).default([]),
     sudo_allow: z.array(z.string().min(1)).default([]),
+    // §12.2: start cron when profile is admin and this is true. The daemon
+    // start itself lands in T10.1 (no admin levels exist yet).
+    needs_cron: z.boolean().default(true),
   })
   .strict();
 

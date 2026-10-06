@@ -11,6 +11,7 @@ describe('LevelSchema', () => {
     const level = LevelSchema.parse(validLevelInput);
     expect(level.id).toBe('w1-02-where-am-i');
     expect(level.sandbox.profile).toBe('basic');
+    expect(level.sandbox.needs_cron).toBe(true);
     expect(level.objectives[0]?.bonus).toBe(false);
     expect(level.objectives).toHaveLength(3);
   });

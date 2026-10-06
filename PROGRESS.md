@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** M2 → T2.2 (T2.1 done)
+**Current focus:** M2 → T2.3 (T2.2 done)
 
 ---
 
@@ -23,7 +23,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 ### M2 — Level engine
 - [x] T2.1 `levelLoader` + `levels:lint` ✅ lint green on w1-02 sample; 10 new tests (loader 4, lint 6) reject bad YAML/schema/dupes/dir/order/skills/files; 55 total
-- [ ] T2.2 `setupCompiler` + seeded generators run in sandbox
+- [x] T2.2 `setupCompiler` + seeded generators run in sandbox ✅ seeds 1≠2 answers, cmdlog writable, secret hidden; 5 compiler + 2 docker tests; 60 unit + 8 docker green
 - [ ] T2.3 Core check types (file/process/port/answer/cwd/command/combinators/exec)
 - [ ] T2.4 `ObjectiveTracker`, cmdlog parser, tux inbox, scoring, hints, coach
 - [ ] T2.5 `script_tests`, `crontab_entry`, `cron_dry_run`, `login_shell_eval`, `cronmatch.py`
@@ -172,6 +172,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 | 2026-10-06 | CI `e2e` job | Non-blocking (`continue-on-error`) until Playwright smoke test exists | Make blocking in T5.2, remove TODO in `ci.yml` |
 | 2026-10-06 | `tq-base` checkers | `cronmatch.py` + other check-specific helpers not baked (only tux/tldr/modeof.sh) | Add with their check types in T2.3/T2.5 |
 | 2026-10-06 | skills.yaml prereqs | All 86 starter skills present with empty `prereqs` | Author sensible edges during content milestones (M7/M8) |
+| 2026-10-06 | cron daemon start | `needs_cron` field present (default true); daemon start not implemented | Implement in T10.1 admin polish; no admin levels exist yet |
 
 ## Blockers
 _What is blocked, what was tried, what was done instead._
