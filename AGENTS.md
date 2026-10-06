@@ -94,7 +94,7 @@ docs/                  deploy.md, loadtest.md
 ## 9. Gotchas worth remembering
 
 - The player's shell logs each finished command to `/run/tq/cmdlog` as `epoch<TAB>exit<TAB>cwd<TAB>command`. Empty Enter must not duplicate entries (dedupe via history number).
-- Shell cwd for `shell_cwd` check: `readlink /proc/$(pgrep -o -u player -x bash)/cwd` (oldest `bash` of `player` is the interactive shell).
+- Shell cwd for `shell_cwd` check: `/usr/sbin/runuser -u player -- readlink /proc/$(pgrep -o -u player -x bash)/cwd` (oldest `bash` of `player` is the interactive shell; runuser because root in the `basic` profile lacks CAP_SYS_PTRACE for cross-UID /proc reads — see D-013).
 - `tux submit` writes a JSON line to `/run/tq/inbox`; the server watches it with a long-lived `docker exec tail -F`. Always JSON-escape with `jq -n --arg`.
 - We do **not** capture stderr/stdout of player commands (it's a raw PTY). Error coaching is based on exit code + command text only.
 - Multi-byte UTF-8 can split across Docker stream chunks — use `StringDecoder`.

@@ -111,3 +111,11 @@ _Append below this line. Continue numbering from D-011._
 - **Decision:** Depend on better-sqlite3 `^12.2.0` (has Node 24 prebuilds); keep drizzle-orm `^0.36.4` / drizzle-kit `^0.28.1`.
 - **Alternatives considered:** Pinning Node 22; installing VS Build Tools; hand-rolled `node:sqlite` client (against plan.md §2).
 - **Consequences:** Native install works out of the box on Node 24; v12 API is compatible with our usage (`Database`, drizzle `drizzle()`/`migrate()`/`$client`).
+
+### D-013 — shell_cwd probe runs as player via runuser
+- **Date:** 2026-10-06
+- **Status:** Accepted
+- **Context:** Plan §8.2 prescribes `readlink /proc/$(pgrep -o -u player -x bash)/cwd` from a root check, but §7.3's `basic` profile drops ALL caps (no `SYS_PTRACE`), so even root gets `EACCES` on a player's `/proc/*/cwd`. The two spec lines contradict each other; adding `SYS_PTRACE` would violate hard rule 3 (loosen only per the profile table).
+- **Decision:** Keep the restrictive cap table untouched; run the readlink *as player* (`/usr/sbin/runuser -u player -- readlink …`). Same-UID `/proc` reads need no extra capabilities, and the exec is still root-initiated with a server-fixed, read-only command.
+- **Alternatives considered:** Adding `SYS_PTRACE` to the basic profile (weakens sandbox hardening for every level); deriving cwd from the cmdlog (changes check semantics).
+- **Consequences:** `shell_cwd` works under the locked-down profile; the AGENTS.md §9 gotcha now documents the runuser form.
