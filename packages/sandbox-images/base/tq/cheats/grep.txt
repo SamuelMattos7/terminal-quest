@@ -1,0 +1,6 @@
+grep — search text inside files.
+
+  grep ERROR app.log           Lines containing ERROR.
+  grep -i error app.log        Ignore case.
+  grep -n ERROR app.log        Show line numbers.
+  grep -r AKIA ~/config        Search a whole directory tree.

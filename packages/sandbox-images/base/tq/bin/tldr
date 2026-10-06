@@ -1,0 +1,16 @@
+#!/bin/bash
+# tldr — simplified cheat pages (plan.md §7.1). Prints the baked page for
+# a command, falling back to `man` when there is none.
+set -u
+
+if [ "$#" -ne 1 ]; then
+  echo "Usage: tldr <command>" >&2
+  exit 2
+fi
+
+page="/opt/tq/cheats/$1.txt"
+if [ -f "$page" ]; then
+  cat "$page"
+else
+  exec man "$1"
+fi

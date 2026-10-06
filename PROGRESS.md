@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** M1 → T1.1 (M0 done)
+**Current focus:** M1 → T1.2 (T1.1 done)
 
 ---
 
@@ -17,7 +17,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 - [x] T0.4 CI workflow (`verify`, `levels`, `e2e` jobs) ✅ actionlint 1.7.7 clean, verify job defined; pnpm verify green, 38 tests
 
 ### M1 — Sandbox
-- [ ] T1.1 `tq-base` image + `/opt/tq` helpers (`bashrc`, `tux`, cheats)
+- [x] T1.1 `tq-base` image + `/opt/tq` helpers (`bashrc`, `tux`, cheats) ✅ images:build ok; whoami=player, bin={tux,tldr,modeof.sh}; sudo/su denied, /opt/tq ro, secret 700; tux submit JSON ok
 - [ ] T1.2 `DockerProvider` + security profiles (+ `test:docker` script)
 - [ ] T1.3 `SessionManager` + reaper (idle, max-age, orphan sweep, capacity)
 
@@ -170,6 +170,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 |---|---|---|---|
 | 2026-10-06 | CI `levels` job | Non-blocking (`continue-on-error`) until `levels:lint`/`levels:test` exist | Make blocking in T2.6, remove TODO in `ci.yml` |
 | 2026-10-06 | CI `e2e` job | Non-blocking (`continue-on-error`) until Playwright smoke test exists | Make blocking in T5.2, remove TODO in `ci.yml` |
+| 2026-10-06 | `tq-base` checkers | `cronmatch.py` + other check-specific helpers not baked (only tux/tldr/modeof.sh) | Add with their check types in T2.3/T2.5 |
 
 ## Blockers
 _What is blocked, what was tried, what was done instead._

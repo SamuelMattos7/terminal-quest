@@ -1,0 +1,7 @@
+ls — list directory contents.
+
+  ls                    List files here.
+  ls -l                 Long format (permissions, sizes, dates).
+  ls -la                Long format, including hidden files (dotfiles).
+  ls -lh                Human-readable sizes (K, M, G).
+  ls -lS                Sort by size, biggest first.

@@ -1,0 +1,4 @@
+man — show the manual for a command.
+
+  man ls                Full documentation for ls (arrows scroll, q quits).
+  ls --help             Shorter help, printed right here.

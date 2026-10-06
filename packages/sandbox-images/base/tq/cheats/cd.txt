@@ -1,0 +1,7 @@
+cd — change directory.
+
+  cd office             Go into ./office.
+  cd /var/log           Go somewhere via its absolute path.
+  cd ..                 Up one level. (../.. goes up two.)
+  cd ~                  Back home. (cd with no args does the same.)
+  cd -                  Back to the previous directory.

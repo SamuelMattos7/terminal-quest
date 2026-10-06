@@ -1,0 +1,5 @@
+echo — print text.
+
+  echo hello            Print "hello".
+  echo "a  b"           Quotes keep the spaces together.
+  echo $HOME            Print the value of a variable.

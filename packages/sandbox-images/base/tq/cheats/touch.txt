@@ -1,0 +1,4 @@
+touch — make empty files (or update timestamps).
+
+  touch notes.txt       Create an empty file.
+  mkdir -p projects    Create a directory (parents as needed).

@@ -1,0 +1,4 @@
+cat — print whole files.
+
+  cat notes.txt         Show the file.
+  cat a.txt b.txt       Show both, one after the other.

@@ -1,0 +1,5 @@
+tail / head — show the end or start of a file.
+
+  tail log.txt          Last 10 lines.
+  tail -n 3 log.txt     Last 3 lines.
+  head log.txt          First 10 lines.

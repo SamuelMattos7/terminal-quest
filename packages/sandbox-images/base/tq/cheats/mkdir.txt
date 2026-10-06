@@ -1,0 +1,5 @@
+mkdir — make directories. touch — make empty files.
+
+  mkdir projects        Create ./projects.
+  mkdir -p a/b/c        Create nested dirs (parents as needed).
+  touch notes.txt       Create an empty file (or update its timestamp).

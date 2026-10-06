@@ -1,0 +1,5 @@
+rm — delete files. (There is no trash can. Be careful.)
+
+  rm junk.txt           Delete a file.
+  rmdir emptydir        Delete an empty directory.
+  rm -r oldtree         Delete a directory and everything in it.

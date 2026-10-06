@@ -1,0 +1,20 @@
+# /opt/tq/bashrc — sourced by the player's interactive shell (plan.md §7.4).
+[ -f /etc/bash.bashrc ] && . /etc/bash.bashrc
+export PS1='\[\e[32m\]\u@penguin-corp\[\e[0m\]:\[\e[36m\]\w\[\e[0m\]\$ '
+export PATH="/opt/tq/bin:$PATH"
+shopt -s histappend checkwinsize
+HISTCONTROL=ignoredups
+__tq_last_n=""
+__tq_log() {
+  local ec=$?
+  local n cmd
+  read -r n cmd < <(HISTTIMEFORMAT= history 1)
+  if [ -n "$n" ] && [ "$n" != "$__tq_last_n" ]; then
+    __tq_last_n="$n"
+    printf '%s\t%s\t%s\t%s\n' "$(date +%s)" "$ec" "$PWD" "${cmd//$'\n'/ }" >> /run/tq/cmdlog 2>/dev/null
+  fi
+  return $ec
+}
+PROMPT_COMMAND="__tq_log"
+# Level-specific rc additions (aliases etc.) are appended by setup if the level defines `setup.rc_extra`.
+[ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"

@@ -1,0 +1,5 @@
+mv — move or rename files. cp — copy files.
+
+  mv draft.txt final.txt        Rename.
+  mv photo.jpg pictures/        Move into pictures/.
+  cp report.txt backup/         Copy into the backup directory.

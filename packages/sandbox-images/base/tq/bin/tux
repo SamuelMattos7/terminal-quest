@@ -1,0 +1,51 @@
+#!/bin/bash
+# tux — helper CLI for players (plan.md §7.5). Talks to the server by
+# appending one JSON line to /run/tq/inbox (the server tails it).
+set -u
+
+usage() {
+  cat <<'EOF'
+Usage: tux <command> [args]
+  hint              Ask for the next hint (see the Quest panel).
+  status            Ask the server for your objective status.
+  submit <text...>  Submit an answer.
+  explain <cmd...>   Ask what a command does.
+  help              Show this help.
+EOF
+}
+
+case "${1-help}" in
+  hint)
+    echo '{"cmd":"hint"}' >> /run/tq/inbox
+    echo "Tux: Hint requested. Check the Quest panel."
+    ;;
+  status)
+    echo '{"cmd":"status"}' >> /run/tq/inbox
+    echo "Tux: Status requested. Watch the Quest panel."
+    ;;
+  submit)
+    shift
+    if [ "$#" -eq 0 ]; then
+      echo "Usage: tux submit <text...>" >&2
+      exit 2
+    fi
+    jq -n --arg text "$*" '{"cmd":"submit","text":$text}' >> /run/tq/inbox
+    echo "Answer submitted."
+    ;;
+  explain)
+    shift
+    if [ "$#" -eq 0 ]; then
+      echo "Usage: tux explain <command...>" >&2
+      exit 2
+    fi
+    jq -n --arg text "$*" '{"cmd":"explain","text":$text}' >> /run/tq/inbox
+    echo "Tux: Explanation requested. Watch the Quest panel."
+    ;;
+  help | -h | --help)
+    usage
+    ;;
+  *)
+    echo "Unknown tux command: $1 (try: tux help)" >&2
+    exit 2
+    ;;
+esac
