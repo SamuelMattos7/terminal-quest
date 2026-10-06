@@ -3,6 +3,12 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "exports": {
+    "./engine/levelLoader": {
+      "types": "./dist/engine/levelLoader.d.ts",
+      "default": "./dist/engine/levelLoader.js"
+    }
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
@@ -20,6 +26,7 @@
     "fastify": "^5.2.0",
     "pino": "^9.5.0",
     "tar-stream": "3.1.7",
+    "yaml": "2.7.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

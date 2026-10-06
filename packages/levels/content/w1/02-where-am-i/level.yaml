@@ -1,0 +1,46 @@
+id: w1-02-where-am-i
+world: 1
+order: 2
+title: 'Where Am I?'
+kind: lesson
+difficulty: 1
+estimated_minutes: 4
+story: |
+  Tux-9000: "You're lost. Everyone is, at first. Two commands will fix that:
+  one tells you where you are, the other tells you what's around you.
+  A welcome file is waiting in your home folder. Its name hides a secret word."
+teaches: [pwd, ls]
+par_commands: 3
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  generators:
+    - { script: setup/gen.sh }
+objectives:
+  - id: ran-pwd
+    text: "Run pwd to see which directory you're in."
+    check: { type: command_used, regex: '^pwd$' }
+  - id: ran-ls
+    text: "Run ls to list what's in this directory."
+    check: { type: command_used, regex: '^ls(\s|$)' }
+  - id: found-word
+    text: 'Find the welcome file and submit the word in its name: tux submit <word>'
+    check: { type: answer_equals, from_file: /opt/tq/secret/welcome_word }
+hints:
+  - "ls lists files. Look for one starting with 'welcome-'."
+  - "The word is between 'welcome-' and '.txt'."
+  - "If the file is 'welcome-banana.txt', type: tux submit banana"
+explain:
+  - command: 'pwd'
+    parts: [{ token: 'pwd', meaning: 'print working directory — where you are right now' }]
+  - command: 'ls'
+    parts: [{ token: 'ls', meaning: 'list directory contents' }]
+cheatsheet:
+  - { skill: pwd, syntax: 'pwd', note: 'Show the full path of the current directory.' }
+  - {
+      skill: ls,
+      syntax: 'ls [-la] [PATH]',
+      note: 'List files. -l long format, -a include hidden files.',
+    }
+success_message: "Located. You now know where you are and what's around you. That's 80% of Linux."
+solutions: { reference: solution.sh, wrong: [wrong/wrong-word.sh] }

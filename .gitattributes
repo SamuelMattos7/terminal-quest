@@ -2,3 +2,6 @@
 # into Linux images where a CR breaks shebangs and RUN lines.
 packages/sandbox-images/base/Dockerfile text eol=lf
 packages/sandbox-images/base/tq/** text eol=lf
+# Level scripts run as bash inside sandboxes; YAML stays LF for clean diffs.
+packages/levels/**/*.sh text eol=lf
+packages/levels/**/*.yaml text eol=lf

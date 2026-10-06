@@ -1,0 +1,22 @@
+{
+  "name": "@terminal-quest/level-runner",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "lint": "tsx src/main.ts lint",
+    "levels:test": "tsx src/main.ts test"
+  },
+  "dependencies": {
+    "@terminal-quest/server": "workspace:*",
+    "@terminal-quest/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.3"
+  }
+}

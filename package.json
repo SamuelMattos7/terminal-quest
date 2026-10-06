@@ -10,13 +10,13 @@
   "scripts": {
     "dev": "concurrently -n server,web -c green,cyan \"pnpm --filter @terminal-quest/server dev\" \"pnpm --filter @terminal-quest/web dev\"",
     "build": "pnpm -r build",
-    "lint": "eslint . && prettier --check apps packages *.json *.js *.ts",
+    "lint": "eslint . && prettier --check apps packages tools *.json *.js *.ts",
     "test": "vitest run",
     "test:docker": "pnpm --filter @terminal-quest/server test:docker",
     "verify": "pnpm build && pnpm lint && pnpm test",
     "images:build": "docker build -t tq-base -f packages/sandbox-images/base/Dockerfile packages/sandbox-images/base",
     "db:migrate": "pnpm --filter @terminal-quest/server db:migrate",
-    "levels:lint": "echo \"levels:lint not yet implemented (T2.1)\" && exit 1",
+    "levels:lint": "pnpm --filter @terminal-quest/level-runner lint",
     "levels:test": "echo \"levels:test not yet implemented (T2.6)\" && exit 1",
     "e2e": "echo \"e2e not yet implemented (T5.2)\" && exit 1"
   },
