@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** M3 → T3.1 (M2 done)
+**Current focus:** M3 → T3.2 (T3.1 done)
 
 ---
 
@@ -30,7 +30,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 - [x] T2.6 `tools/level-runner` (`levels:test`) ✅ w1-02 matrix baseline-fail/wrong-fail/reference-pass ×3 seeds; CI levels job blocking; 85 unit + 34 docker green
 
 ### M3 — Server API & socket
-- [ ] T3.1 Guest auth, `me`, `worlds`, `levels/:id` public DTO, unlock logic
+- [x] T3.1 Guest auth, `me`, `worlds`, `levels/:id` public DTO, unlock logic ✅ 19 new tests (auth 4, worlds 5, levels 2, xp 4, unlock 4); DTO leak scan, 429 rate limit; 104 total
 - [ ] T3.2 `start` / `reset` / `DELETE session` + WebSocket wiring
 - [ ] T3.3 Persistence: attempts, progress, skills, XP, badges, streaks, spellbook, daily, review
 

@@ -23,6 +23,8 @@
     "db:migrate": "tsx src/db/migrate.ts"
   },
   "dependencies": {
+    "@fastify/cookie": "11.0.0",
+    "@fastify/rate-limit": "10.0.0",
     "@terminal-quest/shared": "workspace:*",
     "better-sqlite3": "12.2.0",
     "dockerode": "^4.0.2",

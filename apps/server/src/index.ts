@@ -1,16 +1,8 @@
-import Fastify from 'fastify';
 import { loadConfig } from './config.js';
-import { registerHealthRoute } from './routes/health.js';
-import { logger } from './util/logger.js';
+import { buildApp, logger } from './app.js';
 
-export function buildApp() {
-  const app = Fastify({ logger: false });
-  const config = loadConfig();
-  void registerHealthRoute(app, config);
-  return { app, config };
-}
-
-const { app, config } = buildApp();
+const config = loadConfig();
+const app = await buildApp({ config });
 
 try {
   await app.listen({ port: config.PORT, host: '0.0.0.0' });
