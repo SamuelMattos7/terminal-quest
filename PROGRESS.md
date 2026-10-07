@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** M2 → T2.4 (T2.3 done)
+**Current focus:** M2 → T2.5 (T2.4 done)
 
 ---
 
@@ -25,7 +25,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 - [x] T2.1 `levelLoader` + `levels:lint` ✅ lint green on w1-02 sample; 10 new tests (loader 4, lint 6) reject bad YAML/schema/dupes/dir/order/skills/files; 55 total
 - [x] T2.2 `setupCompiler` + seeded generators run in sandbox ✅ seeds 1≠2 answers, cmdlog writable, secret hidden; 5 compiler + 2 docker tests; 60 unit + 8 docker green
 - [x] T2.3 Core check types (file/process/port/answer/cwd/command/combinators/exec) ✅ 22 docker tests pass+fail per type; shell_cwd via runuser (D-013), pgrep self-match fix; 60 unit + 26 docker green
-- [ ] T2.4 `ObjectiveTracker`, cmdlog parser, tux inbox, scoring, hints, coach
+- [x] T2.4 `ObjectiveTracker`, cmdlog parser, tux inbox, scoring, hints, coach ✅ 25 new Docker-free tests (scoring 9, coach 5, tracker 5, cmdlog 5, hints 1); 85 total
 - [ ] T2.5 `script_tests`, `crontab_entry`, `cron_dry_run`, `login_shell_eval`, `cronmatch.py`
 - [ ] T2.6 `tools/level-runner` (`levels:test`)
 

@@ -1,0 +1,22 @@
+# Global error-coach rules (plan.md §10.7). Level `coach` lists are checked
+# first; these are the fallback. Shape: { when: { exit_code?, command_regex? }, say }.
+- when: { exit_code: 127 }
+  say: 'command not found — check spelling, or the program may not be installed.'
+- when: { exit_code: 126 }
+  say: 'Found but not executable. Is the permission bit set? (`ls -l`).'
+- when: { exit_code: 1, command_regex: '^rm\b' }
+  say: 'rm refused. Is it a directory? (`rm -r` for directories — carefully.)'
+- when: { exit_code: 1, command_regex: '^cd\b' }
+  say: "No such directory. Use `ls` to see what's here, and `pwd` to confirm where you are."
+- when: { exit_code: 2, command_regex: '^ls\b' }
+  say: "ls couldn't find that path."
+- when: { exit_code: 1, command_regex: '^(cp|mv)\b' }
+  say: 'Check source and destination paths exist; destination directory needs a trailing / or to exist.'
+- when: { exit_code: 126, command_regex: '^\./' }
+  say: "To run a script in the current dir use `./name` and make sure it's executable (chmod +x)."
+- when: { exit_code: 1, command_regex: '^\./' }
+  say: "To run a script in the current dir use `./name` and make sure it's executable (chmod +x)."
+- when: { exit_code: 2, command_regex: '^grep\b' }
+  say: 'Bad grep usage or path. Quote patterns with special characters.'
+- when: { exit_code: 1, command_regex: '^(cat|less|head|tail)\b' }
+  say: "That file doesn't exist or you can't read it (`ls -l`)."

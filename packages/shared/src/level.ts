@@ -83,7 +83,7 @@ const ObjectiveSchema = z
   })
   .strict();
 
-const CoachRuleSchema = z
+export const CoachRuleSchema = z
   .object({
     when: z
       .object({
@@ -102,6 +102,8 @@ const CoachRuleSchema = z
     say: z.string().min(1),
   })
   .strict();
+
+export type CoachRule = z.infer<typeof CoachRuleSchema>;
 
 export const ExplainCardSchema = z
   .object({
