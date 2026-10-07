@@ -17,6 +17,8 @@ import {
 } from './checks/processChecks.js';
 import { checkAnswerEquals, checkCommandUsed, checkShellCwd } from './checks/shellChecks.js';
 import { checkExec, checkPortListening } from './checks/netExecChecks.js';
+import { checkCrontabEntry, checkCronDryRun } from './checks/cronChecks.js';
+import { checkLoginShellEval, checkScriptTests } from './checks/scriptChecks.js';
 
 // Evaluates one check against a live sandbox (plan.md §8.2). Returns false
 // for timeouts and unmet conditions alike; richer telemetry (check_timeout
@@ -60,10 +62,13 @@ export async function runCheck(
     case 'exec':
       return checkExec(provider, handle, check, ctx);
     case 'script_tests':
+      return checkScriptTests(provider, handle, check, ctx);
     case 'crontab_entry':
+      return checkCrontabEntry(provider, handle, check, ctx);
     case 'cron_dry_run':
+      return checkCronDryRun(provider, handle, check, ctx);
     case 'login_shell_eval':
-      throw new Error(`check type '${check.type}' is not implemented until T2.5`);
+      return checkLoginShellEval(provider, handle, check, ctx);
     case 'all':
       return runAll(provider, handle, check.checks, ctx);
     case 'any': {

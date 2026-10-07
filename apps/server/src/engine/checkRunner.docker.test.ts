@@ -63,15 +63,28 @@ describe('checkRunner combinators and environment', () => {
     ).toBe(true);
   });
 
-  it('rejects check types reserved for T2.5', async () => {
+  it('dispatches script_tests through the runner', async () => {
     const ctx = baseCtx();
     await expect(
       runCheck(
         fx.provider,
         fx.handle,
-        { type: 'script_tests', path: '/home/player/x.sh', shellcheck: false, cases: [] },
+        {
+          type: 'script_tests',
+          path: '/home/player/does-not-exist.sh',
+          shellcheck: false,
+          cases: [
+            {
+              name: 'missing script fails',
+              args: [],
+              setup: [],
+              hidden: false,
+              expect: { exit_code: 0 },
+            },
+          ],
+        },
         ctx,
       ),
-    ).rejects.toThrow('T2.5');
+    ).resolves.toBe(false);
   });
 });
