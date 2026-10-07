@@ -4,9 +4,13 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./engine/levelLoader": {
-      "types": "./dist/engine/levelLoader.d.ts",
-      "default": "./dist/engine/levelLoader.js"
+    "./engine/*": {
+      "types": "./dist/engine/*.d.ts",
+      "default": "./dist/engine/*.js"
+    },
+    "./sandbox/*": {
+      "types": "./dist/sandbox/*.d.ts",
+      "default": "./dist/sandbox/*.js"
     }
   },
   "scripts": {

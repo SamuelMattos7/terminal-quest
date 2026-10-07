@@ -29,7 +29,7 @@ case "${1-help}" in
       echo "Usage: tux submit <text...>" >&2
       exit 2
     fi
-    jq -n --arg text "$*" '{"cmd":"submit","text":$text}' >> /run/tq/inbox
+    jq -c -n --arg text "$*" '{"cmd":"submit","text":$text}' >> /run/tq/inbox
     echo "Answer submitted."
     ;;
   explain)
@@ -38,7 +38,7 @@ case "${1-help}" in
       echo "Usage: tux explain <command...>" >&2
       exit 2
     fi
-    jq -n --arg text "$*" '{"cmd":"explain","text":$text}' >> /run/tq/inbox
+    jq -c -n --arg text "$*" '{"cmd":"explain","text":$text}' >> /run/tq/inbox
     echo "Tux: Explanation requested. Watch the Quest panel."
     ;;
   help | -h | --help)

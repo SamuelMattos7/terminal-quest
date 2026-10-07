@@ -1,5 +1,5 @@
 import { StringDecoder } from 'node:string_decoder';
-import { PassThrough, type Duplex, type Readable } from 'node:stream';
+import { PassThrough, type Duplex } from 'node:stream';
 import { posix } from 'node:path';
 import Docker from 'dockerode';
 import { pack } from 'tar-stream';
@@ -290,9 +290,15 @@ export class DockerProvider implements SandboxProvider {
       AttachStdout: true,
       AttachStderr: false,
     });
-    const stream = (await exec.start({ hijack: true, stdin: false })) as unknown as Readable;
+    const stream = (await exec.start({ hijack: true, stdin: false })) as unknown as Duplex;
+    // Non-TTY exec streams are multiplexed (8-byte frame headers); demux
+    // before splitting lines, or the first line of each frame is corrupt.
+    const stdout = new PassThrough();
+    const stderr = new PassThrough();
+    stderr.resume();
+    container.modem.demuxStream(stream, stdout, stderr);
     let pending = '';
-    stream.on('data', (chunk: Buffer) => {
+    stdout.on('data', (chunk: Buffer) => {
       pending += chunk.toString('utf8');
       let idx = pending.indexOf('\n');
       while (idx >= 0) {

@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
+    "test:docker": "vitest run --config vitest.docker.config.ts",
     "lint": "tsx src/main.ts lint",
     "levels:test": "tsx src/main.ts test"
   },

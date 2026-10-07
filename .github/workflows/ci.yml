@@ -31,8 +31,6 @@ jobs:
   levels:
     name: levels (sandbox images, level lint + tests)
     runs-on: ubuntu-24.04
-    # TODO(T2.6): make blocking once levels:lint and levels:test exist.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -52,6 +50,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
       - run: pnpm i --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm images:build
       - run: pnpm levels:lint
       - run: pnpm levels:test --world 1,2
 

@@ -97,6 +97,38 @@ describe('DockerProvider basic sandbox', () => {
     }
   }, 30_000);
 
+  it('watchFile delivers complete lines without framing bytes', async () => {
+    await provider.exec(
+      h,
+      ['bash', '-c', `printf 'first\\n' > /tmp/t12-watch.txt && chmod 666 /tmp/t12-watch.txt`],
+      {
+        user: 'root',
+      },
+    );
+    const seen: string[] = [];
+    const watcher = await provider.watchFile(h, '/tmp/t12-watch.txt', (line) => {
+      seen.push(line);
+    });
+    try {
+      await provider.exec(
+        h,
+        [
+          'bash',
+          '-c',
+          `printf '{"cmd":"submit","text":"x"}\\nsecond line\\n' >> /tmp/t12-watch.txt`,
+        ],
+        { user: 'player' },
+      );
+      const deadline = Date.now() + 10_000;
+      while (seen.length < 3 && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      expect(seen).toEqual(['first', '{"cmd":"submit","text":"x"}', 'second line']);
+    } finally {
+      watcher.stop();
+    }
+  }, 30_000);
+
   it('destroy leaves no container behind', async () => {
     const temp = await provider.create({ ...spec, attemptId: 't12-temp' });
     await provider.destroy(temp);

@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** M2 → T2.6 (T2.5 done)
+**Current focus:** M3 → T3.1 (M2 done)
 
 ---
 
@@ -27,7 +27,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 - [x] T2.3 Core check types (file/process/port/answer/cwd/command/combinators/exec) ✅ 22 docker tests pass+fail per type; shell_cwd via runuser (D-013), pgrep self-match fix; 60 unit + 26 docker green
 - [x] T2.4 `ObjectiveTracker`, cmdlog parser, tux inbox, scoring, hints, coach ✅ 25 new Docker-free tests (scoring 9, coach 5, tracker 5, cmdlog 5, hints 1); 85 total
 - [x] T2.5 `script_tests`, `crontab_entry`, `cron_dry_run`, `login_shell_eval`, `cronmatch.py` ✅ 7 new docker tests (cronmatch equiv, entry, dry-run rel-path fail, script cases, shellcheck, login env); 85 unit + 33 docker green
-- [ ] T2.6 `tools/level-runner` (`levels:test`)
+- [x] T2.6 `tools/level-runner` (`levels:test`) ✅ w1-02 matrix baseline-fail/wrong-fail/reference-pass ×3 seeds; CI levels job blocking; 85 unit + 34 docker green
 
 ### M3 — Server API & socket
 - [ ] T3.1 Guest auth, `me`, `worlds`, `levels/:id` public DTO, unlock logic
@@ -168,9 +168,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 
 | Date | Area | Gap | Planned resolution |
 |---|---|---|---|
-| 2026-10-06 | CI `levels` job | Non-blocking (`continue-on-error`) until `levels:lint`/`levels:test` exist | Make blocking in T2.6, remove TODO in `ci.yml` |
 | 2026-10-06 | CI `e2e` job | Non-blocking (`continue-on-error`) until Playwright smoke test exists | Make blocking in T5.2, remove TODO in `ci.yml` |
-| 2026-10-06 | `tq-base` checkers | `cronmatch.py` + other check-specific helpers not baked (only tux/tldr/modeof.sh) | Add with their check types in T2.3/T2.5 |
 | 2026-10-06 | skills.yaml prereqs | All 86 starter skills present with empty `prereqs` | Author sensible edges during content milestones (M7/M8) |
 | 2026-10-06 | cron daemon start | `needs_cron` field present (default true); daemon start not implemented | Implement in T10.1 admin polish; no admin levels exist yet |
 
