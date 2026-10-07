@@ -1,3 +1,7 @@
+# Normalize every text file to LF on checkout: prettier demands LF, and CR
+# bytes break shebangs and RUN lines baked into Linux images. This also
+# makes Windows checkouts (core.autocrlf=true) behave like CI (Linux).
+* text=auto eol=lf
 # Shell scripts and Dockerfiles must keep LF endings: they are COPY'd
 # into Linux images where a CR breaks shebangs and RUN lines.
 packages/sandbox-images/base/Dockerfile text eol=lf
