@@ -56,3 +56,68 @@ export const HealthResponseSchema = z.object({
 });
 
 export type HealthResponse = z.infer<typeof HealthResponseSchema>;
+
+// Auth + progression shapes for plan.md §6 (T3.1).
+
+export const UserShapeSchema = z
+  .object({
+    id: z.string().min(1),
+    displayName: z.string().nullable(),
+    xp: z.number().int().min(0),
+    streakDays: z.number().int().min(0),
+  })
+  .strict();
+
+export type UserShape = z.infer<typeof UserShapeSchema>;
+
+export const GuestResponseSchema = z
+  .object({
+    user: UserShapeSchema,
+  })
+  .strict();
+
+export type GuestResponse = z.infer<typeof GuestResponseSchema>;
+
+export const MeResponseSchema = z
+  .object({
+    user: UserShapeSchema,
+    playerLevel: z.number().int().min(1),
+    xpToNext: z.number().int().min(0),
+    badges: z.array(z.string().min(1)),
+  })
+  .strict();
+
+export type MeResponse = z.infer<typeof MeResponseSchema>;
+
+export const LevelStateSchema = z.enum(['locked', 'available', 'completed']);
+
+export type LevelState = z.infer<typeof LevelStateSchema>;
+
+const WorldsLevelSchema = z
+  .object({
+    id: z.string().min(1),
+    title: z.string().min(1),
+    kind: z.enum(['lesson', 'boss', 'review', 'daily']),
+    difficulty: z.number().int().min(1).max(5),
+    estimatedMinutes: z.number().int().positive(),
+    state: LevelStateSchema,
+    bestRank: z.enum(['S', 'A', 'B', 'C']).optional(),
+  })
+  .strict();
+
+export const WorldsResponseSchema = z
+  .object({
+    worlds: z.array(
+      z
+        .object({
+          id: z.number().int().min(1),
+          title: z.string().min(1),
+          blurb: z.string().min(1),
+          levels: z.array(WorldsLevelSchema),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+
+export type WorldsResponse = z.infer<typeof WorldsResponseSchema>;
