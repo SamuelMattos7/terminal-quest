@@ -25,6 +25,7 @@
   "dependencies": {
     "@fastify/cookie": "11.0.0",
     "@fastify/rate-limit": "10.0.0",
+    "@fastify/websocket": "11.0.0",
     "@terminal-quest/shared": "workspace:*",
     "better-sqlite3": "12.2.0",
     "dockerode": "^4.0.2",
@@ -40,9 +41,11 @@
     "@types/dockerode": "^3.3.31",
     "@types/node": "^22.7.4",
     "@types/tar-stream": "3.1.0",
+    "@types/ws": "8.5.13",
     "drizzle-kit": "0.28.1",
     "tsx": "^4.19.1",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.3"
+    "vitest": "^2.1.3",
+    "ws": "8.18.0"
   }
 }

@@ -14,12 +14,16 @@ export interface Session {
   lastInputAt: number;
 }
 
+export type SessionExpireReason = 'idle' | 'max_age';
+
 export interface SessionManagerOptions {
   provider: SandboxProvider;
   maxContainers: number;
   idleTtlMs: number;
   maxAgeMs: number;
   now?: () => number;
+  /** Fired after a sweep destroys a session (T3.2 wires socket cleanup). */
+  onExpire?: (id: string, reason: SessionExpireReason) => void;
 }
 
 /** Thrown by create() when the live-session count hits the capacity cap.
@@ -90,9 +94,11 @@ export class SessionManager {
       if (at - session.createdAt >= this.opts.maxAgeMs) {
         await this.close(session.id, 'max_age');
         result.maxAge += 1;
+        this.opts.onExpire?.(session.id, 'max_age');
       } else if (at - session.lastInputAt >= this.opts.idleTtlMs) {
         await this.close(session.id, 'idle');
         result.idle += 1;
+        this.opts.onExpire?.(session.id, 'idle');
       }
     }
     return result;

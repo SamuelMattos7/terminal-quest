@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** M3 → T3.2 (T3.1 done)
+**Current focus:** M3 → T3.3 (T3.2 done)
 
 ---
 
@@ -31,7 +31,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 ### M3 — Server API & socket
 - [x] T3.1 Guest auth, `me`, `worlds`, `levels/:id` public DTO, unlock logic ✅ 19 new tests (auth 4, worlds 5, levels 2, xp 4, unlock 4); DTO leak scan, 429 rate limit; 104 total
-- [ ] T3.2 `start` / `reset` / `DELETE session` + WebSocket wiring
+- [x] T3.2 `start` / `reset` / `DELETE session` + WebSocket wiring ✅ ws client solves w1-02 via stdin → objective frames + level_complete (S, 55xp); 4401/4403, oversize/ping, replace/reset/abandon, 429+Retry-After; 106 unit + 43 docker green
 - [ ] T3.3 Persistence: attempts, progress, skills, XP, badges, streaks, spellbook, daily, review
 
 ### M4 — Web client

@@ -15,10 +15,15 @@ export interface TrackerState {
   commands: LoggedCommand[];
 }
 
-export type InboxCommand = 'hint' | 'status' | 'submit' | 'explain' | 'unknown';
+export type InboxCommand = 'hint' | 'status' | 'unknown' | InboxSubmit | InboxExplain;
 
 export interface InboxSubmit {
   kind: 'submit';
+  text: string;
+}
+
+export interface InboxExplain {
+  kind: 'explain';
   text: string;
 }
 
@@ -57,8 +62,11 @@ export function handleInboxLine(state: TrackerState, line: string): InboxCommand
   switch (cmd) {
     case 'hint':
     case 'status':
-    case 'explain':
       return cmd;
+    case 'explain': {
+      const text = (parsed as { text?: unknown }).text;
+      return typeof text === 'string' ? { kind: 'explain', text } : 'unknown';
+    }
     case 'submit': {
       const text = (parsed as { text?: unknown }).text;
       if (typeof text !== 'string') {
