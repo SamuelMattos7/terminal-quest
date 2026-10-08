@@ -140,7 +140,7 @@ describe('session socket over the w1-02 sample', () => {
       for (const s of sockets) {
         s.close();
       }
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   }, 120_000);
 
@@ -192,7 +192,7 @@ describe('session socket over the w1-02 sample', () => {
       for (const s of sockets) {
         s.close();
       }
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   }, 120_000);
 });

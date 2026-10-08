@@ -33,7 +33,7 @@ describe('GET /api/worlds', () => {
     try {
       expect((await ctx.app.inject({ method: 'GET', url: '/api/worlds' })).statusCode).toBe(401);
     } finally {
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   });
 
@@ -65,7 +65,7 @@ describe('GET /api/worlds', () => {
         'A',
       );
     } finally {
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   });
 
@@ -78,7 +78,7 @@ describe('GET /api/worlds', () => {
         expect(level.state).toBe('available');
       }
     } finally {
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   });
 
@@ -93,7 +93,7 @@ describe('GET /api/worlds', () => {
       }
       expect(last).toBe(429);
     } finally {
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   });
 
@@ -104,7 +104,7 @@ describe('GET /api/worlds', () => {
       const worlds = await getWorlds(ctx, cookie);
       expect(worlds.worlds.map((w) => w.id)).toEqual([1]);
     } finally {
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   });
 });

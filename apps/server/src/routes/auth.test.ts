@@ -14,7 +14,7 @@ describe('POST /api/guest', () => {
       expect(String(setCookie)).toContain('tq_session=');
       expect(String(setCookie)).toContain('HttpOnly');
     } finally {
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   });
 
@@ -36,7 +36,7 @@ describe('POST /api/guest', () => {
         GuestResponseSchema.parse(second.json()).user.id,
       );
     } finally {
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   });
 });
@@ -48,7 +48,7 @@ describe('GET /api/me', () => {
       const res = await ctx.app.inject({ method: 'GET', url: '/api/me' });
       expect(res.statusCode).toBe(401);
     } finally {
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   });
 
@@ -65,7 +65,7 @@ describe('GET /api/me', () => {
         badges: [],
       });
     } finally {
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   });
 });

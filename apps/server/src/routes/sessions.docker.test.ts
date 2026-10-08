@@ -23,7 +23,7 @@ describe('POST /api/levels/:id/start', () => {
         headers: { cookie },
       });
     } finally {
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   });
 
@@ -53,7 +53,7 @@ describe('POST /api/levels/:id/start', () => {
         (await ctx.app.inject({ method: 'POST', url: '/api/levels/w1-01-a/start' })).statusCode,
       ).toBe(401);
     } finally {
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   });
 
@@ -79,7 +79,7 @@ describe('POST /api/levels/:id/start', () => {
       expect(res.statusCode).toBe(429);
       expect(res.headers['retry-after']).toBe('30');
     } finally {
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   });
 
@@ -121,7 +121,7 @@ describe('POST /api/levels/:id/start', () => {
         headers: { cookie },
       });
     } finally {
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   });
 });
@@ -163,7 +163,7 @@ describe('POST /api/sessions/:id/reset', () => {
         headers: { cookie },
       });
     } finally {
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   });
 });
@@ -209,7 +209,7 @@ describe('DELETE /api/sessions/:id', () => {
         ).statusCode,
       ).toBe(404);
     } finally {
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   });
 });

@@ -33,7 +33,7 @@ describe('GET /api/levels/:id', () => {
         expect(leaked).not.toContain(`"${key}"`);
       }
     } finally {
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   });
 
@@ -54,7 +54,7 @@ describe('GET /api/levels/:id', () => {
         (await ctx.app.inject({ method: 'GET', url: '/api/levels/w1-01-first' })).statusCode,
       ).toBe(401);
     } finally {
-      ctx.cleanup();
+      await ctx.cleanup();
     }
   });
 });
