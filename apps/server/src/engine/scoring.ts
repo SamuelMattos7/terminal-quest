@@ -24,6 +24,8 @@ export interface ScoreBreakdownEntry {
 export interface ScoreResult {
   /** XP actually awarded (after repeat-completion adjustment). */
   xp: number;
+  /** Unadjusted single-run total; the new bestXp when higher. */
+  fullXp: number;
   rank: Rank;
   breakdown: ScoreBreakdownEntry[];
 }
@@ -93,7 +95,7 @@ export function computeScore(input: ScoreInput): ScoreResult {
   const bonusIds = new Set(input.bonusDoneIds);
   const allBonusDone = level.objectives.filter((o) => o.bonus).every((o) => bonusIds.has(o.id));
   const rank = computeRank(level, input.hintTiers.length, input.commandCount, allBonusDone);
-  return { xp: awarded, rank, breakdown };
+  return { xp: awarded, fullXp: fullXp, rank, breakdown };
 }
 
 /** Derives manualBonus + commandCount from a cmdlog command list. */

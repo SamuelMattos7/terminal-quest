@@ -19,6 +19,8 @@ import type { SandboxProvider } from './sandbox/provider.js';
 import { SessionManager } from './sandbox/sessionManager.js';
 import { Reaper } from './sandbox/reaper.js';
 import { LiveSessionRegistry } from './ws/liveSession.js';
+import { loadBadges } from './progression/badges.js';
+import { endAttempt } from './progression/attempts.js';
 import { closeLiveSession } from './ws/sessionFlow.js';
 import { registerSessionSocket } from './ws/sessionSocket.js';
 import { registerHealthRoute } from './routes/health.js';
@@ -26,6 +28,7 @@ import { registerAuthRoutes } from './routes/auth.js';
 import { registerMeRoutes } from './routes/me.js';
 import { registerWorldsRoutes } from './routes/worlds.js';
 import { registerLevelRoutes } from './routes/levels.js';
+import { registerProgressRoutes } from './routes/progress.js';
 import { registerSessionRoutes } from './routes/sessions.js';
 
 declare module 'fastify' {
@@ -64,6 +67,7 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   const contentRoot = opts.contentRoot ?? discoverContentRoot();
   const levels = loadLevels(contentRoot);
   const coachRules = loadCoachRules(contentRoot);
+  const badgeList = loadBadges(join(dirname(contentRoot), 'badges.yaml'));
   const provider = new DockerProvider({ socketPath: opts.socketPath ?? config.DOCKER_SOCKET });
   const live = new LiveSessionRegistry();
   const manager = new SessionManager({
@@ -74,7 +78,17 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
     onExpire: (id, reason) => {
       const expired = live.get(id);
       live.delete(id);
-      if (expired?.socket !== undefined) {
+      if (expired === undefined) {
+        return;
+      }
+      if (!expired.attemptFinished) {
+        try {
+          endAttempt(db, expired.attemptId, 'expired');
+        } catch (err) {
+          logger.warn({ err, id }, 'failed to mark expired attempt');
+        }
+      }
+      if (expired.socket !== undefined) {
         expired.socket.send(JSON.stringify({ t: 'closing', reason }));
         expired.socket.close();
         expired.socket = undefined;
@@ -95,6 +109,8 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
     manager,
     live,
     coachRules,
+    badgeList,
+    skills: levels.skills,
     db,
     levelsByWorld: levels.byWorld,
     levelsById: levels.byId,
@@ -126,6 +142,7 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   await registerMeRoutes(app);
   await registerWorldsRoutes(app);
   await registerLevelRoutes(app);
+  await registerProgressRoutes(app);
   await registerSessionRoutes(app, { ...flowDeps, config });
   await registerSessionSocket(app, { ...flowDeps, config });
 

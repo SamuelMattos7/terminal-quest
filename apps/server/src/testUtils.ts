@@ -2,17 +2,47 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { randomUUID } from 'node:crypto';
 import { stringify as stringifyYaml } from 'yaml';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from './app.js';
 import { testConfig, type AppConfig } from './config.js';
 import { closeDb, createDb, type Db } from './db/client.js';
+import { users } from './db/schema.js';
 
 // Shared scaffolding for API route tests: an isolated temp-file database
 // (migrated) and a fixture content tree. Nothing touches Docker.
 
 const migrationsFolder = fileURLToPath(new URL('./db/migrations', import.meta.url));
+
+export interface TempDb {
+  db: Db;
+  cleanup: () => void;
+}
+
+/** Migrated temp-file database without an app (for pure progression tests). */
+export function makeTempDb(): TempDb {
+  const dir = mkdtempSync(join(tmpdir(), 'tq-db-test-'));
+  const db = createDb(join(dir, 'test.sqlite'));
+  migrate(db, { migrationsFolder });
+  return {
+    db,
+    cleanup: () => {
+      closeDb(db);
+      rmSync(dir, { recursive: true, force: true });
+    },
+  };
+}
+
+/** Insert a bare user row; returns the id. */
+export function makeUser(db: Db, overrides: { xp?: number } = {}): string {
+  const id = randomUUID();
+  db.insert(users)
+    .values({ id, createdAt: 1, xp: overrides.xp ?? 0 })
+    .run();
+  return id;
+}
 
 export interface FixtureLevel {
   dir: string;
@@ -52,7 +82,7 @@ export function makeLevel(id: string, world: number, order: number, kind = 'less
 export interface TestContext {
   app: FastifyInstance;
   db: Db;
-  cleanup: () => void;
+  cleanup: () => Promise<void>;
 }
 
 export async function makeTestContext(
@@ -68,6 +98,7 @@ export async function makeTestContext(
       stringifyYaml([{ id: 'pwd', title: 'pwd', group: 'navigation', world: 1 }]),
     );
     writeFileSync(join(dir, 'coach.yaml'), stringifyYaml([]));
+    writeFileSync(join(dir, 'badges.yaml'), stringifyYaml([]));
     for (const fixture of fixtures) {
       const levelDir = join(root, fixture.dir);
       mkdirSync(levelDir, { recursive: true });
@@ -88,8 +119,10 @@ export async function makeTestContext(
   return {
     app,
     db,
-    cleanup: () => {
-      void app.close();
+    cleanup: async () => {
+      // Awaited in order: the onClose hook writes attempt rows, so the
+      // database must stay open until the app is fully closed.
+      await app.close();
       closeDb(db);
       rmSync(dir, { recursive: true, force: true });
     },

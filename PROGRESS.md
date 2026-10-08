@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** M3 → T3.3 (T3.2 done)
+**Current focus:** M4 → T4.1 (M3 done)
 
 ---
 
@@ -32,7 +32,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 ### M3 — Server API & socket
 - [x] T3.1 Guest auth, `me`, `worlds`, `levels/:id` public DTO, unlock logic ✅ 19 new tests (auth 4, worlds 5, levels 2, xp 4, unlock 4); DTO leak scan, 429 rate limit; 104 total
 - [x] T3.2 `start` / `reset` / `DELETE session` + WebSocket wiring ✅ ws client solves w1-02 via stdin → objective frames + level_complete (S, 55xp); 4401/4403, oversize/ping, replace/reset/abandon, 429+Retry-After; 106 unit + 43 docker green
-- [ ] T3.3 Persistence: attempts, progress, skills, XP, badges, streaks, spellbook, daily, review
+- [x] T3.3 Persistence: attempts, progress, skills, XP, badges, streaks, spellbook, daily, review ✅ 24 new tests (repeat-XP via scoring, streaks, skills, badges, review/daily, 6 endpoints); 130 unit + 43 docker green
 
 ### M4 — Web client
 - [ ] T4.1 Theme, routing, API client, stores, Landing + WorldMap
@@ -171,6 +171,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 | 2026-10-06 | CI `e2e` job | Non-blocking (`continue-on-error`) until Playwright smoke test exists | Make blocking in T5.2, remove TODO in `ci.yml` |
 | 2026-10-06 | skills.yaml prereqs | All 86 starter skills present with empty `prereqs` | Author sensible edges during content milestones (M7/M8) |
 | 2026-10-06 | cron daemon start | `needs_cron` field present (default true); daemon start not implemented | Implement in T10.1 admin polish; no admin levels exist yet |
+| 2026-10-07 | 25%-XP review replays | `GET /api/review` lists due items only; replays score full XP | Wire 25% replay XP with T6.1 review UI |
 
 ## Blockers
 _What is blocked, what was tried, what was done instead._

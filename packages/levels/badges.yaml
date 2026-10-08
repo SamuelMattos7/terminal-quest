@@ -1,0 +1,66 @@
+# Badge catalog (plan.md §10.4). `rule` keys map to evaluators in
+# apps/server/src/progression/badges.ts. Level-id rules activate as soon
+# as their content exists; nothing here leaks answers.
+- id: first-command
+  title: 'First Command'
+  description: 'Complete any level.'
+  rule: first-command
+- id: pipe-dream
+  title: 'Pipe Dream'
+  description: 'Complete a level whose log includes a pipeline with 4+ stages.'
+  rule: pipe-dream
+- id: no-hints-world
+  title: 'Clean Sweep'
+  description: 'Finish a world with 0 hints used.'
+  rule: no-hints-world
+- id: zombie-slayer
+  title: 'Zombie Slayer'
+  description: 'Complete w3-05.'
+  rule: level-done
+  level: w3-05-signals-kill
+- id: cron-whisperer
+  title: 'Cron Whisperer'
+  description: 'Complete w4-12 and w4-13 at rank B or better.'
+  rule: cron-whisperer
+- id: streak-3
+  title: 'Three Day Streak'
+  description: 'Complete levels on 3 consecutive UTC days.'
+  rule: streak-3
+- id: streak-7
+  title: 'Week Warrior'
+  description: 'Complete levels on 7 consecutive UTC days.'
+  rule: streak-7
+- id: s-rank-10
+  title: 'Ten Times S'
+  description: 'Earn 10 S ranks.'
+  rule: s-rank-10
+- id: vim-escape
+  title: 'Vim Escape'
+  description: 'Complete w2-14.'
+  rule: level-done
+  level: w2-14-vim-survival
+- id: boss-1
+  title: 'Lobby Boss'
+  description: 'Defeat the World 1 boss.'
+  rule: boss-done
+  world: 1
+- id: boss-2
+  title: 'Filing Room Boss'
+  description: 'Defeat the World 2 boss.'
+  rule: boss-done
+  world: 2
+- id: boss-3
+  title: 'Engine Room Boss'
+  description: 'Defeat the World 3 boss.'
+  rule: boss-done
+  world: 3
+- id: boss-4
+  title: 'Automation Boss'
+  description: 'Defeat the World 4 boss.'
+  rule: boss-done
+  world: 4
+- id: boss-5
+  title: 'War Room Boss'
+  description: 'Defeat the final boss.'
+  rule: boss-done
+  world: 5
