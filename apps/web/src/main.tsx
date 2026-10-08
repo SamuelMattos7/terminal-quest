@@ -2,6 +2,7 @@ import '@fontsource/inter';
 import '@fontsource/jetbrains-mono';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App.js';
 import './theme.css';
 
@@ -12,6 +13,8 @@ if (root === null) {
 
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <App />
+    </BrowserRouter>
   </React.StrictMode>,
 );

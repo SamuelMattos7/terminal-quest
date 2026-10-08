@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** M4 → T4.1 (M3 done)
+**Current focus:** M4 → T4.2 (T4.1 done)
 
 ---
 
@@ -35,7 +35,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 - [x] T3.3 Persistence: attempts, progress, skills, XP, badges, streaks, spellbook, daily, review ✅ 24 new tests (repeat-XP via scoring, streaks, skills, badges, review/daily, 6 endpoints); 130 unit + 43 docker green
 
 ### M4 — Web client
-- [ ] T4.1 Theme, routing, API client, stores, Landing + WorldMap
+- [x] T4.1 Theme, routing, API client, stores, Landing + WorldMap ✅ pnpm verify green, 159 tests (29 new web: client 7, stores 8, routes 5, pages 7, terminal 2); live `pnpm dev`: guest→me→worlds round-trip + :5173 200
 - [ ] T4.2 Level page (terminal, quest panel, hints, reset, complete modal)
 - [ ] T4.3 Spellbook, Skills graph, Profile, Settings, MobileKeyBar, a11y
 
@@ -172,6 +172,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 | 2026-10-06 | skills.yaml prereqs | All 86 starter skills present with empty `prereqs` | Author sensible edges during content milestones (M7/M8) |
 | 2026-10-06 | cron daemon start | `needs_cron` field present (default true); daemon start not implemented | Implement in T10.1 admin polish; no admin levels exist yet |
 | 2026-10-07 | 25%-XP review replays | `GET /api/review` lists due items only; replays score full XP | Wire 25% replay XP with T6.1 review UI |
+| 2026-10-08 | T4.2/T4.3 pages | `/play/:levelId`, `/spellbook`, `/skills`, `/profile`, `/settings` render explicit "arrives in T4.x" placeholders | Replaced with real pages in T4.2 (level) and T4.3 (rest) |
 
 ## Blockers
 _What is blocked, what was tried, what was done instead._

@@ -12,6 +12,24 @@
   --purple: #b78cff;
 }
 
+/* High-contrast mode (toggled in Settings, T4.3; applied via useSettings). */
+html[data-contrast='high'] {
+  --panel: #000000;
+  --panel-2: #0a0f14;
+  --border: #5a7290;
+  --text: #ffffff;
+  --muted: #c3d3e2;
+}
+
+/* Font-size scale (toggled in Settings, T4.3; applied via useSettings). */
+html[data-font-size='large'] {
+  font-size: 112.5%;
+}
+
+html[data-font-size='xlarge'] {
+  font-size: 125%;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -22,4 +40,21 @@ body {
 code,
 pre {
   font-family: 'JetBrains Mono', monospace;
+}
+
+/* Reduced motion: OS preference or manual override (both disable animation). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+html[data-reduced-motion='on'] *,
+html[data-reduced-motion='on'] *::before,
+html[data-reduced-motion='on'] *::after {
+  animation: none !important;
+  transition: none !important;
 }
