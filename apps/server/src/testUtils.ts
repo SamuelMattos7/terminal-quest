@@ -58,24 +58,32 @@ export interface TestContext {
 export async function makeTestContext(
   fixtures: FixtureLevel[] = [makeLevel('first', 1, 1)],
   configOverrides: Partial<AppConfig> = {},
+  contentRoot?: string,
 ): Promise<TestContext> {
   const dir = mkdtempSync(join(tmpdir(), 'tq-api-test-'));
-  writeFileSync(
-    join(dir, 'skills.yaml'),
-    stringifyYaml([{ id: 'pwd', title: 'pwd', group: 'navigation', world: 1 }]),
-  );
-  for (const fixture of fixtures) {
-    const levelDir = join(dir, 'content', fixture.dir);
-    mkdirSync(levelDir, { recursive: true });
-    writeFileSync(join(levelDir, 'level.yaml'), stringifyYaml(fixture.level));
+  const root = contentRoot ?? join(dir, 'content');
+  if (contentRoot === undefined) {
+    writeFileSync(
+      join(dir, 'skills.yaml'),
+      stringifyYaml([{ id: 'pwd', title: 'pwd', group: 'navigation', world: 1 }]),
+    );
+    writeFileSync(join(dir, 'coach.yaml'), stringifyYaml([]));
+    for (const fixture of fixtures) {
+      const levelDir = join(root, fixture.dir);
+      mkdirSync(levelDir, { recursive: true });
+      writeFileSync(join(levelDir, 'level.yaml'), stringifyYaml(fixture.level));
+    }
   }
   const dbPath = join(dir, 'test.sqlite');
   const db = createDb(dbPath);
   migrate(db, { migrationsFolder });
   const app = await buildApp({
     db,
-    contentRoot: join(dir, 'content'),
+    contentRoot: root,
     config: testConfig({ DB_PATH: dbPath, ...configOverrides }),
+    // Never run the reaper in tests: the boot orphan sweep would destroy
+    // other test files' containers under parallel workers.
+    startReaper: false,
   });
   return {
     app,

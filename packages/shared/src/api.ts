@@ -121,3 +121,22 @@ export const WorldsResponseSchema = z
   .strict();
 
 export type WorldsResponse = z.infer<typeof WorldsResponseSchema>;
+
+// Session lifecycle shapes for plan.md §6 (T3.2).
+
+export const StartSessionResponseSchema = z
+  .object({
+    sessionId: z.string().min(1),
+    wsPath: z.string().min(1),
+  })
+  .strict();
+
+export type StartSessionResponse = z.infer<typeof StartSessionResponseSchema>;
+
+export const OkResponseSchema = z
+  .object({
+    ok: z.literal(true),
+  })
+  .strict();
+
+export type OkResponse = z.infer<typeof OkResponseSchema>;

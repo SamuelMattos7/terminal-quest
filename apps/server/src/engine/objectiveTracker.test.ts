@@ -72,7 +72,10 @@ describe('inbox handling', () => {
     const state = createTracker(makeLevel());
     expect(handleInboxLine(state, '{"cmd":"hint"}')).toBe('hint');
     expect(handleInboxLine(state, '{"cmd":"status"}')).toBe('status');
-    expect(handleInboxLine(state, '{"cmd":"explain","text":"ls"}')).toBe('explain');
+    expect(handleInboxLine(state, '{"cmd":"explain","text":"ls"}')).toEqual({
+      kind: 'explain',
+      text: 'ls',
+    });
     expect(handleInboxLine(state, '{"cmd":"submit","text":"banana"}')).toEqual({
       kind: 'submit',
       text: 'banana',
