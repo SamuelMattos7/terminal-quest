@@ -4,6 +4,7 @@ import {
   type CoachRule,
   type Level,
   type ServerMessage,
+  type Skill,
 } from '@terminal-quest/shared';
 import { levelProgress } from '../db/schema.js';
 import type { Db } from '../db/client.js';
@@ -21,21 +22,27 @@ import {
 import { compileSetup } from '../engine/setupCompiler.js';
 import { runSetup } from '../engine/setupRunner.js';
 import { levelStates } from '../progression/unlock.js';
+import { endAttempt, openAttempt } from '../progression/attempts.js';
+import { recordLevelCompletion } from '../progression/progress.js';
+import type { Badge } from '../progression/badges.js';
 import { SessionManager } from '../sandbox/sessionManager.js';
 import type { SandboxProvider } from '../sandbox/provider.js';
 import { LiveSessionRegistry, type LiveSession } from './liveSession.js';
 
-// Live-session lifecycle shared by the session routes and the socket
-// (T3.2): launch (sandbox + setup + shell + watchers), evaluate-and-report,
-// hints, and closing. No attempt-table writes — T3.3 owns persistence.
+// Live-session lifecycle shared by the session routes and the socket:
+// launch (sandbox + setup + shell + watchers), evaluate-and-report (with
+// completion persistence), hints, and closing.
 
 export interface FlowDeps {
   provider: SandboxProvider;
   manager: SessionManager;
   live: LiveSessionRegistry;
   coachRules: CoachRule[];
+  badgeList: Badge[];
+  skills: Map<string, Skill>;
   db: Db;
   levelsByWorld: Map<number, Level[]>;
+  levelsById: Map<string, Level>;
   unlockAll: boolean;
 }
 
@@ -118,13 +125,30 @@ export async function evaluateAndReport(deps: FlowDeps, live: LiveSession): Prom
     isFirstClear: (best?.completions ?? 0) === 0,
     bestXp: best?.bestXp ?? 0,
   });
+  const { newBadges } = await recordLevelCompletion(deps.db, {
+    userId: live.userId,
+    level: live.level,
+    attemptId: live.attemptId,
+    seed: live.seed,
+    xpAwarded: score.xp,
+    fullXp: score.fullXp,
+    rank: score.rank,
+    hintTiers: live.hints.tiersUsed,
+    commands: live.tracker.commands,
+    bonusDoneIds: bonusDone,
+    teachesSkills: deps.skills,
+    badgeList: deps.badgeList,
+    levelsById: deps.levelsById,
+    levelsByWorld: deps.levelsByWorld,
+  });
+  live.attemptFinished = true;
   send(live, {
     t: 'level_complete',
     result: {
       xp: score.xp,
       rank: score.rank,
       breakdown: score.breakdown,
-      newBadges: [],
+      newBadges,
       unlocked: await computeUnlocked(deps, live.userId, live.level.id),
       explain: live.level.explain,
       skillsGained: live.level.teaches,
@@ -195,6 +219,8 @@ export async function launchLevelSession(
     userId,
     level,
     seed,
+    attemptId: openAttempt(deps.db, userId, level.id, seed),
+    attemptFinished: false,
     tracker,
     hints: createHintState(),
     coach: createCoach(deps.coachRules, level.coach),
@@ -260,6 +286,9 @@ export async function closeLiveSession(
   }
   live.shell = undefined;
   deps.live.delete(live.session.id);
+  if (!live.attemptFinished) {
+    endAttempt(deps.db, live.attemptId, 'abandoned');
+  }
   await deps.manager.close(live.session.id, 'manual');
 }
 

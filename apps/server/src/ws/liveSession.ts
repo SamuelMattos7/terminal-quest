@@ -14,6 +14,8 @@ export interface LiveSession {
   userId: string;
   level: Level;
   seed: number;
+  attemptId: string;
+  attemptFinished: boolean;
   tracker: TrackerState;
   hints: HintState;
   coach: Coach;

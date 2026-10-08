@@ -140,3 +140,106 @@ export const OkResponseSchema = z
   .strict();
 
 export type OkResponse = z.infer<typeof OkResponseSchema>;
+
+// Progression shapes for plan.md §6 (T3.3).
+
+export const ProgressResponseSchema = z
+  .object({
+    levels: z.record(
+      z
+        .object({
+          bestRank: z.enum(['S', 'A', 'B', 'C']).nullable(),
+          bestXp: z.number().int().min(0),
+          completions: z.number().int().min(0),
+          state: LevelStateSchema,
+        })
+        .strict(),
+    ),
+    totals: z
+      .object({
+        xp: z.number().int().min(0),
+        completions: z.number().int().min(0),
+        levelsCompleted: z.number().int().min(0),
+      })
+      .strict(),
+  })
+  .strict();
+
+export type ProgressResponse = z.infer<typeof ProgressResponseSchema>;
+
+export const SkillsResponseSchema = z
+  .object({
+    skills: z.array(
+      z
+        .object({
+          id: z.string().min(1),
+          title: z.string().min(1),
+          group: z.string().min(1),
+          prereqs: z.array(z.string().min(1)),
+          uses: z.number().int().min(0),
+          masteredAt: z.number().int().nullable(),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+
+export type SkillsResponse = z.infer<typeof SkillsResponseSchema>;
+
+const SpellbookEntrySchema = z
+  .object({
+    skillId: z.string().min(1),
+    title: z.string().min(1),
+    cheatsheet: z.array(
+      z
+        .object({
+          syntax: z.string().min(1),
+          note: z.string().min(1),
+        })
+        .strict(),
+    ),
+    examples: z.array(z.string().min(1)),
+    note: z.string().nullable(),
+  })
+  .strict();
+
+export const SpellbookResponseSchema = z
+  .object({
+    entries: z.array(SpellbookEntrySchema),
+  })
+  .strict();
+
+export type SpellbookResponse = z.infer<typeof SpellbookResponseSchema>;
+
+export const NoteRequestSchema = z
+  .object({
+    note: z.string().max(2000),
+  })
+  .strict();
+
+export type NoteRequest = z.infer<typeof NoteRequestSchema>;
+
+export const DailyResponseSchema = z
+  .object({
+    levelId: z.string().min(1),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    completed: z.boolean(),
+  })
+  .strict();
+
+export type DailyResponse = z.infer<typeof DailyResponseSchema>;
+
+export const ReviewResponseSchema = z
+  .object({
+    due: z.array(
+      z
+        .object({
+          skillId: z.string().min(1),
+          levelId: z.string().min(1),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+
+export type ReviewResponse = z.infer<typeof ReviewResponseSchema>;
