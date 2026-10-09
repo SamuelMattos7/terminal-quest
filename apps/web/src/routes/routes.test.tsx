@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../api/client.js';
+import { useSession } from '../session/useSession.js';
 import { useGame } from '../stores/game.js';
 import { strings } from '../strings.js';
 import { AppRoutes } from './routes.js';
@@ -10,8 +11,49 @@ vi.mock('../api/client.js', async (importOriginal) => {
   const mod = await importOriginal<typeof import('../api/client.js')>();
   return {
     ...mod,
-    api: { guest: vi.fn(), me: vi.fn(), worlds: vi.fn() },
+    api: {
+      guest: vi.fn(),
+      me: vi.fn(),
+      worlds: vi.fn(),
+      startLevel: vi.fn(),
+      resetSession: vi.fn(),
+      deleteSession: vi.fn(),
+    },
   };
+});
+
+vi.mock('../session/socket.js', () => {
+  class MockSocket {
+    connect = vi.fn();
+    send = vi.fn();
+    close = vi.fn();
+    constructor(_url: string, _handler: unknown) {}
+  }
+  return { SessionSocket: MockSocket, MAX_RECONNECT_ATTEMPTS: 3 };
+});
+
+vi.mock('@xterm/xterm', () => {
+  class MockTerm {
+    options: Record<string, unknown> = {};
+    cols = 80;
+    rows = 24;
+    loadAddon(): void {}
+    open(): void {}
+    write(): void {}
+    focus(): void {}
+    dispose(): void {}
+    onData(): { dispose: () => void } {
+      return { dispose: () => {} };
+    }
+  }
+  return { Terminal: MockTerm };
+});
+
+vi.mock('@xterm/addon-fit', () => {
+  class MockFit {
+    fit(): void {}
+  }
+  return { FitAddon: MockFit };
 });
 
 function renderAt(path: string): void {
@@ -27,9 +69,13 @@ function renderAt(path: string): void {
 
 beforeEach(() => {
   useGame.setState({ me: null, worlds: null, starting: false, loading: false, error: null });
+  useSession.getState().disconnect();
   vi.mocked(api.guest).mockReset();
   vi.mocked(api.me).mockReset();
   vi.mocked(api.worlds).mockReset();
+  vi.mocked(api.startLevel).mockReset();
+  vi.mocked(api.resetSession).mockReset();
+  vi.mocked(api.deleteSession).mockReset();
 });
 
 describe('AppRoutes', () => {
@@ -51,10 +97,11 @@ describe('AppRoutes', () => {
     expect(await screen.findByText(strings.mapTitle)).not.toBeNull();
   });
 
-  it('renders the T4.2 placeholder for level pages', () => {
+  it('renders the level page for /play/:levelId', async () => {
+    vi.mocked(api.startLevel).mockResolvedValue({ sessionId: 's1', wsPath: '/ws/sessions/s1' });
     renderAt('/play/w1-01-first-words');
-    expect(screen.getByText(strings.levelPageTitle)).not.toBeNull();
-    expect(screen.getByText(`${strings.comingSoon} T4.2.`)).not.toBeNull();
+    expect(await screen.findByText(strings.levelStarting)).not.toBeNull();
+    expect(api.startLevel).toHaveBeenCalledWith('w1-01-first-words');
   });
 
   it('renders T4.3 placeholders for the later pages', () => {
