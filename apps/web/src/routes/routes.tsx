@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { strings } from '../strings.js';
 import { Landing } from '../pages/Landing.js';
+import { LevelPage } from '../pages/LevelPage.js';
 import { PlaceholderPage } from '../pages/PlaceholderPage.js';
 import { WorldMap } from '../pages/WorldMap.js';
 
@@ -13,10 +14,7 @@ export function AppRoutes() {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/map" element={<WorldMap />} />
-      <Route
-        path="/play/:levelId"
-        element={<PlaceholderPage title={strings.levelPageTitle} taskId="T4.2" />}
-      />
+      <Route path="/play/:levelId" element={<LevelPage />} />
       <Route
         path="/spellbook"
         element={<PlaceholderPage title={strings.navSpellbook} taskId="T4.3" />}
