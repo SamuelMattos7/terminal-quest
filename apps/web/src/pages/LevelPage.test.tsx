@@ -46,6 +46,8 @@ vi.mock('../api/client.js', async (importOriginal) => {
       deleteSession: vi.fn(),
       me: vi.fn(),
       worlds: vi.fn(),
+      progress: vi.fn(),
+      spellbook: vi.fn(),
     },
   };
 });
@@ -77,6 +79,7 @@ vi.mock('@xterm/xterm', () => {
     onData(): { dispose: () => void } {
       return { dispose: () => {} };
     }
+    attachCustomKeyEventHandler(): void {}
   }
   return { Terminal: MockTerm };
 });
@@ -162,7 +165,16 @@ beforeEach(() => {
   socketMocks.instances = [];
   termMocks.instances = [];
   useSession.getState().disconnect();
-  useGame.setState({ me: null, worlds: null, starting: false, loading: false, error: null });
+  useGame.setState({
+    me: null,
+    worlds: null,
+    progress: null,
+    skillsData: null,
+    spellbook: null,
+    starting: false,
+    loading: false,
+    error: null,
+  });
   vi.mocked(api.startLevel)
     .mockReset()
     .mockResolvedValue({ sessionId: 's1', wsPath: '/ws/sessions/s1' });
@@ -177,6 +189,13 @@ beforeEach(() => {
       badges: [],
     });
   vi.mocked(api.worlds).mockReset().mockResolvedValue({ worlds: [] });
+  vi.mocked(api.progress)
+    .mockReset()
+    .mockResolvedValue({
+      levels: {},
+      totals: { xp: 0, completions: 0, levelsCompleted: 0, hintsUsed: 0 },
+    });
+  vi.mocked(api.spellbook).mockReset().mockResolvedValue({ entries: [] });
 });
 
 describe('LevelPage', () => {
@@ -231,6 +250,32 @@ describe('LevelPage', () => {
     fireEvent.click(screen.getByRole('button', { name: strings.leaveLevel }));
     expect(await screen.findByText('map-probe')).not.toBeNull();
     expect(api.deleteSession).toHaveBeenCalledWith('s2');
+  });
+
+  it('sends keybar keys through stdin', async () => {
+    renderPage();
+    const socket = await openLiveSession();
+    await screen.findByTestId('terminal-container');
+    expect(screen.getByTestId('mobile-keybar')).not.toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Tab' }));
+    expect(socket.send).toHaveBeenCalledWith({ t: 'stdin', d: '\t' });
+    fireEvent.click(screen.getByRole('button', { name: 'Ctrl+C' }));
+    expect(socket.send).toHaveBeenCalledWith({ t: 'stdin', d: '\x03' });
+  });
+
+  it('shows spellbook notes for the level skills in the notes tab', async () => {
+    vi.mocked(api.spellbook).mockResolvedValue({
+      entries: [
+        { skillId: 'pwd', title: 'pwd', cheatsheet: [], examples: [], note: 'stay oriented' },
+        { skillId: 'grep', title: 'grep', cheatsheet: [], examples: [], note: 'unrelated' },
+      ],
+    });
+    renderPage();
+    await openLiveSession();
+    await screen.findByTestId('terminal-container');
+    fireEvent.click(screen.getByRole('tab', { name: strings.notesTab }));
+    expect(screen.getByText('stay oriented')).not.toBeNull();
+    expect(screen.queryByText('unrelated')).toBeNull();
   });
 
   it('disconnects the socket on unmount without abandoning', async () => {

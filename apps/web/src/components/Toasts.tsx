@@ -29,7 +29,7 @@ function ToastItem({ toast, onDismiss }: { toast: SessionToast; onDismiss: (id: 
         onClick={() => {
           onDismiss(toast.id);
         }}
-        className="font-mono text-muted hover:text-text"
+        className="flex min-h-6 min-w-6 items-center justify-center font-mono text-muted hover:text-text"
       >
         ×
       </button>

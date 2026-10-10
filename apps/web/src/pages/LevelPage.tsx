@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { CompleteModal } from '../components/CompleteModal.js';
+import { MobileKeyBar } from '../components/MobileKeyBar.js';
 import { buildObjectiveItems } from '../components/ObjectiveList.js';
 import { QuestPanel } from '../components/QuestPanel.js';
 import { TerminalView } from '../components/TerminalView.js';
@@ -21,6 +22,9 @@ export function LevelPage() {
   const completion = useSession((s) => s.completion);
   const error = useSession((s) => s.error);
   const closeReason = useSession((s) => s.closeReason);
+  const spellbook = useGame((s) => s.spellbook);
+  const [ctrlArmed, setCtrlArmed] = useState(false);
+  const ctrlKey = useRef({ armed: false });
 
   // (Re)start whenever the route level changes. Unmount closes the socket
   // only — the server session idles out via the reaper (T1.3).
@@ -46,6 +50,18 @@ export function LevelPage() {
       void useGame.getState().refresh();
     }
   }, [completion]);
+
+  // Notes tab content: saved spellbook notes for this level's skills.
+  useEffect(() => {
+    if (useGame.getState().spellbook === null) {
+      void useGame.getState().loadSpellbook();
+    }
+  }, []);
+
+  const toggleCtrl = (): void => {
+    ctrlKey.current.armed = !ctrlKey.current.armed;
+    setCtrlArmed(ctrlKey.current.armed);
+  };
 
   if (levelId === undefined) {
     return (
@@ -96,15 +112,33 @@ export function LevelPage() {
 
   const items = buildObjectiveItems(level, statuses);
   const nextId = completion?.unlocked[0] ?? null;
+  const notes = (spellbook?.entries ?? []).flatMap((e) =>
+    level.teaches.includes(e.skillId) && e.note !== null
+      ? [{ skillId: e.skillId, title: e.title, note: e.note }]
+      : [],
+  );
 
   return (
     <div className="flex min-h-screen flex-col bg-bg">
       <main className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 gap-4 p-4 lg:grid-cols-[65%_35%]">
-        <TerminalView
-          onLeaveTerminal={() => {
-            document.getElementById('quest-panel')?.focus();
-          }}
-        />
+        <div className="flex min-h-0 flex-col gap-2">
+          <TerminalView
+            onLeaveTerminal={() => {
+              document.getElementById('quest-panel')?.focus();
+            }}
+            ctrlKey={ctrlKey}
+            onCtrlConsumed={() => {
+              setCtrlArmed(false);
+            }}
+          />
+          <MobileKeyBar
+            ctrlArmed={ctrlArmed}
+            onToggleCtrl={toggleCtrl}
+            onKey={(seq) => {
+              useSession.getState().sendStdin(seq);
+            }}
+          />
+        </div>
         <QuestPanel
           level={level}
           items={items}
@@ -113,6 +147,7 @@ export function LevelPage() {
           hintsTotal={3}
           canRequestHint={status === 'live'}
           toasts={toasts}
+          notes={notes}
           onRequestHint={() => {
             useSession.getState().requestHint();
           }}

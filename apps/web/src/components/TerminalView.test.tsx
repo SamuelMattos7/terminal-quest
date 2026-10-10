@@ -31,6 +31,7 @@ interface MockTerminal {
   focused: boolean;
   disposed: boolean;
   emitData: (data: string) => void;
+  keyHandler: ((event: KeyboardEvent) => boolean) | null;
 }
 
 vi.mock('@xterm/xterm', () => {
@@ -43,6 +44,7 @@ vi.mock('@xterm/xterm', () => {
     focused = false;
     disposed = false;
     private dataHandlers: Array<(data: string) => void> = [];
+    keyHandler: ((event: KeyboardEvent) => boolean) | null = null;
 
     constructor() {
       termMocks.instances.push(this);
@@ -64,6 +66,9 @@ vi.mock('@xterm/xterm', () => {
     onData(fn: (data: string) => void): { dispose: () => void } {
       this.dataHandlers.push(fn);
       return { dispose: () => {} };
+    }
+    attachCustomKeyEventHandler(fn: (event: KeyboardEvent) => boolean): void {
+      this.keyHandler = fn;
     }
     emitData(data: string): void {
       for (const fn of this.dataHandlers) {
@@ -160,5 +165,23 @@ describe('TerminalView', () => {
     unmount();
     expect(term.disposed).toBe(true);
     expect(sessionStub.setStdoutWriter).toHaveBeenLastCalledWith(null);
+  });
+
+  it('sends a control code for the next letter while Ctrl is armed', () => {
+    const onCtrlConsumed = vi.fn();
+    const ctrlKey = { current: { armed: true } };
+    render(
+      <TerminalView onLeaveTerminal={() => {}} ctrlKey={ctrlKey} onCtrlConsumed={onCtrlConsumed} />,
+    );
+    const term = lastTerm();
+    const keyEvent = (key: string) =>
+      ({ key, ctrlKey: false, metaKey: false, altKey: false }) as KeyboardEvent;
+    expect(term.keyHandler?.(keyEvent('c'))).toBe(false);
+    expect(sessionStub.sendStdin).toHaveBeenCalledWith('\x03');
+    expect(ctrlKey.current.armed).toBe(false);
+    expect(onCtrlConsumed).toHaveBeenCalledTimes(1);
+    // Disarmed: letters pass through to the terminal.
+    expect(term.keyHandler?.(keyEvent('d'))).toBe(true);
+    expect(sessionStub.sendStdin).toHaveBeenCalledTimes(1);
   });
 });

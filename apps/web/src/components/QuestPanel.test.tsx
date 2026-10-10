@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { PublicLevel } from '@terminal-quest/shared';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { strings } from '../strings.js';
 import { QuestPanel } from './QuestPanel.js';
@@ -32,21 +33,24 @@ function renderPanel(overrides?: Partial<Parameters<typeof QuestPanel>[0]>): {
   const onDismissToast = vi.fn();
   const onFocusTerminal = vi.fn();
   render(
-    <QuestPanel
-      level={level}
-      items={[...items]}
-      hints={[]}
-      hintsUsed={0}
-      hintsTotal={3}
-      canRequestHint
-      toasts={[]}
-      onRequestHint={onRequestHint}
-      onReset={onReset}
-      onLeave={onLeave}
-      onDismissToast={onDismissToast}
-      onFocusTerminal={onFocusTerminal}
-      {...overrides}
-    />,
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <QuestPanel
+        level={level}
+        items={[...items]}
+        hints={[]}
+        hintsUsed={0}
+        hintsTotal={3}
+        canRequestHint
+        toasts={[]}
+        notes={[]}
+        onRequestHint={onRequestHint}
+        onReset={onReset}
+        onLeave={onLeave}
+        onDismissToast={onDismissToast}
+        onFocusTerminal={onFocusTerminal}
+        {...overrides}
+      />
+    </MemoryRouter>,
   );
   return { onRequestHint, onReset, onLeave, onFocusTerminal };
 }
@@ -88,5 +92,25 @@ describe('QuestPanel', () => {
   it('shows toasts', () => {
     renderPanel({ toasts: [{ id: 7, kind: 'coach', text: 'check your spelling' }] });
     expect(screen.getByText('check your spelling')).not.toBeNull();
+  });
+
+  it('switches mobile tabs and shows level notes', () => {
+    renderPanel({
+      notes: [{ skillId: 'pwd', title: 'pwd', note: 'stay oriented' }],
+    });
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs).toHaveLength(3);
+    expect(tabs[0]?.getAttribute('aria-selected')).toBe('true');
+    fireEvent.click(screen.getByRole('tab', { name: strings.notesTab }));
+    expect(screen.getByText('stay oriented')).not.toBeNull();
+    fireEvent.click(screen.getByRole('tab', { name: strings.hintsTab }));
+    expect(screen.getByTestId('hint-button')).not.toBeNull();
+  });
+
+  it('shows the notes empty state with a spellbook link', () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole('tab', { name: strings.notesTab }));
+    expect(screen.getByText(strings.notesEmpty)).not.toBeNull();
+    expect(screen.getByRole('link', { name: strings.openSpellbook })).not.toBeNull();
   });
 });

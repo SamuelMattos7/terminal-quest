@@ -15,6 +15,11 @@ vi.mock('../api/client.js', async (importOriginal) => {
       guest: vi.fn(),
       me: vi.fn(),
       worlds: vi.fn(),
+      progress: vi.fn(),
+      skills: vi.fn(),
+      spellbook: vi.fn(),
+      badges: vi.fn(),
+      deleteProgress: vi.fn(),
       startLevel: vi.fn(),
       resetSession: vi.fn(),
       deleteSession: vi.fn(),
@@ -45,6 +50,7 @@ vi.mock('@xterm/xterm', () => {
     onData(): { dispose: () => void } {
       return { dispose: () => {} };
     }
+    attachCustomKeyEventHandler(): void {}
   }
   return { Terminal: MockTerm };
 });
@@ -68,14 +74,28 @@ function renderAt(path: string): void {
 }
 
 beforeEach(() => {
-  useGame.setState({ me: null, worlds: null, starting: false, loading: false, error: null });
+  useGame.setState({
+    me: null,
+    worlds: null,
+    progress: null,
+    skillsData: null,
+    spellbook: null,
+    starting: false,
+    loading: false,
+    error: null,
+  });
   useSession.getState().disconnect();
   vi.mocked(api.guest).mockReset();
   vi.mocked(api.me).mockReset();
   vi.mocked(api.worlds).mockReset();
+  vi.mocked(api.progress).mockReset();
   vi.mocked(api.startLevel).mockReset();
   vi.mocked(api.resetSession).mockReset();
   vi.mocked(api.deleteSession).mockReset();
+  vi.mocked(api.skills).mockReset();
+  vi.mocked(api.spellbook).mockReset();
+  vi.mocked(api.badges).mockReset();
+  vi.mocked(api.deleteProgress).mockReset();
 });
 
 describe('AppRoutes', () => {
@@ -93,6 +113,10 @@ describe('AppRoutes', () => {
       badges: [],
     });
     vi.mocked(api.worlds).mockResolvedValue({ worlds: [] });
+    vi.mocked(api.progress).mockResolvedValue({
+      levels: {},
+      totals: { xp: 10, completions: 0, levelsCompleted: 0, hintsUsed: 0 },
+    });
     renderAt('/map');
     expect(await screen.findByText(strings.mapTitle)).not.toBeNull();
   });
@@ -104,8 +128,28 @@ describe('AppRoutes', () => {
     expect(api.startLevel).toHaveBeenCalledWith('w1-01-first-words');
   });
 
-  it('renders T4.3 placeholders for the later pages', () => {
-    for (const path of ['/spellbook', '/skills', '/profile', '/settings']) {
+  it('renders the T4.3 pages with API data', async () => {
+    vi.mocked(api.spellbook).mockResolvedValue({ entries: [] });
+    vi.mocked(api.skills).mockResolvedValue({ skills: [] });
+    vi.mocked(api.me).mockResolvedValue({
+      user: { id: 'u1', displayName: null, xp: 0, streakDays: 0 },
+      playerLevel: 1,
+      xpToNext: 100,
+      badges: [],
+    });
+    vi.mocked(api.worlds).mockResolvedValue({ worlds: [] });
+    vi.mocked(api.progress).mockResolvedValue({
+      levels: {},
+      totals: { xp: 0, completions: 0, levelsCompleted: 0, hintsUsed: 0 },
+    });
+    vi.mocked(api.badges).mockResolvedValue({ badges: [] });
+    const cases: Array<[string, string]> = [
+      ['/spellbook', strings.spellbookTitle],
+      ['/skills', strings.skillsTitle],
+      ['/profile', strings.profileTitle],
+      ['/settings', strings.settingsTitle],
+    ];
+    for (const [path, title] of cases) {
       const { unmount } = render(
         <MemoryRouter
           initialEntries={[path]}
@@ -114,7 +158,7 @@ describe('AppRoutes', () => {
           <AppRoutes />
         </MemoryRouter>,
       );
-      expect(screen.getByText(`${strings.comingSoon} T4.3.`)).not.toBeNull();
+      expect(await screen.findByRole('heading', { name: title })).not.toBeNull();
       unmount();
     }
   });
