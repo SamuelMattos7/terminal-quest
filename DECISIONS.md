@@ -119,3 +119,19 @@ _Append below this line. Continue numbering from D-011._
 - **Decision:** Keep the restrictive cap table untouched; run the readlink *as player* (`/usr/sbin/runuser -u player -- readlink â€¦`). Same-UID `/proc` reads need no extra capabilities, and the exec is still root-initiated with a server-fixed, read-only command.
 - **Alternatives considered:** Adding `SYS_PTRACE` to the basic profile (weakens sandbox hardening for every level); deriving cwd from the cmdlog (changes check semantics).
 - **Consequences:** `shell_cwd` works under the locked-down profile; the AGENTS.md Â§9 gotcha now documents the runuser form.
+
+### D-014 — Additive profile/settings API for T4.3
+- **Date:** 2026-10-11
+- **Status:** Accepted
+- **Context:** plan.md §9.2 requires display-name edit (Profile) and reset-progress (Settings), but §6 defines no endpoints for them; badge titles live only in badges.yaml with no serving endpoint.
+- **Decision:** Add three additive endpoints (no existing contract changes): PATCH /api/me {displayName 1-40}, DELETE /api/progress (wipes attempts/level_progress/skill_progress/badges + zeroes xp/streak, keeps identity and spellbook notes, abandons live session), GET /api/badges (catalog + earnedAt); add totals.hintsUsed to GET /api/progress.
+- **Alternatives considered:** Dead settings buttons until a later milestone (worse); folding badge metadata into GET /api/me (churns T3.1-tested schema).
+- **Consequences:** §6 table extended with a dated note; new shared schemas covered by schema + route + client tests.
+
+### D-015 — Missing @tailwind directives left the app unstyled
+- **Date:** 2026-10-11
+- **Status:** Accepted
+- **Context:** The T4.3 Lighthouse audit reported unstyled-UA colors (#0000ee links): apps/web/src/theme.css never contained @tailwind base/components/utilities, so no utility class ever took effect. Only :root tokens and body rules applied. Unit tests cannot catch this (jsdom ignores styles).
+- **Decision:** Add the three directives at the top of theme.css; fix the resulting audit findings (keybar exact-match names, min 36px touch targets, link hit-area).
+- **Alternatives considered:** None — plain bug.
+- **Consequences:** First true visual render of the app; verify claimed Tailwind styling visually during the T4.3 manual check.
