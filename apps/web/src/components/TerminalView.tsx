@@ -28,10 +28,17 @@ const STATUS_DOT: Record<SessionStatus, string> = {
 interface TerminalViewProps {
   /** Move keyboard focus out of the terminal (plan.md §9.5: focus is never trapped). */
   onLeaveTerminal: () => void;
+  /**
+   * Shared Ctrl-arm flag for the mobile key bar (§9.6): while armed, the next
+   * letter typed on the OS keyboard is sent as a control code instead.
+   */
+  ctrlKey?: { current: { armed: boolean } };
+  /** Fired when an armed Ctrl is consumed by a keystroke. */
+  onCtrlConsumed?: () => void;
 }
 
 /** xterm.js terminal bound to the live session socket (plan.md §9.3). */
-export function TerminalView({ onLeaveTerminal }: TerminalViewProps) {
+export function TerminalView({ onLeaveTerminal, ctrlKey, onCtrlConsumed }: TerminalViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const termRef = useRef<Terminal | null>(null);
   const status = useSession((s) => s.status);
@@ -71,6 +78,26 @@ export function TerminalView({ onLeaveTerminal }: TerminalViewProps) {
     });
     const dropInput = term.onData((data: string) => {
       useSession.getState().sendStdin(data);
+    });
+    // Returns void in xterm v5: the handler dies with the terminal on dispose.
+    term.attachCustomKeyEventHandler((event: KeyboardEvent) => {
+      const armed = ctrlKey?.current.armed ?? false;
+      if (
+        armed &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        /^[a-zA-Z]$/.test(event.key)
+      ) {
+        const code = String.fromCharCode(event.key.toLowerCase().charCodeAt(0) - 96);
+        useSession.getState().sendStdin(code);
+        if (ctrlKey !== undefined) {
+          ctrlKey.current.armed = false;
+        }
+        onCtrlConsumed?.();
+        return false;
+      }
+      return true;
     });
 
     let timer: ReturnType<typeof setTimeout> | null = null;

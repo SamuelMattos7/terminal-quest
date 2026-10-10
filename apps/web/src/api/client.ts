@@ -1,4 +1,5 @@
 import type {
+  BadgesResponse,
   DailyResponse,
   GuestResponse,
   MeResponse,
@@ -12,6 +13,7 @@ import type {
   WorldsResponse,
 } from '@terminal-quest/shared';
 import {
+  BadgesResponseSchema,
   DailyResponseSchema,
   GuestResponseSchema,
   MeResponseSchema,
@@ -100,6 +102,13 @@ export const api = {
   me(): Promise<MeResponse> {
     return request('/api/me', MeResponseSchema);
   },
+  updateDisplayName(displayName: string): Promise<GuestResponse> {
+    return request('/api/me', GuestResponseSchema, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ displayName }),
+    });
+  },
   worlds(): Promise<WorldsResponse> {
     return request('/api/worlds', WorldsResponseSchema);
   },
@@ -121,11 +130,38 @@ export const api = {
   progress(): Promise<ProgressResponse> {
     return request('/api/progress', ProgressResponseSchema);
   },
+  deleteProgress(): Promise<OkResponse> {
+    return request('/api/progress', OkResponseSchema, { method: 'DELETE' });
+  },
+  badges(): Promise<BadgesResponse> {
+    return request('/api/badges', BadgesResponseSchema);
+  },
   skills(): Promise<SkillsResponse> {
     return request('/api/skills', SkillsResponseSchema);
   },
   spellbook(): Promise<SpellbookResponse> {
     return request('/api/spellbook', SpellbookResponseSchema);
+  },
+  saveSpellbookNote(skillId: string, note: string): Promise<OkResponse> {
+    const path = `/api/spellbook/${encodeURIComponent(skillId)}/note`;
+    return request(path, OkResponseSchema, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ note }),
+    });
+  },
+  /** Raw markdown export (text, not JSON): fetched then offered as a download. */
+  async spellbookExport(): Promise<string> {
+    let res: Response;
+    try {
+      res = await fetch('/api/spellbook/export', { credentials: 'same-origin' });
+    } catch {
+      throw new ApiError(0, 'Network error: could not reach the server.');
+    }
+    if (!res.ok) {
+      throw new ApiError(res.status, await readErrorMessage(res), readRetryAfter(res));
+    }
+    return res.text();
   },
   daily(): Promise<DailyResponse> {
     return request('/api/daily', DailyResponseSchema);

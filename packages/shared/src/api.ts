@@ -160,6 +160,7 @@ export const ProgressResponseSchema = z
         xp: z.number().int().min(0),
         completions: z.number().int().min(0),
         levelsCompleted: z.number().int().min(0),
+        hintsUsed: z.number().int().min(0),
       })
       .strict(),
   })
@@ -175,6 +176,7 @@ export const SkillsResponseSchema = z
           id: z.string().min(1),
           title: z.string().min(1),
           group: z.string().min(1),
+          world: z.number().int().min(0),
           prereqs: z.array(z.string().min(1)),
           uses: z.number().int().min(0),
           masteredAt: z.number().int().nullable(),
@@ -243,3 +245,30 @@ export const ReviewResponseSchema = z
   .strict();
 
 export type ReviewResponse = z.infer<typeof ReviewResponseSchema>;
+
+// Profile + settings shapes (D-014: additive plan.md §6 extensions for T4.3).
+
+export const DisplayNameRequestSchema = z
+  .object({
+    displayName: z.string().trim().min(1).max(40),
+  })
+  .strict();
+
+export type DisplayNameRequest = z.infer<typeof DisplayNameRequestSchema>;
+
+export const BadgesResponseSchema = z
+  .object({
+    badges: z.array(
+      z
+        .object({
+          id: z.string().min(1),
+          title: z.string().min(1),
+          description: z.string().min(1),
+          earnedAt: z.number().int().nullable(),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+
+export type BadgesResponse = z.infer<typeof BadgesResponseSchema>;

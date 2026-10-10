@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { HealthResponseSchema, toPublicLevel } from './api.js';
+import {
+  BadgesResponseSchema,
+  DisplayNameRequestSchema,
+  HealthResponseSchema,
+  toPublicLevel,
+} from './api.js';
 import { LevelSchema } from './level.js';
 import { validLevelInput } from './test-fixtures.js';
 
@@ -16,6 +21,36 @@ describe('HealthResponseSchema', () => {
   });
 });
 
+describe('DisplayNameRequestSchema', () => {
+  it('trims and accepts a short name', () => {
+    expect(DisplayNameRequestSchema.parse({ displayName: '  Tux  ' })).toEqual({
+      displayName: 'Tux',
+    });
+  });
+
+  it('rejects blank and over-long names', () => {
+    expect(() => DisplayNameRequestSchema.parse({ displayName: '   ' })).toThrow();
+    expect(() => DisplayNameRequestSchema.parse({ displayName: 'x'.repeat(41) })).toThrow();
+  });
+});
+
+describe('BadgesResponseSchema', () => {
+  it('accepts earned and unearned entries', () => {
+    expect(
+      BadgesResponseSchema.parse({
+        badges: [
+          { id: 'first-command', title: 'First Command', description: 'Do it.', earnedAt: 7 },
+          { id: 'other', title: 'Other', description: 'Later.', earnedAt: null },
+        ],
+      }),
+    ).toEqual({
+      badges: [
+        { id: 'first-command', title: 'First Command', description: 'Do it.', earnedAt: 7 },
+        { id: 'other', title: 'Other', description: 'Later.', earnedAt: null },
+      ],
+    });
+  });
+});
 describe('toPublicLevel', () => {
   it('maps level fields to the public DTO', () => {
     const level = LevelSchema.parse(validLevelInput);

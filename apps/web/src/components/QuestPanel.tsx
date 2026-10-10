@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { PublicLevel } from '@terminal-quest/shared';
 import type { RevealedHint, SessionToast } from '../session/useSession.js';
 import { strings } from '../strings.js';
@@ -6,6 +7,14 @@ import { Announcer } from './Announcer.js';
 import { HintPanel } from './HintPanel.js';
 import { ObjectiveList, type ObjectiveItem } from './ObjectiveList.js';
 import { Toasts } from './Toasts.js';
+
+export interface LevelNote {
+  skillId: string;
+  title: string;
+  note: string;
+}
+
+type PanelTab = 'mission' | 'hints' | 'notes';
 
 interface QuestPanelProps {
   level: PublicLevel;
@@ -15,6 +24,7 @@ interface QuestPanelProps {
   hintsTotal: number;
   canRequestHint: boolean;
   toasts: SessionToast[];
+  notes: LevelNote[];
   onRequestHint: () => void;
   onReset: () => void;
   onLeave: () => void;
@@ -31,6 +41,7 @@ export function QuestPanel({
   hintsTotal,
   canRequestHint,
   toasts,
+  notes,
   onRequestHint,
   onReset,
   onLeave,
@@ -38,6 +49,8 @@ export function QuestPanel({
   onFocusTerminal,
 }: QuestPanelProps) {
   const [confirmingReset, setConfirmingReset] = useState(false);
+  // Small screens show one tab at a time; desktop shows everything stacked.
+  const [tab, setTab] = useState<PanelTab>('mission');
 
   return (
     <section
@@ -47,28 +60,86 @@ export function QuestPanel({
       onClick={onFocusTerminal}
       className="flex min-h-0 flex-col gap-4 overflow-y-auto rounded-lg border border-border bg-panel p-4"
     >
-      <div className="flex items-start gap-3">
-        <pre aria-hidden="true" className="font-mono text-xs leading-tight text-green">
-          {'  (o_\n  (//\\\n  V_/_)'}
-        </pre>
+      <div role="tablist" aria-label="Panel sections" className="flex gap-1 lg:hidden">
+        {(
+          [
+            ['mission', strings.missionTab],
+            ['hints', strings.hintsTab],
+            ['notes', strings.notesTab],
+          ] as Array<[PanelTab, string]>
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            onClick={() => {
+              setTab(id);
+            }}
+            className={`flex-1 rounded-md px-3 py-2 font-mono text-sm ${
+              tab === id ? 'bg-panel-2 text-green' : 'text-muted'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className={tab === 'mission' ? 'contents' : 'hidden lg:contents'}>
+        <div className="flex items-start gap-3">
+          <pre aria-hidden="true" className="font-mono text-xs leading-tight text-green">
+            {'  (o_\n  (//\\\n  V_/_)'}
+          </pre>
+          <div>
+            <h2 className="font-mono text-lg text-text">{level.title}</h2>
+            <p className="mt-1 text-sm text-muted">{level.story}</p>
+          </div>
+        </div>
+
         <div>
-          <h2 className="font-mono text-lg text-text">{level.title}</h2>
-          <p className="mt-1 text-sm text-muted">{level.story}</p>
+          <h3 className="mb-2 font-mono text-sm text-cyan">{strings.objectivesTitle}</h3>
+          <ObjectiveList items={items} />
         </div>
       </div>
 
-      <div>
-        <h3 className="mb-2 font-mono text-sm text-cyan">{strings.objectivesTitle}</h3>
-        <ObjectiveList items={items} />
+      <div className={tab === 'hints' ? 'contents' : 'hidden lg:contents'}>
+        <HintPanel
+          hints={hints}
+          hintsUsed={hintsUsed}
+          hintsTotal={hintsTotal}
+          canRequest={canRequestHint}
+          onRequestHint={onRequestHint}
+        />
       </div>
 
-      <HintPanel
-        hints={hints}
-        hintsUsed={hintsUsed}
-        hintsTotal={hintsTotal}
-        canRequest={canRequestHint}
-        onRequestHint={onRequestHint}
-      />
+      <div className={tab === 'notes' ? 'contents' : 'hidden lg:contents'}>
+        <div>
+          <h3 className="mb-2 font-mono text-sm text-cyan">{strings.notesTab}</h3>
+          {notes.length === 0 ? (
+            <p className="text-sm text-muted">{strings.notesEmpty}</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {notes.map((note) => (
+                <li
+                  key={note.skillId}
+                  className="rounded-md border border-border bg-panel-2 px-3 py-2 text-sm text-text"
+                >
+                  <span className="font-mono text-xs text-green">{note.title} </span>
+                  {note.note}
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-2">
+            <Link
+              className="inline-block py-1 font-mono text-xs text-cyan underline"
+              to="/spellbook"
+            >
+              {strings.openSpellbook}
+            </Link>
+          </p>
+        </div>
+      </div>
 
       <Toasts toasts={toasts} onDismiss={onDismissToast} />
       <Announcer items={items} />
