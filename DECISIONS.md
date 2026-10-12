@@ -119,3 +119,11 @@ _Append below this line. Continue numbering from D-011._
 - **Decision:** Keep the restrictive cap table untouched; run the readlink *as player* (`/usr/sbin/runuser -u player -- readlink â€¦`). Same-UID `/proc` reads need no extra capabilities, and the exec is still root-initiated with a server-fixed, read-only command.
 - **Alternatives considered:** Adding `SYS_PTRACE` to the basic profile (weakens sandbox hardening for every level); deriving cwd from the cmdlog (changes check semantics).
 - **Consequences:** `shell_cwd` works under the locked-down profile; the AGENTS.md Â§9 gotcha now documents the runuser form.
+
+### D-016 — w1-01 guidance via shell greeting instead of UI pre-fill
+- **Date:** 2026-10-12
+- **Status:** Accepted
+- **Context:** plan.md §11.3 specifies w1-01 as 'Guided: UI pre-fills echo hello', but no pre-fill mechanism exists (T4.2 terminal starts empty) and building one is out of proportion for a two-command tutorial.
+- **Decision:** Guide the first keystroke with an rc_extra shell greeting plus explicit story text, instead of pre-filled input.
+- **Alternatives considered:** Building initial-input support into TerminalView/useSession (real scope, saved for a future UX pass if telemetry shows w1-01 friction).
+- **Consequences:** Minor deviation from the §11.3 table note; T5.2 e2e types both commands manually so the gate is unaffected.
