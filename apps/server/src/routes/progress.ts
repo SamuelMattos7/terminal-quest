@@ -1,19 +1,29 @@
 import { and, eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import {
+  BadgesResponseSchema,
   DailyResponseSchema,
   NoteRequestSchema,
+  OkResponseSchema,
   ProgressResponseSchema,
   ReviewResponseSchema,
   SkillsResponseSchema,
   SpellbookResponseSchema,
   type LevelState,
 } from '@terminal-quest/shared';
-import { levelProgress, skillProgress, spellbookNotes, users } from '../db/schema.js';
+import {
+  attempts,
+  badges,
+  levelProgress,
+  skillProgress,
+  spellbookNotes,
+  users,
+} from '../db/schema.js';
 import { levelStates } from '../progression/unlock.js';
 import { dailyLevel, isDailyEligible } from '../progression/daily.js';
 import { reviewDue } from '../progression/review.js';
 import { dayString } from '../progression/streaks.js';
+import { closeLiveSession } from '../ws/sessionFlow.js';
 
 // Progression endpoints for plan.md §6 (T3.3): progress, skills, spellbook,
 // daily, review. Auth is enforced by the global /api hook; handlers still
@@ -54,6 +64,11 @@ export async function registerProgressRoutes(app: FastifyInstance): Promise<void
       };
     }
     const [user] = await app.db.select().from(users).where(eq(users.id, userId)).all();
+    const attemptRows = await app.db
+      .select({ hintsUsed: attempts.hintsUsed })
+      .from(attempts)
+      .where(eq(attempts.userId, userId))
+      .all();
     return reply.send(
       ProgressResponseSchema.parse({
         levels,
@@ -61,6 +76,7 @@ export async function registerProgressRoutes(app: FastifyInstance): Promise<void
           xp: user?.xp ?? 0,
           completions: rows.reduce((sum, r) => sum + r.completions, 0),
           levelsCompleted: completed.size,
+          hintsUsed: attemptRows.reduce((sum, r) => sum + r.hintsUsed, 0),
         },
       }),
     );
@@ -83,6 +99,7 @@ export async function registerProgressRoutes(app: FastifyInstance): Promise<void
           id: s.id,
           title: s.title,
           group: s.group,
+          world: s.world,
           prereqs: s.prereqs,
           uses: bySkill.get(s.id)?.uses ?? 0,
           masteredAt: bySkill.get(s.id)?.masteredAt ?? null,
@@ -256,5 +273,65 @@ export async function registerProgressRoutes(app: FastifyInstance): Promise<void
       completed,
     );
     return reply.send(ReviewResponseSchema.parse({ due }));
+  });
+
+  // Badge catalog with earned state for the Profile grid (D-014, T4.3).
+  app.get('/api/badges', async (request, reply) => {
+    const userId = requireUserId(request);
+    if (userId === undefined) {
+      return reply.code(401).send({ error: 'unauthorized' });
+    }
+    const earned = await app.db.select().from(badges).where(eq(badges.userId, userId)).all();
+    const earnedAt = new Map(earned.map((r) => [r.badgeId, r.earnedAt]));
+    return reply.send(
+      BadgesResponseSchema.parse({
+        badges: app.badgeList.map((b) => ({
+          id: b.id,
+          title: b.title,
+          description: b.description,
+          earnedAt: earnedAt.get(b.id) ?? null,
+        })),
+      }),
+    );
+  });
+
+  // Settings "reset progress" (D-014, T4.3): wipe completions, attempts,
+  // mastery, badges, XP, and streaks. Identity (user row, tokens, display
+  // name) and knowledge (spellbook notes) are kept. A live session is
+  // abandoned first so its late completion cannot resurrect progress.
+  app.delete('/api/progress', async (request, reply) => {
+    const userId = requireUserId(request);
+    if (userId === undefined) {
+      return reply.code(401).send({ error: 'unauthorized' });
+    }
+    const live = app.live.getByUser(userId);
+    if (live !== undefined) {
+      await closeLiveSession(
+        {
+          provider: app.provider,
+          manager: app.manager,
+          live: app.live,
+          coachRules: app.coachRules,
+          badgeList: app.badgeList,
+          skills: app.levels.skills,
+          db: app.db,
+          levelsByWorld: app.levels.byWorld,
+          levelsById: app.levels.byId,
+          unlockAll: app.config.UNLOCK_ALL === 1,
+        },
+        live,
+        'abandoned',
+      );
+    }
+    await app.db.delete(attempts).where(eq(attempts.userId, userId)).run();
+    await app.db.delete(levelProgress).where(eq(levelProgress.userId, userId)).run();
+    await app.db.delete(skillProgress).where(eq(skillProgress.userId, userId)).run();
+    await app.db.delete(badges).where(eq(badges.userId, userId)).run();
+    await app.db
+      .update(users)
+      .set({ xp: 0, streakDays: 0, lastActiveDay: null })
+      .where(eq(users.id, userId))
+      .run();
+    return reply.send(OkResponseSchema.parse({ ok: true }));
   });
 }

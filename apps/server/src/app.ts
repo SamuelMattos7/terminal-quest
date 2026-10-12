@@ -19,7 +19,7 @@ import type { SandboxProvider } from './sandbox/provider.js';
 import { SessionManager } from './sandbox/sessionManager.js';
 import { Reaper } from './sandbox/reaper.js';
 import { LiveSessionRegistry } from './ws/liveSession.js';
-import { loadBadges } from './progression/badges.js';
+import { loadBadges, type Badge } from './progression/badges.js';
 import { endAttempt } from './progression/attempts.js';
 import { closeLiveSession } from './ws/sessionFlow.js';
 import { registerSessionSocket } from './ws/sessionSocket.js';
@@ -40,6 +40,7 @@ declare module 'fastify' {
     manager: SessionManager;
     live: LiveSessionRegistry;
     coachRules: CoachRule[];
+    badgeList: Badge[];
   }
   interface FastifyRequest {
     user?: User;
@@ -103,6 +104,7 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   app.decorate('manager', manager);
   app.decorate('live', live);
   app.decorate('coachRules', coachRules);
+  app.decorate('badgeList', badgeList);
 
   const flowDeps = {
     provider,

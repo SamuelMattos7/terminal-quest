@@ -100,4 +100,44 @@ describe('api client', () => {
     const [url] = calls[0] as [string, RequestInit];
     expect(url).toBe('/api/sessions/a%2Fb%3Fc/reset');
   });
+
+  it('PATCHes the display name as JSON', async () => {
+    const { calls } = stubFetch(jsonResponse(guestBody));
+    await api.updateDisplayName('Tux');
+    const [url, init] = calls[0] as [string, RequestInit];
+    expect(url).toBe('/api/me');
+    expect(init?.method).toBe('PATCH');
+    expect(init?.body).toBe(JSON.stringify({ displayName: 'Tux' }));
+  });
+
+  it('DELETEs progress and parses the badges list', async () => {
+    stubFetch(jsonResponse({ ok: true }));
+    await expect(api.deleteProgress()).resolves.toEqual({ ok: true });
+    const body = { badges: [{ id: 'b1', title: 'B', description: 'D', earnedAt: null }] };
+    stubFetch(jsonResponse(body));
+    await expect(api.badges()).resolves.toEqual(body);
+  });
+
+  it('PUTs spellbook notes and downloads the markdown export', async () => {
+    const { calls } = stubFetch(jsonResponse({ ok: true }));
+    await api.saveSpellbookNote('pwd', 'my note');
+    const [url, init] = calls[0] as [string, RequestInit];
+    expect(url).toBe('/api/spellbook/pwd/note');
+    expect(init?.method).toBe('PUT');
+    vi.unstubAllGlobals();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response('# Spellbook', { status: 200 }))),
+    );
+    await expect(api.spellbookExport()).resolves.toBe('# Spellbook');
+  });
+
+  it('surfaces export failures with status', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(jsonResponse({ error: 'unauthorized' }, 401))),
+    );
+    const err = await api.spellbookExport().catch((e: unknown) => e);
+    expect((err as ApiError).status).toBe(401);
+  });
 });

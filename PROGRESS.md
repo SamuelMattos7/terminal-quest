@@ -36,8 +36,8 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 ### M4 — Web client
 - [x] T4.1 Theme, routing, API client, stores, Landing + WorldMap ✅ pnpm verify green, 159 tests (29 new web: client 7, stores 8, routes 5, pages 7, terminal 2); live `pnpm dev`: guest→me→worlds round-trip + :5173 200
-- [ ] T4.2 Level page (terminal, quest panel, hints, reset, complete modal)
-- [ ] T4.3 Spellbook, Skills graph, Profile, Settings, MobileKeyBar, a11y
+- [x] T4.2 Level page (terminal, quest panel, hints, reset, complete modal) ✅ pnpm verify green, 199 tests (40 new web: socket 8, session 10, terminal 4, panel 11, modal 2, page 5); live scripted WS solve of w1-02 via real SessionSocket → level_complete (A, 53 XP)
+- [x] T4.3 Spellbook, Skills graph, Profile, Settings, MobileKeyBar, a11y ✅ pnpm verify green, 241 tests; Lighthouse a11y 100 Map + 100 Level (headless Chrome, live stack); D-014 additive API, D-015 tailwind fix
 
 ### M5 — Vertical slice (GATE — do not continue until green)
 - [x] T5.1 Levels `w1-01`, `w1-02`, `w1-03` complete and passing `levels:test` ✅ levels:lint 3 levels 0 problems; levels:test --world 1 --seeds 3 green (27/27: baseline-fail/wrong-fail/reference-pass, w1-03 bonus reported)
@@ -172,7 +172,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 | 2026-10-06 | skills.yaml prereqs | All 86 starter skills present with empty `prereqs` | Author sensible edges during content milestones (M7/M8) |
 | 2026-10-06 | cron daemon start | `needs_cron` field present (default true); daemon start not implemented | Implement in T10.1 admin polish; no admin levels exist yet |
 | 2026-10-07 | 25%-XP review replays | `GET /api/review` lists due items only; replays score full XP | Wire 25% replay XP with T6.1 review UI |
-| 2026-10-08 | T4.2/T4.3 pages | `/play/:levelId`, `/spellbook`, `/skills`, `/profile`, `/settings` render explicit "arrives in T4.x" placeholders | Replaced with real pages in T4.2 (level) and T4.3 (rest) |
+| 2026-10-11 | Web bundle size | `dist` JS is ~576 KB (xterm.js); vite emits a chunk-size warning, no code-splitting yet | Consider `React.lazy` for `/play` during polish |
 
 ## Blockers
 _What is blocked, what was tried, what was done instead._

@@ -279,6 +279,11 @@ All JSON. Base path `/api`. Authentication: httpOnly, SameSite=Lax cookie `tq_se
 | `GET /api/spellbook/export` | markdown export of spellbook | `text/markdown` |
 | `GET /api/daily` | today's daily challenge descriptor | `{ levelId, date, completed }` |
 | `GET /api/review` | skills due for review (§10.5) | `{ due: [{skillId, levelId}] }` |
+| `PATCH /api/me` | update display name `{ displayName }` (trimmed, 1–40 chars) | `{ user }` |
+| `GET /api/badges` | badge catalog with earned state | `{ badges: [{id,title,description,earnedAt?}] }` |
+| `DELETE /api/progress` | reset progress (keeps identity + spellbook notes, abandons live session) | `{ ok }` |
+
+> 2026-10-11 (D-014): the three rows above plus `totals.hintsUsed` were added for T4.3 Profile/Settings UI. All additive; no existing contract changed.
 
 **Rules**
 - Unlock logic: first level of World 1 is always available; a level is available if the previous level in the same world is completed; first level of world N+1 requires the boss of world N completed. Env var `UNLOCK_ALL=1` unlocks everything (dev only).

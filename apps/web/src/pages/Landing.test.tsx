@@ -10,7 +10,7 @@ vi.mock('../api/client.js', async (importOriginal) => {
   const mod = await importOriginal<typeof import('../api/client.js')>();
   return {
     ...mod,
-    api: { guest: vi.fn(), me: vi.fn(), worlds: vi.fn() },
+    api: { guest: vi.fn(), me: vi.fn(), worlds: vi.fn(), progress: vi.fn() },
   };
 });
 
@@ -40,6 +40,12 @@ beforeEach(() => {
   vi.mocked(api.guest).mockReset().mockResolvedValue({ user: meFixture.user });
   vi.mocked(api.me).mockReset().mockResolvedValue(meFixture);
   vi.mocked(api.worlds).mockReset().mockResolvedValue({ worlds: [] });
+  vi.mocked(api.progress)
+    .mockReset()
+    .mockResolvedValue({
+      levels: {},
+      totals: { xp: 0, completions: 0, levelsCompleted: 0, hintsUsed: 0 },
+    });
 });
 
 describe('Landing', () => {
