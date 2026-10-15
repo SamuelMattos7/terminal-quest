@@ -123,6 +123,7 @@ function completionMessage(): ServerMessage {
       unlocked: ['w1-03-moving-around'],
       explain: [],
       skillsGained: ['pwd'],
+      message: 'Well done.',
     },
   };
 }

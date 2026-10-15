@@ -22,6 +22,9 @@ export function CompleteModal({ result, onNext, onReplay, onBackToMap }: Complet
     >
       <div className="w-full max-w-lg rounded-lg border border-green bg-panel p-6">
         <h2 className="font-mono text-2xl text-green">{strings.completeTitle}</h2>
+        <p className="mt-2 text-sm italic text-muted" data-testid="complete-message">
+          Tux-9000: “{result.message}”
+        </p>
         <p className="mt-2 font-mono text-4xl text-text" data-testid="complete-rank">
           {result.rank}
         </p>

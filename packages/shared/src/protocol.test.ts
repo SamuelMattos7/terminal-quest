@@ -87,6 +87,7 @@ describe('ServerMessageSchema', () => {
           unlocked: ['w1-03-moving-around'],
           explain: [],
           skillsGained: ['pwd'],
+          message: 'Well done.',
         },
       }),
     ).toMatchObject({ t: 'level_complete' });
@@ -101,6 +102,7 @@ describe('ServerMessageSchema', () => {
           unlocked: [],
           explain: [],
           skillsGained: [],
+          message: 'Well done.',
         },
       }),
     ).toThrow();

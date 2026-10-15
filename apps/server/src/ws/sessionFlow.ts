@@ -22,6 +22,7 @@ import {
 import { compileSetup } from '../engine/setupCompiler.js';
 import { runSetup } from '../engine/setupRunner.js';
 import { levelStates } from '../progression/unlock.js';
+import { HINT_NUDGE_TEXT, shouldNudge } from '../progression/dialogue.js';
 import { wasReviewDue } from '../progression/review.js';
 import { endAttempt, openAttempt } from '../progression/attempts.js';
 import { recordLevelCompletion } from '../progression/progress.js';
@@ -98,12 +99,22 @@ export async function evaluateAndReport(deps: FlowDeps, live: LiveSession): Prom
   for (const id of newlyDone) {
     send(live, { t: 'objective', id, status: 'done' });
   }
+  if (newlyDone.length > 0) {
+    // Any progress ends the stuck episode (§10.6 idle nudge).
+    live.dialogue.lastProgressAt = Date.now();
+    live.dialogue.failsSinceProgress = 0;
+    live.dialogue.nudgedAt = null;
+  }
   if (live.completed) {
     return;
   }
   const required = requiredObjectives(live.level);
   const done = required.every((id) => live.tracker.done.get(id) === true);
   if (!done) {
+    if (shouldNudge(live.dialogue)) {
+      live.dialogue.nudgedAt = Date.now();
+      send(live, { t: 'tux', text: HINT_NUDGE_TEXT });
+    }
     return;
   }
   live.completed = true;
@@ -155,6 +166,7 @@ export async function evaluateAndReport(deps: FlowDeps, live: LiveSession): Prom
       unlocked: await computeUnlocked(deps, live.userId, live.level.id),
       explain: live.level.explain,
       skillsGained: live.level.teaches,
+      message: live.level.success_message,
     },
   });
 }
@@ -230,6 +242,12 @@ export async function launchLevelSession(
     shell: undefined,
     socket: undefined,
     completed: false,
+    dialogue: {
+      welcomed: false,
+      lastProgressAt: Date.now(),
+      failsSinceProgress: 0,
+      nudgedAt: null,
+    },
   };
 
   const shell = await deps.provider.openShell(session.handle, { cols: 80, rows: 24 });
@@ -261,6 +279,9 @@ export async function launchLevelSession(
       return;
     }
     noteCommand(tracker, entry);
+    if (entry.exitCode !== 0) {
+      live.dialogue.failsSinceProgress += 1;
+    }
     const tip = live.coach.advise(entry.command, entry.exitCode);
     if (tip !== undefined) {
       send(live, { t: 'coach', text: tip });

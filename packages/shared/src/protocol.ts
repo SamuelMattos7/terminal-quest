@@ -55,6 +55,7 @@ const LevelCompleteResultSchema = z
     unlocked: z.array(z.string().min(1)),
     explain: z.array(ExplainCardSchema),
     skillsGained: z.array(z.string().min(1)),
+    message: z.string().min(1),
   })
   .strict();
 

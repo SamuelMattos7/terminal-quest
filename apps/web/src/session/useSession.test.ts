@@ -143,6 +143,7 @@ describe('useSession', () => {
       unlocked: ['w1-03-moving-around'],
       explain: [],
       skillsGained: ['pwd'],
+      message: 'Well done.',
     };
     socket.handler({ kind: 'message', message: { t: 'level_complete', result } });
     expect(useSession.getState().status).toBe('completed');
