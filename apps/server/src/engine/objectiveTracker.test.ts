@@ -130,4 +130,36 @@ describe('evaluate', () => {
     expect(result.newlyDone).toEqual([]);
     expect(result.completed).toBe(false);
   });
+
+  it('reports timed-out checks with objective and type', async () => {
+    const timeouts: Array<{ objectiveId: string; checkType: string }> = [];
+    const provider: SandboxProvider = {
+      ...stubProvider(),
+      exec: async () => ({ code: 1, stdout: '', stderr: '', timedOut: true }),
+    };
+    const handle = { id: 'h', spec: {} } as never;
+    const level = makeLevel({
+      objectives: [{ id: 'run-it', text: 'Run it.', check: { type: 'exec', inline: 'true' } }],
+    });
+    const state = createTracker(level);
+    const result = await evaluate(provider, handle, level, state, {
+      seed: 7,
+      onCheckTimeout: (objectiveId, checkType) => {
+        timeouts.push({ objectiveId, checkType });
+      },
+    });
+    expect(result.completed).toBe(false);
+    expect(timeouts).toEqual([{ objectiveId: 'run-it', checkType: 'exec' }]);
+  });
+
+  it('stays silent without timeouts or listeners', async () => {
+    const provider = stubProvider();
+    const handle = { id: 'h', spec: {} } as never;
+    const level = makeLevel();
+    const state = createTracker(level);
+    noteCommand(state, { epoch: 1, exitCode: 0, cwd: '/', command: 'pwd' });
+    submitAnswer(state, 'banana');
+    const result = await evaluate(provider, handle, level, state, { seed: 7 });
+    expect(result.newlyDone).toEqual(['ran-pwd', 'found-word']);
+  });
 });

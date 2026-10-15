@@ -47,6 +47,9 @@ export async function checkExec(
     ['env', '-i', 'PATH=/usr/bin:/bin:/opt/tq/bin', 'HOME=/root', `TQ_SEED=${ctx.seed}`, ...cmd],
     { user: 'root', timeoutMs: 5000 },
   );
+  if (res.timedOut) {
+    ctx.onTimeout?.(check.type);
+  }
   if (res.timedOut || res.code !== (check.expect_exit ?? 0)) {
     return false;
   }

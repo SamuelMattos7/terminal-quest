@@ -62,7 +62,7 @@ async function handleMessage(
       await evaluateAndReport(deps, live);
       return;
     case 'hint':
-      requestHint(live);
+      requestHint(deps, live);
       return;
   }
 }

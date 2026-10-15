@@ -53,11 +53,16 @@ async function schedulesMatch(
   handle: SandboxHandle,
   expected: string,
   actual: string,
+  ctx: CheckContext,
 ): Promise<boolean> {
   const res = await provider.exec(handle, ['/opt/tq/bin/cronmatch.py', expected, actual], {
     user: 'root',
     timeoutMs: 5000,
   });
+  if (res.timedOut) {
+    ctx.onTimeout?.('crontab_entry');
+    return false;
+  }
   return !res.timedOut && res.code === 0;
 }
 
@@ -73,7 +78,7 @@ export async function checkCrontabEntry(
   }
   const commandPattern = new RegExp(check.command_regex);
   for (const entry of entries) {
-    if (!(await schedulesMatch(provider, handle, check.schedule, entry.schedule))) {
+    if (!(await schedulesMatch(provider, handle, check.schedule, entry.schedule, ctx))) {
       continue;
     }
     if (commandPattern.test(entry.command)) {
@@ -199,6 +204,7 @@ export async function checkCronDryRun(
     { user: target.user, cwd: home, timeoutMs: (check.timeout_s ?? 10) * 1000 },
   );
   if (res.timedOut) {
+    ctx.onTimeout?.(check.type);
     return false;
   }
   return evaluateOutputExpect(res, check.expect);

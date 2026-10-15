@@ -14,6 +14,12 @@ export interface CheckContext {
   levelId: string;
   answers: string[];
   commands: LoggedCommand[];
+  /**
+   * Fired with the leaf check type when a sandbox probe times out (T6.3
+   * telemetry). Only exec-family leaves observe timeouts today; instant
+   * file/stat probes report false without attribution (see D-018).
+   */
+  onTimeout?: (checkType: string) => void;
 }
 
 export const CHECK_TIMEOUT_MS = 5000;
