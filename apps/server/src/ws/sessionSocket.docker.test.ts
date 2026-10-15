@@ -96,6 +96,12 @@ describe('session socket over the w1-02 sample', () => {
       const collected = collect(socket);
       await waitFor(collected, (m) => m.t === 'session_state', 15_000, 'session_state');
 
+      const intro = await waitFor(collected, (m) => m.t === 'tux', 15_000, 'intro');
+      if (intro.t !== 'tux') {
+        throw new Error('unreachable');
+      }
+      expect(intro.text).toContain('Where Am I?');
+
       const send = (text: string): void => {
         socket.send(JSON.stringify({ t: 'stdin', d: text }));
       };
@@ -138,6 +144,17 @@ describe('session socket over the w1-02 sample', () => {
       expect(done.result.rank).toBe('S');
       expect(done.result.xp).toBe(55);
       expect(done.result.skillsGained).toEqual(['pwd', 'ls']);
+      expect(done.result.message).toContain('Located.');
+
+      // A reconnect replays state but never a second greeting.
+      const second = new WebSocket(`ws://127.0.0.1:${address.port}${started.wsPath}`, {
+        headers: { cookie, Origin: 'http://localhost:5173' },
+      });
+      sockets.push(second);
+      const secondCollected = collect(second);
+      await waitFor(secondCollected, (m) => m.t === 'session_state', 15_000, 'reconnect state');
+      await new Promise((r) => setTimeout(r, 2000));
+      expect(secondCollected.messages.filter((m) => m.t === 'tux')).toEqual([]);
     } finally {
       for (const s of sockets) {
         s.close();

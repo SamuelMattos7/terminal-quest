@@ -2,6 +2,7 @@ import type { Level } from '@terminal-quest/shared';
 import type { Coach } from '../engine/coach.js';
 import type { HintState } from '../engine/hints.js';
 import type { TrackerState } from '../engine/objectiveTracker.js';
+import type { NudgeState } from '../progression/dialogue.js';
 import type { Session } from '../sandbox/sessionManager.js';
 import type { ShellStream } from '../sandbox/provider.js';
 
@@ -22,6 +23,7 @@ export interface LiveSession {
   shell: ShellStream | undefined;
   socket: { send(payload: string): void; close(code?: number): void } | undefined;
   completed: boolean;
+  dialogue: NudgeState & { welcomed: boolean };
 }
 
 export class LiveSessionRegistry {

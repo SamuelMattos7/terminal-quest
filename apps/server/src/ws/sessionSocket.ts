@@ -2,6 +2,8 @@ import type { FastifyInstance } from 'fastify';
 import { ClientMessageSchema } from '@terminal-quest/shared';
 import { userFromToken, requestToken } from '../auth.js';
 import { createStdinLimiter, type LiveSession } from './liveSession.js';
+import { requiredObjectives } from '../engine/objectiveTracker.js';
+import { tuxIntro } from '../progression/dialogue.js';
 import {
   evaluateAndReport,
   requestHint,
@@ -82,7 +84,7 @@ export async function registerSessionSocket(
         socket.close(4401, 'unauthorized');
         return;
       }
-      live.socket = {
+      const adapter = {
         send: (payload: string) => {
           socket.send(payload);
         },
@@ -90,14 +92,26 @@ export async function registerSessionSocket(
           socket.close(code);
         },
       };
+      live.socket = adapter;
       const s = sessionStateMessage(live);
       live.socket.send(JSON.stringify({ t: 'session_state', ...s, hintsTotal: 3 }));
+      if (!live.dialogue.welcomed) {
+        live.dialogue.welcomed = true;
+        live.socket.send(
+          JSON.stringify({
+            t: 'tux',
+            text: tuxIntro(live.level.title, requiredObjectives(live.level).length),
+          }),
+        );
+      }
       const limiter = createStdinLimiter();
       socket.on('message', (raw: unknown) => {
         void handleMessage(deps, live, limiter, raw).catch(() => undefined);
       });
       socket.on('close', () => {
-        if (live.socket !== undefined) {
+        // Only detach our own adapter: a stale close from a replaced socket
+        // must not wipe the live registration (T6.2 reconnect-once intro).
+        if (live.socket === adapter) {
           live.socket = undefined;
         }
       });

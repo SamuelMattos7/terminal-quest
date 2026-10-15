@@ -22,6 +22,7 @@ const result: CompletionResult = {
     },
   ],
   skillsGained: ['pwd'],
+  message: 'Acceptable.',
 };
 
 describe('CompleteModal', () => {
@@ -38,6 +39,7 @@ describe('CompleteModal', () => {
       />,
     );
     expect(screen.getByTestId('complete-rank').textContent).toBe('S');
+    expect(screen.getByTestId('complete-message').textContent).toContain('Acceptable.');
     expect(screen.getByText('base')).not.toBeNull();
     expect(screen.getByText(strings.completeExplain)).not.toBeNull();
     expect(screen.getByText('early-bird')).not.toBeNull();
