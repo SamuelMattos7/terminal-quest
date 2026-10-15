@@ -1,0 +1,42 @@
+id: w1-01-first-words
+world: 1
+order: 1
+title: 'First Words'
+kind: lesson
+difficulty: 1
+estimated_minutes: 3
+story: |
+  Tux-9000: "New hire. Good. Don't touch anything yet. Okay, touch the keyboard.
+  Type `echo hello` and press Enter. The machine repeats you. That's most of the job.
+  Then run `whoami`. I know who you are. The machine should too."
+teaches: [echo, whoami]
+par_commands: 2
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  rc_extra: |
+    echo 'Tux-9000: start with "echo hello".'
+objectives:
+  - id: said-hello
+    text: 'Say hello with echo: type `echo hello` and press Enter.'
+    check: { type: command_used, regex: '^echo(\s|$)' }
+  - id: said-name
+    text: 'Ask the machine who you are: run `whoami`.'
+    check: { type: command_used, regex: '^whoami$' }
+hints:
+  - 'echo repeats whatever you type after it. That is the whole trick.'
+  - 'Type `echo hello` and press Enter. Then try `whoami`.'
+  - 'The full solution is two lines: `echo hello` on the first, `whoami` on the second.'
+explain:
+  - command: 'echo hello'
+    parts:
+      - { token: 'echo', meaning: 'print its arguments to the terminal' }
+      - { token: 'hello', meaning: 'plain text — echo repeats it back at you' }
+  - command: 'whoami'
+    parts:
+      - { token: 'whoami', meaning: 'print the name of the current user (you are player)' }
+cheatsheet:
+  - { skill: echo, syntax: 'echo TEXT', note: 'Print text to the terminal.' }
+  - { skill: whoami, syntax: 'whoami', note: 'Show the current username.' }
+success_message: 'The machine talks back. You officially work here now. Badge earned: making noise.'
+solutions: { reference: solution.sh, wrong: [wrong/echo-only.sh] }

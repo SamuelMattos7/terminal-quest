@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** M5 → T5.1 (M4 done)
+**Current focus:** M5 → T5.2
 
 ---
 
@@ -40,7 +40,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 - [x] T4.3 Spellbook, Skills graph, Profile, Settings, MobileKeyBar, a11y ✅ pnpm verify green, 241 tests; Lighthouse a11y 100 Map + 100 Level (headless Chrome, live stack); D-014 additive API, D-015 tailwind fix
 
 ### M5 — Vertical slice (GATE — do not continue until green)
-- [ ] T5.1 Levels `w1-01`, `w1-02`, `w1-03` complete and passing `levels:test`
+- [x] T5.1 Levels `w1-01`, `w1-02`, `w1-03` complete and passing `levels:test` ✅ levels:lint 3 levels 0 problems; levels:test --world 1 --seeds 3 green (27/27: baseline-fail/wrong-fail/reference-pass, w1-03 bonus reported)
 - [ ] T5.2 Playwright smoke test passes locally and in CI
 
 ### M6 — Progression & polish
@@ -76,9 +76,9 @@ Columns: **A** = authored (level.yaml, setup, solution, wrong, hints, explain) �
 ### World 1 — The Lobby
 | ID | A | L | T |
 |---|---|---|---|
-| w1-01-first-words | [ ] | [ ] | [ ] |
-| w1-02-where-am-i | [ ] | [ ] | [ ] |
-| w1-03-moving-around | [ ] | [ ] | [ ] |
+| w1-01-first-words | [x] | [x] | [x] |
+| w1-02-where-am-i | [x] | [x] | [x] |
+| w1-03-moving-around | [x] | [x] | [x] |
 | w1-04-paths | [ ] | [ ] | [ ] |
 | w1-05-peek-inside | [ ] | [ ] | [ ] |
 | w1-06-make-things | [ ] | [ ] | [ ] |

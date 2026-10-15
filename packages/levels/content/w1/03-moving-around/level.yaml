@@ -1,0 +1,71 @@
+id: w1-03-moving-around
+world: 1
+order: 3
+title: 'Moving Around'
+kind: lesson
+difficulty: 1
+estimated_minutes: 5
+story: |
+  Tux-9000: "The office moved. It does that. Your desk is at ~/office/floor2/room204.
+  Get there with cd. Dots are shortcuts: `.` means here, `..` means up one level.
+  And `cd -` jumps back to where you just were. Prove it."
+teaches: [cd, paths]
+par_commands: 5
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  dirs:
+    - { path: /home/player/office/floor1/room101, owner: player, mode: '755' }
+    - { path: /home/player/office/floor1/room102, owner: player, mode: '755' }
+    - { path: /home/player/office/floor2/room203, owner: player, mode: '755' }
+    - { path: /home/player/office/floor2/room204, owner: player, mode: '755' }
+  files:
+    - {
+        path: /home/player/office/floor1/room101/memo.txt,
+        owner: player,
+        mode: '644',
+        content: 'Wrong floor. Keep walking.\n',
+      }
+    - {
+        path: /home/player/office/floor2/room203/inbox.txt,
+        owner: player,
+        mode: '644',
+        content: 'So close. One room over.\n',
+      }
+    - {
+        path: /home/player/office/floor2/room204/desk.txt,
+        owner: player,
+        mode: '644',
+        content: 'Your desk. Sit down.\n',
+      }
+objectives:
+  - id: reached-desk
+    text: 'Navigate to your new desk: ~/office/floor2/room204.'
+    check: { type: shell_cwd, equals: /home/player/office/floor2/room204 }
+  - id: round-trip
+    text: 'Bonus: hop out and back with `cd -`.'
+    bonus: true
+    check: { type: command_used, regex: '^cd -$' }
+hints:
+  - 'cd changes directory. Chain the walk: office, then floor2, then room204.'
+  - 'From home one line does it: `cd office/floor2/room204`. And `..` goes up one level.'
+  - 'Try: `cd office`, `cd floor2`, `cd room204`. For the bonus: `cd ..`, then `cd -` hops back.'
+explain:
+  - command: 'cd office/floor2/room204'
+    parts:
+      - { token: 'cd', meaning: 'change the current directory' }
+      - { token: 'office/floor2/room204', meaning: 'a relative path — three steps down from home' }
+  - command: 'cd ..'
+    parts:
+      - { token: '..', meaning: 'the parent directory — one level up' }
+  - command: 'cd -'
+    parts: [{ token: '-', meaning: 'jump back to the previous directory' }]
+cheatsheet:
+  - { skill: cd, syntax: 'cd [PATH]', note: 'Move around. No PATH goes home; - jumps back.' }
+  - {
+      skill: paths,
+      syntax: '~/office/floor2/room204',
+      note: '~ is home. Paths starting with / are absolute; the rest are relative to here.',
+    }
+success_message: 'Desk found. You navigate like someone who has been lost before. Good.'
+solutions: { reference: solution.sh, wrong: [wrong/wrong-room.sh] }
