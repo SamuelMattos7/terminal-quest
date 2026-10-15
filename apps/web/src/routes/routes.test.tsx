@@ -19,6 +19,8 @@ vi.mock('../api/client.js', async (importOriginal) => {
       skills: vi.fn(),
       spellbook: vi.fn(),
       badges: vi.fn(),
+      daily: vi.fn(),
+      review: vi.fn(),
       deleteProgress: vi.fn(),
       startLevel: vi.fn(),
       resetSession: vi.fn(),
@@ -96,6 +98,13 @@ beforeEach(() => {
   vi.mocked(api.spellbook).mockReset();
   vi.mocked(api.badges).mockReset();
   vi.mocked(api.deleteProgress).mockReset();
+  vi.mocked(api.daily).mockReset().mockResolvedValue({
+    levelId: 'w1-01-first-words',
+    date: '2026-10-13',
+    completed: true,
+  });
+  vi.mocked(api.review).mockReset().mockResolvedValue({ due: [] });
+  vi.mocked(api.skills).mockReset().mockResolvedValue({ skills: [] });
 });
 
 describe('AppRoutes', () => {

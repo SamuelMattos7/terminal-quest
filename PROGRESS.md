@@ -51,7 +51,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 ### M6 — Progression & polish
 
-- [ ] T6.1 Badges, streak, daily, review + UI surfaces
+- [x] T6.1 Badges, streak, daily, review + UI surfaces ✅ pnpm verify green, 250 tests; test:docker 42 green; DailyCard + ReviewBanner on map; 25% review-replay XP (D-017)
 - [ ] T6.2 Tux dialogue system (intro, completion, idle nudge)
 - [ ] T6.3 Telemetry events recorded for a full attempt
 
@@ -183,12 +183,11 @@ Columns: **A** = authored (level.yaml, setup, solution, wrong, hints, explain) �
 
 _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing silent._
 
-| Date       | Area                  | Gap                                                                                     | Planned resolution                                         |
-| ---------- | --------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| 2026-10-06 | skills.yaml prereqs   | All 86 starter skills present with empty `prereqs`                                      | Author sensible edges during content milestones (M7/M8)    |
-| 2026-10-06 | cron daemon start     | `needs_cron` field present (default true); daemon start not implemented                 | Implement in T10.1 admin polish; no admin levels exist yet |
-| 2026-10-07 | 25%-XP review replays | `GET /api/review` lists due items only; replays score full XP                           | Wire 25% replay XP with T6.1 review UI                     |
-| 2026-10-11 | Web bundle size       | `dist` JS is ~576 KB (xterm.js); vite emits a chunk-size warning, no code-splitting yet | Consider `React.lazy` for `/play` during polish            |
+| Date       | Area                | Gap                                                                                     | Planned resolution                                         |
+| ---------- | ------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| 2026-10-06 | skills.yaml prereqs | All 86 starter skills present with empty `prereqs`                                      | Author sensible edges during content milestones (M7/M8)    |
+| 2026-10-06 | cron daemon start   | `needs_cron` field present (default true); daemon start not implemented                 | Implement in T10.1 admin polish; no admin levels exist yet |
+| 2026-10-11 | Web bundle size     | `dist` JS is ~576 KB (xterm.js); vite emits a chunk-size warning, no code-splitting yet | Consider `React.lazy` for `/play` during polish            |
 
 ## Blockers
 

@@ -10,7 +10,15 @@ vi.mock('../api/client.js', async (importOriginal) => {
   const mod = await importOriginal<typeof import('../api/client.js')>();
   return {
     ...mod,
-    api: { guest: vi.fn(), me: vi.fn(), worlds: vi.fn(), progress: vi.fn() },
+    api: {
+      guest: vi.fn(),
+      me: vi.fn(),
+      worlds: vi.fn(),
+      progress: vi.fn(),
+      daily: vi.fn(),
+      review: vi.fn(),
+      skills: vi.fn(),
+    },
   };
 });
 
@@ -80,6 +88,31 @@ beforeEach(() => {
       levels: {},
       totals: { xp: 0, completions: 0, levelsCompleted: 0, hintsUsed: 0 },
     });
+  vi.mocked(api.daily).mockReset().mockResolvedValue({
+    levelId: 'w1-02-where-am-i',
+    date: '2026-10-13',
+    completed: false,
+  });
+  vi.mocked(api.review)
+    .mockReset()
+    .mockResolvedValue({
+      due: [{ skillId: 'pwd', levelId: 'w1-01-first-words' }],
+    });
+  vi.mocked(api.skills)
+    .mockReset()
+    .mockResolvedValue({
+      skills: [
+        {
+          id: 'pwd',
+          title: 'pwd',
+          group: 'navigation',
+          world: 1,
+          prereqs: [],
+          uses: 3,
+          masteredAt: 9,
+        },
+      ],
+    });
 });
 
 describe('WorldMap', () => {
@@ -122,5 +155,15 @@ describe('WorldMap', () => {
     vi.mocked(api.me).mockImplementation(() => new Promise(() => {}));
     renderMap();
     expect(screen.getByText(strings.mapLoading)).not.toBeNull();
+  });
+
+  it('shows the daily card and review banner above the worlds', async () => {
+    vi.mocked(api.worlds).mockResolvedValue(JSON.parse(JSON.stringify(worldsFixture)));
+    renderMap();
+    expect(await screen.findByTestId('daily-card')).not.toBeNull();
+    expect(screen.getByTestId('review-banner')).not.toBeNull();
+    expect(screen.getByRole('link', { name: strings.dailyPlay }).getAttribute('href')).toBe(
+      '/play/w1-02-where-am-i',
+    );
   });
 });
