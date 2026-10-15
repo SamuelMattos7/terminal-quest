@@ -22,6 +22,7 @@ import {
 import { compileSetup } from '../engine/setupCompiler.js';
 import { runSetup } from '../engine/setupRunner.js';
 import { levelStates } from '../progression/unlock.js';
+import { wasReviewDue } from '../progression/review.js';
 import { endAttempt, openAttempt } from '../progression/attempts.js';
 import { recordLevelCompletion } from '../progression/progress.js';
 import type { Badge } from '../progression/badges.js';
@@ -116,6 +117,7 @@ export async function evaluateAndReport(deps: FlowDeps, live: LiveSession): Prom
     .where(eq(levelProgress.userId, live.userId))
     .all();
   const best = rows.find((r) => r.levelId === live.level.id);
+  const isReviewReplay = await wasReviewDue(deps.db, live.userId, live.level, deps.levelsById);
   const score = computeScore({
     level: live.level,
     hintTiers: live.hints.tiersUsed,
@@ -124,6 +126,7 @@ export async function evaluateAndReport(deps: FlowDeps, live: LiveSession): Prom
     manualBonus: checkManualBonus(commands),
     isFirstClear: (best?.completions ?? 0) === 0,
     bestXp: best?.bestXp ?? 0,
+    isReviewReplay,
   });
   const { newBadges } = await recordLevelCompletion(deps.db, {
     userId: live.userId,

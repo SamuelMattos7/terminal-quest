@@ -106,4 +106,9 @@ export const strings = {
   openSpellbook: 'Open Spellbook',
   keybarLabel: 'Terminal keys',
   ctrlArmed: 'Ctrl armed — next letter sends a control code',
+  dailyTitle: 'Daily challenge',
+  dailyCompleted: 'Completed today',
+  dailyPlay: 'Play daily',
+  reviewTitle: 'Review due',
+  reviewPlay: 'Review',
 } as const;

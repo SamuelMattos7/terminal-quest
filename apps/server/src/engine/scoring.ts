@@ -14,6 +14,11 @@ export interface ScoreInput {
   manualBonus: boolean;
   isFirstClear: boolean;
   bestXp: number;
+  /**
+   * Review replay (§10.5, D-017): the level was due for spaced repetition.
+   * Awards 25% of base XP instead of the improvement-over-best rule.
+   */
+  isReviewReplay?: boolean;
 }
 
 export interface ScoreBreakdownEntry {
@@ -66,6 +71,19 @@ export function computeRank(
 
 export function computeScore(input: ScoreInput): ScoreResult {
   const { level } = input;
+  if (input.isReviewReplay === true) {
+    const xp = Math.round(level.xp * 0.25);
+    const rank = computeRank(level, input.hintTiers.length, input.commandCount, false);
+    return {
+      xp,
+      fullXp: xp,
+      rank,
+      breakdown: [
+        { label: 'base', xp: level.xp },
+        { label: 'review replay (25%)', xp: xp - level.xp },
+      ],
+    };
+  }
   const penalty = hintPenaltyPct(input.hintTiers);
   const discounted = Math.round(level.xp * (1 - penalty / 100));
   const firstClearBonus = input.isFirstClear ? Math.round(level.xp * 0.1) : 0;

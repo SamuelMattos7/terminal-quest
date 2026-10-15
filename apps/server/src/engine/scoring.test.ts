@@ -126,6 +126,25 @@ describe('computeScore', () => {
     expect(computeScore({ ...input, bestXp: 200 }).xp).toBe(0);
   });
 
+  it('awards 25% of base on review replays, ignoring improvement', () => {
+    const result = computeScore({
+      level: makeLevel(),
+      hintTiers: [],
+      commandCount: 3,
+      bonusDoneIds: [],
+      manualBonus: false,
+      isFirstClear: false,
+      bestXp: 90,
+      isReviewReplay: true,
+    });
+    expect(result.xp).toBe(25);
+    expect(result.fullXp).toBe(25);
+    expect(result.breakdown).toEqual([
+      { label: 'base', xp: 100 },
+      { label: 'review replay (25%)', xp: -75 },
+    ]);
+  });
+
   it('ranks B within 3 hints', () => {
     const result = computeScore({
       level: makeLevel(),
