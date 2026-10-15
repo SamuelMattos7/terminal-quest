@@ -87,6 +87,7 @@ export function requiredObjectives(level: Level): string[] {
 
 export interface EvaluateOptions {
   seed: number;
+  onCheckTimeout?: (objectiveId: string, checkType: string) => void;
 }
 
 export interface EvaluateResult {
@@ -101,18 +102,22 @@ export async function evaluate(
   state: TrackerState,
   opts: EvaluateOptions,
 ): Promise<EvaluateResult> {
-  const ctx: CheckContext = {
-    seed: opts.seed,
-    levelId: level.id,
-    answers: state.answers,
-    commands: state.commands,
-  };
   const newlyDone: string[] = [];
   for (const objective of level.objectives) {
     const wasDone = state.done.get(objective.id) ?? false;
     if (wasDone && !objective.hold) {
       continue;
     }
+    const ctx: CheckContext = {
+      seed: opts.seed,
+      levelId: level.id,
+      answers: state.answers,
+      commands: state.commands,
+      onTimeout:
+        opts.onCheckTimeout === undefined
+          ? undefined
+          : (checkType) => opts.onCheckTimeout?.(objective.id, checkType),
+    };
     const passed = await runCheck(provider, handle, objective.check, ctx);
     state.done.set(objective.id, passed);
     if (passed && !wasDone) {

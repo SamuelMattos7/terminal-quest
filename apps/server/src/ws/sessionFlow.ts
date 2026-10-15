@@ -25,10 +25,11 @@ import { levelStates } from '../progression/unlock.js';
 import { HINT_NUDGE_TEXT, shouldNudge } from '../progression/dialogue.js';
 import { wasReviewDue } from '../progression/review.js';
 import { endAttempt, openAttempt } from '../progression/attempts.js';
+import { recordEvent } from '../progression/events.js';
 import { recordLevelCompletion } from '../progression/progress.js';
 import type { Badge } from '../progression/badges.js';
-import { SessionManager } from '../sandbox/sessionManager.js';
-import type { SandboxProvider } from '../sandbox/provider.js';
+import { CapacityError, SessionManager, type Session } from '../sandbox/sessionManager.js';
+import type { SandboxProvider, ShellStream } from '../sandbox/provider.js';
 import { LiveSessionRegistry, type LiveSession } from './liveSession.js';
 
 // Live-session lifecycle shared by the session routes and the socket:
@@ -56,6 +57,15 @@ export function randomSeed(): number {
 
 function send(live: LiveSession, msg: ServerMessage): void {
   live.socket?.send(JSON.stringify(msg));
+}
+
+/** Attempt-scoped ids shared by every telemetry event (T6.3). */
+function attemptScope(live: LiveSession): {
+  userId: string;
+  levelId: string;
+  attemptId: string;
+} {
+  return { userId: live.userId, levelId: live.level.id, attemptId: live.attemptId };
 }
 
 async function completedIds(db: Db, userId: string): Promise<Set<string>> {
@@ -86,7 +96,29 @@ export async function computeUnlocked(
   return unlocked.sort();
 }
 
+// Evaluations for one session run strictly in order. Without this, two
+// cmdlog lines landing together interleave two evaluations on the shared
+// tracker (TOCTOU between the wasDone read and the done write) and both
+// report the same objectives as newly done — duplicating objective frames,
+// telemetry, and potentially completion handling (T6.3 caught this live).
+const evalChains = new WeakMap<LiveSession, Promise<void>>();
+
 export async function evaluateAndReport(deps: FlowDeps, live: LiveSession): Promise<void> {
+  const previous = evalChains.get(live) ?? Promise.resolve();
+  let release!: () => void;
+  const current = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  evalChains.set(live, current);
+  await previous;
+  try {
+    await runEvaluation(deps, live);
+  } finally {
+    release();
+  }
+}
+
+async function runEvaluation(deps: FlowDeps, live: LiveSession): Promise<void> {
   const { newlyDone } = await evaluate(
     deps.provider,
     live.session.handle,
@@ -94,10 +126,22 @@ export async function evaluateAndReport(deps: FlowDeps, live: LiveSession): Prom
     live.tracker,
     {
       seed: live.seed,
+      onCheckTimeout: (objectiveId, checkType) => {
+        recordEvent(deps.db, {
+          ...attemptScope(live),
+          type: 'check_timeout',
+          payload: { objectiveId, checkType },
+        });
+      },
     },
   );
   for (const id of newlyDone) {
     send(live, { t: 'objective', id, status: 'done' });
+    recordEvent(deps.db, {
+      ...attemptScope(live),
+      type: 'objective_complete',
+      payload: { objectiveId: id },
+    });
   }
   if (newlyDone.length > 0) {
     // Any progress ends the stuck episode (§10.6 idle nudge).
@@ -169,15 +213,25 @@ export async function evaluateAndReport(deps: FlowDeps, live: LiveSession): Prom
       message: live.level.success_message,
     },
   });
+  recordEvent(deps.db, {
+    ...attemptScope(live),
+    type: 'level_complete',
+    payload: { xp: score.xp, rank: score.rank },
+  });
 }
 
-export function requestHint(live: LiveSession): void {
+export function requestHint(deps: FlowDeps, live: LiveSession): void {
   const hint = nextHint(live.level, live.hints);
   if (hint === undefined) {
     send(live, { t: 'error', message: 'no hints left' });
     return;
   }
   send(live, { t: 'hint', tier: hint.tier, text: hint.text, penaltyPct: hint.penaltyPct });
+  recordEvent(deps.db, {
+    ...attemptScope(live),
+    type: 'hint_used',
+    payload: { tier: hint.tier },
+  });
 }
 
 function tuxStatus(live: LiveSession): string {
@@ -205,22 +259,36 @@ export async function launchLevelSession(
   levelDir: string,
   seed: number,
 ): Promise<LiveSession> {
-  const session = await deps.manager.create({
-    attemptId: `tq-${userId.slice(0, 8)}-${level.id}-s${seed}-${Date.now() % 100000}`,
-    userId,
-    levelId: level.id,
-    image: level.sandbox.image,
-    profile: level.sandbox.profile,
-    network: 'none',
-    sidecars: [],
-    resources: {
-      memoryMb: level.sandbox.resources.memory_mb,
-      cpus: level.sandbox.resources.cpus,
-      pids: level.sandbox.resources.pids,
-    },
-    startCwd: level.sandbox.start_cwd,
-    env: {},
-  });
+  let session: Session;
+  try {
+    session = await deps.manager.create({
+      attemptId: `tq-${userId.slice(0, 8)}-${level.id}-s${seed}-${Date.now() % 100000}`,
+      userId,
+      levelId: level.id,
+      image: level.sandbox.image,
+      profile: level.sandbox.profile,
+      network: 'none',
+      sidecars: [],
+      resources: {
+        memoryMb: level.sandbox.resources.memory_mb,
+        cpus: level.sandbox.resources.cpus,
+        pids: level.sandbox.resources.pids,
+      },
+      startCwd: level.sandbox.start_cwd,
+      env: {},
+    });
+  } catch (err) {
+    // Capacity rejections have their own 429 path; anything else is infra.
+    if (!(err instanceof CapacityError)) {
+      recordEvent(deps.db, {
+        userId,
+        levelId: level.id,
+        type: 'sandbox_error',
+        payload: { stage: 'create' },
+      });
+    }
+    throw err;
+  }
   try {
     await runSetup(deps.provider, session.handle, compileSetup(level, levelDir, seed), seed);
   } catch (err) {
@@ -250,7 +318,20 @@ export async function launchLevelSession(
     },
   };
 
-  const shell = await deps.provider.openShell(session.handle, { cols: 80, rows: 24 });
+  let shell: ShellStream;
+  try {
+    shell = await deps.provider.openShell(session.handle, { cols: 80, rows: 24 });
+  } catch (err) {
+    recordEvent(deps.db, {
+      userId,
+      levelId: level.id,
+      attemptId: live.attemptId,
+      type: 'sandbox_error',
+      payload: { stage: 'shell' },
+    });
+    await deps.manager.close(session.id, 'manual');
+    throw err;
+  }
   live.shell = shell;
   // Provider chunks are already UTF-8 boundary-safe (T1.2); forward them.
   // send() no-ops while no socket is attached, so this is wired once here.
@@ -263,7 +344,7 @@ export async function launchLevelSession(
   const inbox = await deps.provider.watchFile(session.handle, '/run/tq/inbox', (line) => {
     const cmd = handleInboxLine(tracker, line);
     if (cmd === 'hint') {
-      requestHint(live);
+      requestHint(deps, live);
     } else if (cmd === 'status') {
       send(live, { t: 'tux', text: tuxStatus(live) });
     } else if (typeof cmd === 'object' && cmd.kind === 'explain') {
@@ -292,6 +373,11 @@ export async function launchLevelSession(
 
   const replaced = deps.live.set(session.id, live);
   void replaced;
+  recordEvent(deps.db, {
+    ...attemptScope(live),
+    type: 'level_start',
+    payload: { seed },
+  });
   return live;
 }
 
@@ -312,6 +398,9 @@ export async function closeLiveSession(
   deps.live.delete(live.session.id);
   if (!live.attemptFinished) {
     endAttempt(deps.db, live.attemptId, 'abandoned');
+  }
+  if (reason === 'abandoned') {
+    recordEvent(deps.db, { ...attemptScope(live), type: 'level_abandon' });
   }
   await deps.manager.close(live.session.id, 'manual');
 }

@@ -53,7 +53,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 - [x] T6.1 Badges, streak, daily, review + UI surfaces ✅ pnpm verify green, 250 tests; test:docker 42 green; DailyCard + ReviewBanner on map; 25% review-replay XP (D-017)
 - [x] T6.2 Tux dialogue system (intro, completion, idle nudge) ✅ pnpm verify green, 255 tests; test:docker 42 green (intro once incl. reconnect, success message, stale-socket fix)
-- [ ] T6.3 Telemetry events recorded for a full attempt
+- [x] T6.3 Telemetry events recorded for a full attempt ✅ pnpm verify green, 259 tests; test:docker 43 green (ordered 6-event trail over live w1-01); fixed concurrent-evaluation race found by the trail test
 
 ### M7 — Content: World 1 (12 levels) — see tables below
 

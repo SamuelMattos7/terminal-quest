@@ -14,7 +14,7 @@ export async function checkLoginShellEval(
   handle: SandboxHandle,
   check: LoginShellEval,
   // Login env comes from the shell itself, not the fixed check env.
-  _ctx: CheckContext,
+  ctx: CheckContext,
 ): Promise<boolean> {
   // Login shell on purpose: env, aliases, and PATH customizations from the
   // player's profile files must be visible here (unlike cron_dry_run).
@@ -23,6 +23,7 @@ export async function checkLoginShellEval(
     timeoutMs: 10_000,
   });
   if (res.timedOut) {
+    ctx.onTimeout?.(check.type);
     return false;
   }
   if (check.stdout_equals !== undefined) {
@@ -41,6 +42,7 @@ async function runCase(
   index: number,
   testCase: ScriptCase,
   ctx: CheckContext,
+  checkType: string,
 ): Promise<boolean> {
   const scratch = `/tmp/tq-case-${index}`;
   const prep = await rootShell(
@@ -72,6 +74,7 @@ async function runCase(
     timeoutMs: 10_000,
   });
   if (res.timedOut) {
+    ctx.onTimeout?.(checkType);
     return false;
   }
   if (
@@ -137,7 +140,7 @@ export async function checkScriptTests(
   }
   let index = 0;
   for (const testCase of check.cases) {
-    if (!(await runCase(provider, handle, check.path, index, testCase, ctx))) {
+    if (!(await runCase(provider, handle, check.path, index, testCase, ctx, check.type))) {
       return false;
     }
     index += 1;
