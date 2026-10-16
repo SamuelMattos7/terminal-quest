@@ -94,9 +94,9 @@ Columns: **A** = authored (level.yaml, setup, solution, wrong, hints, explain) Â
 | w1-04-paths               | [x] | [x] | [x] |
 | w1-05-peek-inside         | [x] | [x] | [x] |
 | w1-06-make-things         | [x] | [x] | [x] |
-| w1-07-copy-and-move       | [ ] | [ ] | [ ] |
-| w1-08-delete-carefully    | [ ] | [ ] | [ ] |
-| w1-09-reading-files       | [ ] | [ ] | [ ] |
+| w1-07-copy-and-move       | [x] | [x] | [x] |
+| w1-08-delete-carefully    | [x] | [x] | [x] |
+| w1-09-reading-files       | [x] | [x] | [x] |
 | w1-10-manual-labor        | [ ] | [ ] | [ ] |
 | w1-11-time-travel         | [ ] | [ ] | [ ] |
 | w1-12-boss-organize-chaos | [ ] | [ ] | [ ] |

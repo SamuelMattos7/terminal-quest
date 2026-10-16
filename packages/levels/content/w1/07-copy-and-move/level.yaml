@@ -1,0 +1,103 @@
+id: w1-07-copy-and-move
+world: 1
+order: 7
+title: 'Copy & Move'
+kind: lesson
+difficulty: 2
+estimated_minutes: 6
+story: |
+  Tux-9000: "Filing day. The quarterly report needs a backup copy, the draft
+  becomes final under a new name, and the photo belongs in pictures. Copy with
+  cp — the original stays. Rename and relocate with mv — the original goes.
+  Same spelling, different fate. File them."
+teaches: [cp, mv]
+par_commands: 5
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  files:
+    - {
+        path: /home/player/report.txt,
+        owner: player,
+        mode: '644',
+        content: "Q3 results: up and to the right.\n",
+      }
+    - {
+        path: /home/player/draft.txt,
+        owner: player,
+        mode: '644',
+        content: "Rough thoughts, do not circulate.\n",
+      }
+    - {
+        path: /home/player/photo.jpg,
+        owner: player,
+        mode: '644',
+        content: "A perfectly ordinary penguin portrait.\n",
+      }
+objectives:
+  - id: backup-copy
+    text: 'Copy `report.txt` into `backup/` keeping every byte identical.'
+    check:
+      type: all
+      checks:
+        - { type: file_exists, path: /home/player/backup/report.txt, kind: file }
+        - {
+            type: file_content,
+            path: /home/player/backup/report.txt,
+            equals: 'Q3 results: up and to the right.',
+          }
+  - id: original-stays
+    text: 'The original `report.txt` must still be where it was.'
+    hold: true
+    check: { type: file_exists, path: /home/player/report.txt, kind: file }
+  - id: rename-draft
+    text: 'Rename `draft.txt` to `final.txt` with its content unchanged.'
+    check:
+      type: all
+      checks:
+        - { type: file_exists, path: /home/player/final.txt, kind: file }
+        - {
+            type: file_content,
+            path: /home/player/final.txt,
+            equals: 'Rough thoughts, do not circulate.',
+          }
+        - { type: file_absent, path: /home/player/draft.txt }
+  - id: move-photo
+    text: 'Move `photo.jpg` into `pictures/`.'
+    check:
+      type: all
+      checks:
+        - { type: file_exists, path: /home/player/pictures/photo.jpg, kind: file }
+        - { type: file_absent, path: /home/player/photo.jpg }
+hints:
+  - 'cp duplicates, mv relocates. The backup must be a copy — the original report stays where it is.'
+  - 'Rename with mv by giving the new name as the destination: `mv draft.txt final.txt`. Move photo.jpg the same way, into pictures/.'
+  - 'Try: `mkdir -p backup pictures`, `cp report.txt backup/`, `mv draft.txt final.txt`, `mv photo.jpg pictures/`.'
+explain:
+  - command: 'cp report.txt backup/'
+    parts:
+      - { token: 'cp', meaning: 'copy a file' }
+      - {
+          token: 'report.txt backup/',
+          meaning: 'duplicate report.txt inside the backup directory; the original stays',
+        }
+  - command: 'mv draft.txt final.txt'
+    parts:
+      - { token: 'mv', meaning: 'move (or rename) a file' }
+      - { token: 'draft.txt final.txt', meaning: 'same directory, new name — that is a rename' }
+  - command: 'mv photo.jpg pictures/'
+    parts:
+      - { token: 'pictures/', meaning: 'a directory as destination — that is a move' }
+cheatsheet:
+  - {
+      skill: cp,
+      syntax: 'cp SRC DEST',
+      note: 'Copy files. Original stays; DEST may be a new name or a directory.',
+    }
+  - {
+      skill: mv,
+      syntax: 'mv SRC DEST',
+      note: 'Move or rename. Original goes; DEST may be a new name or a directory.',
+    }
+success_message: 'Filed, copied, moved. The originals survived where they should. Acceptable clerical work.'
+solutions: { reference: solution.sh, wrong: [wrong/move-not-copy.sh] }

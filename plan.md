@@ -545,6 +545,8 @@ All paths are absolute inside the sandbox. Checks run as **root** using `env -i 
 
 Additional rule: objectives are **sticky** by default (once true they stay done). Set `hold: true` to require the check to be true again at completion time (e.g. "important file still exists").
 
+> 2026-10-16 (D-019): `answer_equals` passes when **any** submitted answer matches, not only the latest. The "latest" wording above predates multi-answer levels (w1-09, w2-15 boss): live evaluation already made each submit count via stickiness, and the `levels:test` harness evaluates once after the full solution, so latest-only could never complete them.
+
 ### 8.3 `script_tests` cases
 ```yaml
 check:

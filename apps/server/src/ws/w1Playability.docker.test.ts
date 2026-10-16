@@ -26,6 +26,9 @@ const PLAYABLE: { id: string; dir: string }[] = [
   { id: 'w1-04-paths', dir: '04-paths' },
   { id: 'w1-05-peek-inside', dir: '05-peek-inside' },
   { id: 'w1-06-make-things', dir: '06-make-things' },
+  { id: 'w1-07-copy-and-move', dir: '07-copy-and-move' },
+  { id: 'w1-08-delete-carefully', dir: '08-delete-carefully' },
+  { id: 'w1-09-reading-files', dir: '09-reading-files' },
 ];
 
 async function waitFor(
