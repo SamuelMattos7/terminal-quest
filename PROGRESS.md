@@ -97,8 +97,8 @@ Columns: **A** = authored (level.yaml, setup, solution, wrong, hints, explain) Â
 | w1-07-copy-and-move       | [x] | [x] | [x] |
 | w1-08-delete-carefully    | [x] | [x] | [x] |
 | w1-09-reading-files       | [x] | [x] | [x] |
-| w1-10-manual-labor        | [ ] | [ ] | [ ] |
-| w1-11-time-travel         | [ ] | [ ] | [ ] |
+| w1-10-manual-labor        | [x] | [x] | [x] |
+| w1-11-time-travel         | [x] | [x] | [x] |
 | w1-12-boss-organize-chaos | [ ] | [ ] | [ ] |
 
 ### World 2 â€” The Filing Room

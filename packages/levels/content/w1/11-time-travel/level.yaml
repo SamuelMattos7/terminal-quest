@@ -1,0 +1,65 @@
+id: w1-11-time-travel
+world: 1
+order: 11
+title: 'Time Travel'
+kind: lesson
+difficulty: 2
+estimated_minutes: 6
+story: |
+  Tux-9000: "That filename is a typing workout:
+  quarterly-financial-report-final-v3-REAL.txt. Read it with cat. Then run
+  history — every command is numbered. Re-run the cat without retyping via !
+  plus its number. Tab completes names, Ctrl+R searches history. Never retype
+  monsters."
+teaches: [history, tab-completion]
+par_commands: 4
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  files:
+    - {
+        path: /home/player/quarterly-financial-report-final-v3-REAL.txt,
+        owner: player,
+        mode: '644',
+        content: "Q3 numbers. The REAL ones this time.\n",
+      }
+objectives:
+  - id: read-report
+    text: 'Read the monster file with `cat` (Tab completes its name).'
+    check: { type: command_used, regex: 'cat.*quarterly' }
+  - id: ran-history
+    text: 'Run `history` to see your recent commands, numbered.'
+    check: { type: command_used, regex: '^history' }
+  - id: reran-cat
+    text: 'Re-run that cat with `!n` or `!cat` — check `history` for the number first.'
+    check: { type: command_used, regex: 'cat.*quarterly', min_count: 2 }
+hints:
+  - 'Tab finishes long filenames. Type `cat quar` and press Tab — no heroics.'
+  - '`history` lists commands with numbers. `!n` re-runs number n; `!cat` re-runs the last cat.'
+  - 'Try: `cat quarterly-…` (with Tab), `history`, then `!cat`. Note: `!!` repeats the LAST command — right after history, that is history, not the cat.'
+explain:
+  - command: 'history'
+    parts:
+      - { token: 'history', meaning: 'list past commands, each with a number' }
+  - command: '!cat'
+    parts:
+      - {
+          token: '!cat',
+          meaning: 're-run the most recent command starting with "cat" — no retyping',
+        }
+  - command: 'cat quar<Tab>'
+    parts:
+      - { token: '<Tab>', meaning: 'tab completion — the shell finishes the long filename for you' }
+cheatsheet:
+  - {
+      skill: history,
+      syntax: 'history / !n / !text',
+      note: 'Recall commands. !n re-runs number n, !text the last match, !! the last command.',
+    }
+  - {
+      skill: tab-completion,
+      syntax: '<Tab>',
+      note: 'Complete filenames and commands. Double-Tab lists options.',
+    }
+success_message: 'Re-ran without retyping. Your fingers thank you. History is a time machine.'
+solutions: { reference: solution.sh, wrong: [wrong/no-rerun.sh] }
