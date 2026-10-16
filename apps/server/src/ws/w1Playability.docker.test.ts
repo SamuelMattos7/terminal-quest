@@ -31,6 +31,7 @@ const PLAYABLE: { id: string; dir: string }[] = [
   { id: 'w1-09-reading-files', dir: '09-reading-files' },
   { id: 'w1-10-manual-labor', dir: '10-manual-labor' },
   { id: 'w1-11-time-travel', dir: '11-time-travel' },
+  { id: 'w1-12-boss-organize-chaos', dir: '12-boss-organize-chaos' },
 ];
 
 async function waitFor(
@@ -114,7 +115,7 @@ describe('World 1 playability over the socket', () => {
     120_000,
   );
 
-  it('unlocks the chain 01 -> 11 in one progression', async () => {
+  it('unlocks the full World 1 chain in one progression', async () => {
     const ctx = await makeTestContext([], {}, realContentRoot());
     let socket: WebSocket | undefined;
     try {
@@ -173,5 +174,5 @@ describe('World 1 playability over the socket', () => {
       socket?.close();
       await ctx.cleanup();
     }
-  }, 300_000);
+  }, 600_000);
 });

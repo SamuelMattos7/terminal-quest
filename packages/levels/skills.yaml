@@ -25,62 +25,62 @@
   title: 'cd'
   group: navigation
   world: 1
-  prereqs: []
+  prereqs: [pwd, ls]
 - id: paths
   title: 'absolute and relative paths'
   group: navigation
   world: 1
-  prereqs: []
+  prereqs: [cd]
 - id: hidden-files
   title: 'hidden files'
   group: navigation
   world: 1
-  prereqs: []
+  prereqs: [ls]
 - id: cat
   title: 'cat'
   group: reading
   world: 1
-  prereqs: []
+  prereqs: [ls]
 - id: mkdir
   title: 'mkdir'
   group: files
   world: 1
-  prereqs: []
+  prereqs: [paths]
 - id: touch
   title: 'touch'
   group: files
   world: 1
-  prereqs: []
+  prereqs: [mkdir]
 - id: cp
   title: 'cp'
   group: files
   world: 1
-  prereqs: []
+  prereqs: [cat]
 - id: mv
   title: 'mv'
   group: files
   world: 1
-  prereqs: []
+  prereqs: [cp]
 - id: rm
   title: 'rm'
   group: files
   world: 1
-  prereqs: []
+  prereqs: [ls]
 - id: rmdir
   title: 'rmdir'
   group: files
   world: 1
-  prereqs: []
+  prereqs: [mkdir]
 - id: head-tail
   title: 'head and tail'
   group: reading
   world: 1
-  prereqs: []
+  prereqs: [cat]
 - id: less
   title: 'less'
   group: reading
   world: 1
-  prereqs: []
+  prereqs: [cat]
 - id: man
   title: 'man'
   group: help
