@@ -182,6 +182,16 @@ describe('shell, network, and exec checks', () => {
         ctx,
       ),
     ).toBe(true);
+    // Level-relative form (D-021): `checks/verify.sh` resolves to the same
+    // compiler-uploaded location as the bare name.
+    expect(
+      await runCheck(
+        fx.provider,
+        fx.handle,
+        { type: 'exec', script: 'checks/verify.sh', expect_exit: 0 },
+        ctx,
+      ),
+    ).toBe(true);
     expect(
       await runCheck(
         fx.provider,

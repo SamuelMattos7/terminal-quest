@@ -1,0 +1,55 @@
+id: w1-12-boss-organize-chaos
+world: 1
+order: 12
+title: 'Organize the Chaos'
+kind: boss
+difficulty: 3
+estimated_minutes: 15
+story: |
+  Tux-9000: "Storm hit the lobby. Thirty files everywhere, a tmp/ junk pile,
+  and my README — which stays exactly where it is. Photos to Pictures/, texts
+  and PDFs to Documents/, logs to Logs/. Globs move whole families at once.
+  Sort everything exactly once, torch tmp/, spare the README. This is the
+  final exam. Breathe."
+teaches: [mv, rm, mkdir]
+par_commands: 8
+xp: 100
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  files:
+    - { path: /home/player/README, owner: player, mode: '644', content_file: setup/readme.txt }
+  generators:
+    - { script: setup/gen.sh }
+objectives:
+  - id: everything-sorted
+    text: 'Sort every file into its folder (.jpg→Pictures/, .txt/.pdf→Documents/, .log→Logs/), each exactly once.'
+    check: { type: exec, script: checks/verify.sh, expect_exit: 0 }
+  - id: tmp-gone
+    text: 'Delete the `tmp/` junk pile.'
+    check: { type: file_absent, path: /home/player/tmp }
+  - id: readme-stays
+    text: 'Leave `README` where it is.'
+    hold: true
+    check: { type: file_exists, path: /home/player/README, kind: file }
+hints:
+  - '`mv *.jpg Pictures/` moves a whole family at once. Globs beat thirty commands.'
+  - 'Build all three folders first with one `mkdir -p`, sort the four families, then `rm -rf tmp/`.'
+  - 'Try: `mkdir -p Documents Pictures Logs`, `mv *.jpg Pictures/`, `mv *.txt *.pdf Documents/`, `mv *.log Logs/`, `rm -rf tmp/`. README has no extension — globs will not touch it.'
+explain:
+  - command: 'mv *.jpg Pictures/'
+    parts:
+      - { token: 'mv', meaning: 'move files' }
+      - { token: '*.jpg', meaning: 'a glob — every file ending in .jpg, all at once' }
+      - { token: 'Pictures/', meaning: 'the destination folder' }
+  - command: 'rm -rf tmp/'
+    parts:
+      - { token: 'rm', meaning: 'remove' }
+      - { token: '-rf', meaning: 'recursive (whole trees) and force (no asking)' }
+cheatsheet:
+  - {
+      skill: mv,
+      syntax: 'mv *.ext DEST/',
+      note: 'Move a whole family with a glob. Originals go; DEST keeps them.',
+    }
+success_message: 'Order from chaos. Every file home, junk torched, README breathing. Final exam: passed. The Lobby is yours.'
+solutions: { reference: solution.sh, wrong: [wrong/keeps-tmp.sh, wrong/one-pile.sh] }

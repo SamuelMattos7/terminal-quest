@@ -196,3 +196,12 @@ _Append below this line. Continue numbering from D-011._
 - **Decision:** Poll `GET /healthz` (public; also proves Docker reachability) up to 90 s before the first click in `e2e/smoke.spec.ts`. No assertion or flow changed.
 - **Alternatives considered:** Waiting on `:3001` in the webServer config (Playwright supports one URL only; the spec-side gate is equivalent and keeps the failure message local to the test).
 - **Consequences:** The M5 gate no longer depends on boot-timing luck; verified with back-to-back local `pnpm e2e` greens after a failing run.
+
+### D-021 — `exec` script paths are level-relative; runtime strips `checks/`
+
+- **Date:** 2026-10-16
+- **Status:** Accepted
+- **Context:** Authoring the first `exec`-check level (w1-12) exposed a latent inconsistency: the zod schema, its test, and `levels:lint` all treat `exec.script` as level-dir-relative (`checks/verify.sh`), but `checkExec` resolved it verbatim under `/opt/tq/checks/<levelId>/` while the setup compiler uploads `checks/<name>` with the prefix stripped — so the lint-valid form would 500/miss at runtime.
+- **Decision:** Strip a leading `checks/` segment in `checkExec` (after leading slashes, before the `..` guard). Bare names keep resolving as before for hand-built fixtures.
+- **Alternatives considered:** Changing the convention to bare names (breaks the schema test + lint test + plan §8.1 wording); changing the compiler upload layout (touches every future level).
+- **Consequences:** w1-12 uses `script: checks/verify.sh`; new docker case pins both forms.

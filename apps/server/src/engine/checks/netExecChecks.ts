@@ -31,7 +31,10 @@ export async function checkExec(
 ): Promise<boolean> {
   let cmd: string[];
   if (check.script !== undefined) {
-    const rel = check.script.replace(/^\/+/, '');
+    // Level-relative form: the compiler uploads `checks/<name>` to
+    // `/opt/tq/checks/<levelId>/<name>`, so strip a leading `checks/`
+    // (D-021). Bare names keep working for hand-built fixtures.
+    const rel = check.script.replace(/^\/+/, '').replace(/^(checks\/)+/, '');
     if (rel === '' || rel.split('/').includes('..')) {
       return false;
     }

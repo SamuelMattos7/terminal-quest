@@ -57,7 +57,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 ### M7 — Content: World 1 (12 levels) — see tables below
 
-- [ ] All W1 levels authored, linted, tested (3 seeds)
+- [x] All W1 levels authored, linted, tested (3 seeds) ✅ levels:lint 12 levels 0 problems; levels:test --world 1 --seeds 3 green (baseline-fail/wrong-fail/reference-pass per level per seed); playability chain 01→12 over live sockets green; test:docker 57 green; pnpm verify 259 green; pnpm e2e green; W1 total 73 est. min ≤ 90
 
 ### M8 — Content: World 2 (15 levels) — **MVP release config** (`ENABLE_WORLDS=1,2`)
 
@@ -99,7 +99,7 @@ Columns: **A** = authored (level.yaml, setup, solution, wrong, hints, explain) �
 | w1-09-reading-files       | [x] | [x] | [x] |
 | w1-10-manual-labor        | [x] | [x] | [x] |
 | w1-11-time-travel         | [x] | [x] | [x] |
-| w1-12-boss-organize-chaos | [ ] | [ ] | [ ] |
+| w1-12-boss-organize-chaos | [x] | [x] | [x] |
 
 ### World 2 — The Filing Room
 
@@ -185,7 +185,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 
 | Date       | Area                | Gap                                                                                     | Planned resolution                                         |
 | ---------- | ------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| 2026-10-06 | skills.yaml prereqs | All 86 starter skills present with empty `prereqs`                                      | Author sensible edges during content milestones (M7/M8)    |
+| 2026-10-06 | skills.yaml prereqs | W1 skill edges authored in M7; W2+ skills still have empty `prereqs` | Author remaining edges during M8 |
 | 2026-10-06 | cron daemon start   | `needs_cron` field present (default true); daemon start not implemented                 | Implement in T10.1 admin polish; no admin levels exist yet |
 | 2026-10-11 | Web bundle size     | `dist` JS is ~576 KB (xterm.js); vite emits a chunk-size warning, no code-splitting yet | Consider `React.lazy` for `/play` during polish            |
 
