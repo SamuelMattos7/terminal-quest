@@ -29,6 +29,8 @@ const PLAYABLE: { id: string; dir: string }[] = [
   { id: 'w1-07-copy-and-move', dir: '07-copy-and-move' },
   { id: 'w1-08-delete-carefully', dir: '08-delete-carefully' },
   { id: 'w1-09-reading-files', dir: '09-reading-files' },
+  { id: 'w1-10-manual-labor', dir: '10-manual-labor' },
+  { id: 'w1-11-time-travel', dir: '11-time-travel' },
 ];
 
 async function waitFor(
@@ -112,7 +114,7 @@ describe('World 1 playability over the socket', () => {
     120_000,
   );
 
-  it('unlocks the chain 01 -> 06 in one progression', async () => {
+  it('unlocks the chain 01 -> 11 in one progression', async () => {
     const ctx = await makeTestContext([], {}, realContentRoot());
     let socket: WebSocket | undefined;
     try {
@@ -122,14 +124,21 @@ describe('World 1 playability over the socket', () => {
         throw new Error('server did not bind');
       }
       const cookie = await guestCookie(ctx.app);
+      let first = true;
       for (const { id, dir } of PLAYABLE) {
+        // Start is rate-limited to 10/minute per user: pace the chain.
+        if (!first) {
+          await new Promise((r) => setTimeout(r, 7000));
+        }
+        first = false;
         const res = await ctx.app.inject({
           method: 'POST',
           url: `/api/levels/${id}/start`,
           headers: { cookie },
         });
-        // A 403 here means the previous level did not unlock this one.
-        expect(res.statusCode, `${id} locked`).toBe(200);
+        // A non-200 here means the previous level did not unlock this one
+        // (403) or the start rate limit was tripped (429).
+        expect(res.statusCode, `${id} start failed: ${res.statusCode}`).toBe(200);
         const started = StartSessionResponseSchema.parse(res.json());
         socket = new WebSocket(`ws://127.0.0.1:${address.port}${started.wsPath}`, {
           headers: { cookie, Origin: 'http://localhost:5173' },

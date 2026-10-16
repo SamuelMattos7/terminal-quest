@@ -1,0 +1,53 @@
+id: w1-10-manual-labor
+world: 1
+order: 10
+title: 'Manual Labor'
+kind: lesson
+difficulty: 2
+estimated_minutes: 7
+story: |
+  Tux-9000: "One of these data files is hogging the disk. Find the biggest.
+  ls sorts alphabetically by default — useless. Somewhere in `man ls` or
+  `ls --help` hides a sort-by-size flag. Read the manual like a professional,
+  sort, and submit the heavyweight's name."
+teaches: [man, help]
+par_commands: 5
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  generators:
+    - { script: setup/gen.sh }
+objectives:
+  - id: sorted-by-size
+    text: 'List `datadir` sorted by size (find the flag in the manual).'
+    check: { type: command_used, regex: 'ls\s+.*(-\w*S|--sort)(\s|=|$)' }
+  - id: biggest-file
+    text: "Submit the largest file's name: `tux submit <name>`."
+    check: { type: answer_equals, from_file: /opt/tq/secret/largest }
+  - id: consulted-manual
+    text: 'Bonus: get there via `man ls` or `--help`.'
+    bonus: true
+    check: { type: command_used, regex: '(^man\s|\s--help)' }
+hints:
+  - '`ls -l` shows sizes, but eyeballing is for amateurs. Make ls itself sort by size.'
+  - 'The manual knows: `man ls` (arrows scroll, q quits) or `ls --help | grep -i sort`. Look for size.'
+  - 'Try: `ls -lS datadir` — biggest first. Then `tux submit <that filename>`.'
+explain:
+  - command: 'man ls'
+    parts:
+      - { token: 'man', meaning: 'open the manual page for a command (arrows scroll, q quits)' }
+      - { token: 'ls', meaning: 'look up this command' }
+  - command: 'ls -lS datadir'
+    parts:
+      - { token: 'ls', meaning: 'list directory contents' }
+      - { token: '-lS', meaning: '-l long format with sizes, -S sort largest first' }
+      - { token: 'datadir', meaning: 'which directory to list' }
+cheatsheet:
+  - { skill: man, syntax: 'man CMD', note: 'Full manual. Arrows scroll, / searches, q quits.' }
+  - {
+      skill: help,
+      syntax: 'CMD --help',
+      note: 'Quick flag summary. Pipe to grep to find one flag.',
+    }
+success_message: 'Heavyweight found. The manual beats guessing — remember that.'
+solutions: { reference: solution.sh, wrong: [wrong/smallest.sh] }
