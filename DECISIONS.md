@@ -187,3 +187,12 @@ _Append below this line. Continue numbering from D-011._
 - **Decision:** `checkAnswerEquals` passes if **any** submitted answer matches (after trim/case rules). Live behavior is unchanged for sticky objectives (the only realistic kind for answers): a correct submit still completes immediately and stays done; a later wrong submit cannot un-complete it.
 - **Alternatives considered:** Per-line evaluation in `levels:test` (harness restructure + slower runs for harness/production fidelity); single-answer-per-level design constraint (breaks the w2-15 curriculum row).
 - **Consequences:** Deviates from the §8.2 one-liner; noted with a dated annotation in plan.md §8.2. New unit cases cover multi-answer accumulation.
+
+### D-020 — Gate the e2e smoke on API readiness, not just vite
+
+- **Date:** 2026-10-16
+- **Status:** Accepted
+- **Context:** CI `e2e` failed twice on PR #13 (B2) while #12 was green with no related code change. Local repro showed `POST /api/guest` proxy-500ing ~1 s after page load: Playwright's `webServer.url` only proves vite (:5173) is up, but the spec clicks "Start playing" immediately while the tsx API server (:3001) can still be booting — a pre-existing race since T5.2 that finally hit.
+- **Decision:** Poll `GET /healthz` (public; also proves Docker reachability) up to 90 s before the first click in `e2e/smoke.spec.ts`. No assertion or flow changed.
+- **Alternatives considered:** Waiting on `:3001` in the webServer config (Playwright supports one URL only; the spec-side gate is equivalent and keeps the failure message local to the test).
+- **Consequences:** The M5 gate no longer depends on boot-timing luck; verified with back-to-back local `pnpm e2e` greens after a failing run.
