@@ -1,0 +1,64 @@
+id: w1-04-paths
+world: 1
+order: 4
+title: 'Absolute vs Relative'
+kind: lesson
+difficulty: 1
+estimated_minutes: 5
+story: |
+  Tux-9000: "Field trip. The system logs live at /var/log, and I need eyes on them.
+  A path starting with / works from anywhere — that's absolute. A path starting
+  with .. crawls upward from right here — that's relative. Visit the logs
+  absolutely, then crawl home to ~/office relatively. Move."
+teaches: [paths, cd]
+par_commands: 3
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  dirs:
+    - { path: /home/player/office, owner: player, mode: '755' }
+  files:
+    - {
+        path: /home/player/office/desk.txt,
+        owner: player,
+        mode: '644',
+        content: 'Your other desk. Sit down.\n',
+      }
+objectives:
+  - id: visit-logs
+    text: 'Visit the system logs with an absolute path: `cd /var/log`.'
+    check: { type: command_used, regex: '^cd /var/log/?(\s|$)' }
+  - id: crawl-home
+    text: 'Crawl back to ~/office with a relative path starting with `..`.'
+    check:
+      type: all
+      checks:
+        - { type: command_used, regex: '^cd \.\./' }
+        - { type: shell_cwd, equals: /home/player/office }
+hints:
+  - 'Absolute paths start with / and work from anywhere. The logs are at /var/log — go there first.'
+  - 'From /var/log, `..` climbs one level. Chain climbs with slashes to crawl toward home.'
+  - 'Try: `cd /var/log`, then `cd ../../home/player/office`. The second path starts with `..`, so it is relative.'
+explain:
+  - command: 'cd /var/log'
+    parts:
+      - { token: 'cd', meaning: 'change the current directory' }
+      - {
+          token: '/var/log',
+          meaning: 'an absolute path — it starts at the root /, so it works from anywhere',
+        }
+  - command: 'cd ../../home/player/office'
+    parts:
+      - { token: '../..', meaning: 'climb up two levels from /var/log, landing at /' }
+      - {
+          token: 'home/player/office',
+          meaning: 'then walk down into your office — relative to where the climb ended',
+        }
+cheatsheet:
+  - {
+      skill: paths,
+      syntax: '/abs/path vs rel/path',
+      note: 'Leading / = absolute (same everywhere). No leading / = relative (starts here). .. = up one level.',
+    }
+success_message: 'Both ways work. Absolute for certainty, relative for speed. You move like a local now.'
+solutions: { reference: solution.sh, wrong: [wrong/wrong-relative.sh] }

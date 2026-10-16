@@ -169,3 +169,12 @@ _Append below this line. Continue numbering from D-011._
 - **Decision:** Standardize the review path on unix seconds; infer review replays server-side (level due at completion time) with no protocol change; review replays award round(base*0.25) with bests preserved by max.
 - **Alternatives considered:** Explicit client replay flag (contract churn); data migration to ms (heavier, same outcome).
 - **Consequences:** /api/review becomes accurate (previously over-eager); plain repeats keep improvement-over-best.
+
+### D-018 — Restore man pages in tq-base (B0 spike finding)
+
+- **Date:** 2026-10-16
+- **Status:** Accepted
+- **Context:** B0 spike for M7 showed `man <anything>` fails in `tq-base` ("No manual entry"): debian:12-slim strips `/usr/share/man` via a dpkg path-exclusion, so the `man-db`/`manpages` packages installed empty. w1-10 (Manual Labor) and the bundled `tldr` fallback both need a working `man`.
+- **Decision:** In the base Dockerfile, delete the dpkg exclusion and `apt-get install --reinstall` the toolset so their pages land on disk (mandb rebuilt by the man-db trigger).
+- **Alternatives considered:** Designing w1-10 around `--help` only (weakens the `man` teaching beat the curriculum requires); running `mandb` per-level in setup (slow, fragile).
+- **Consequences:** Image grows by the man pages (~tens of MB); requires `pnpm images:build` + a full `levels:test --world 1` re-run to confirm nothing regressed.

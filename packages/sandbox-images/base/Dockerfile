@@ -25,6 +25,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && chmod 0755 /opt/tq \
   && chmod 0700 /opt/tq/secret
 
+# Debian slim strips /usr/share/man via a dpkg path-exclusion, which leaves
+# `man` with nothing to show (found by the M7 B0 spike; w1-10 needs real man
+# pages — see D-018). Drop the exclusion and reinstall the toolset so their
+# pages land on disk; man-db rebuilds its index via trigger.
+RUN rm -f /etc/dpkg/dpkg.cfg.d/excludes /etc/dpkg/dpkg.cfg.d/docker \
+  && apt-get update && apt-get install -y --reinstall \
+    bash coreutils findutils grep sed gawk less nano vim \
+    man-db manpages manpages-dev \
+    procps psmisc iproute2 iputils-ping curl netcat-openbsd dnsutils openssh-client \
+    tar gzip bzip2 xz-utils zip unzip \
+    jq cron rsync tmux git sudo lsof strace shellcheck bats file tree \
+    ncurses-term locales python3 python3-croniter \
+  && rm -rf /var/lib/apt/lists/*
 # /opt/tq helpers: root-owned, player can read and execute, never write.
 COPY tq/ /opt/tq/
 RUN chown -R root:root /opt/tq \
