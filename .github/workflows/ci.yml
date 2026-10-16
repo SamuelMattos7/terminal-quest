@@ -81,3 +81,10 @@ jobs:
       - run: pnpm images:build
       - run: npx playwright install --with-deps chromium
       - run: pnpm e2e
+      - name: Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7

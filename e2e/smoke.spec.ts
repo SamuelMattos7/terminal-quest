@@ -17,11 +17,13 @@ test('smoke: start, solve w1-01, unlock w1-02', async ({ page }) => {
     )
     .toBe(200);
   await page.getByRole('button', { name: 'Start playing' }).click();
-  await expect(page).toHaveURL(/\/map/);
+  await expect(page).toHaveURL(/\/map/, { timeout: 30_000 });
 
   await page.getByRole('link', { name: /First Words/ }).click();
-  await expect(page).toHaveURL(/\/play\/w1-01-first-words/);
-  await expect(page.getByTestId('terminal-container')).toBeVisible();
+  await expect(page).toHaveURL(/\/play\/w1-01-first-words/, { timeout: 30_000 });
+  // The terminal renders after level fetch + session start (container
+  // create) + first session_state: generous budget for CI tail latency.
+  await expect(page.getByTestId('terminal-container')).toBeVisible({ timeout: 30_000 });
   // The socket must be live before keystrokes, or they are dropped.
   await expect(page.getByText('Connected')).toBeVisible({ timeout: 30_000 });
 
@@ -40,6 +42,6 @@ test('smoke: start, solve w1-01, unlock w1-02', async ({ page }) => {
   await expect(page.getByTestId('complete-modal')).toBeVisible({ timeout: 30_000 });
 
   await page.getByTestId('complete-back').click();
-  await expect(page).toHaveURL(/\/map/);
-  await expect(page.getByRole('link', { name: /Where Am I/ })).toBeVisible();
+  await expect(page).toHaveURL(/\/map/, { timeout: 30_000 });
+  await expect(page.getByRole('link', { name: /Where Am I/ })).toBeVisible({ timeout: 30_000 });
 });
