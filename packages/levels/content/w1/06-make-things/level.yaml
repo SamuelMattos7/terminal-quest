@@ -1,0 +1,49 @@
+id: w1-06-make-things
+world: 1
+order: 6
+title: 'Make Things'
+kind: lesson
+difficulty: 1
+estimated_minutes: 4
+story: |
+  Tux-9000: "Projects need shelves before they need code. Build me a projects
+  drawer: an alpha folder with a notes.txt inside, and an empty beta folder
+  beside it. mkdir builds rooms. touch drops empty files. The -p flag builds
+  the whole hallway at once. Hammer time."
+teaches: [mkdir, touch]
+par_commands: 3
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+objectives:
+  - id: alpha-dir
+    text: 'Create the directory `projects/alpha`.'
+    check: { type: file_exists, path: /home/player/projects/alpha, kind: dir }
+  - id: beta-dir
+    text: 'Create the directory `projects/beta`.'
+    check: { type: file_exists, path: /home/player/projects/beta, kind: dir }
+  - id: notes-file
+    text: 'Create the empty file `projects/alpha/notes.txt`.'
+    check: { type: file_exists, path: /home/player/projects/alpha/notes.txt, kind: file }
+hints:
+  - 'mkdir creates directories, touch creates empty files. Neither exists yet — start with the parents.'
+  - 'projects/ does not exist, so plain `mkdir projects/alpha` fails. There is a flag that builds parents too.'
+  - 'Try: `mkdir -p projects/alpha projects/beta`, then `touch projects/alpha/notes.txt`.'
+explain:
+  - command: 'mkdir -p projects/alpha projects/beta'
+    parts:
+      - { token: 'mkdir', meaning: 'make directories' }
+      - { token: '-p', meaning: 'create parents as needed — no error if they already exist' }
+      - { token: 'projects/alpha projects/beta', meaning: 'two directories built in one command' }
+  - command: 'touch projects/alpha/notes.txt'
+    parts:
+      - { token: 'touch', meaning: 'create an empty file (or update its timestamp)' }
+      - { token: 'projects/alpha/notes.txt', meaning: 'the new file, inside the alpha folder' }
+cheatsheet:
+  - {
+      skill: mkdir,
+      syntax: 'mkdir [-p] DIR...',
+      note: 'Make directories. -p builds missing parents, no error if present.',
+    }
+  - { skill: touch, syntax: 'touch FILE...', note: 'Create empty files (or refresh timestamps).' }
+success_message: 'Shelves built. Alpha awaits brilliance, beta awaits lower expectations.'
+solutions: { reference: solution.sh, wrong: [wrong/no-parents.sh] }

@@ -1,0 +1,49 @@
+id: w1-05-peek-inside
+world: 1
+order: 5
+title: 'Peek Inside'
+kind: lesson
+difficulty: 1
+estimated_minutes: 5
+story: |
+  Tux-9000: "I hid a passphrase in the attic. Its file starts with a dot, so it
+  is invisible to plain ls — Linux hides dotfiles. Show the hidden files, read
+  the secret with cat, and submit the passphrase. The attic also holds boring
+  decoys. Snoop like you mean it."
+teaches: [hidden-files, cat]
+par_commands: 4
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  generators:
+    - { script: setup/gen.sh }
+objectives:
+  - id: show-hidden
+    text: 'List the attic showing hidden files (`ls -a`).'
+    check: { type: command_used, regex: 'ls\s+(-\w*[aA]|--a\w*)(\s|$)' }
+  - id: submit-passphrase
+    text: 'Read the hidden file and submit its passphrase: `tux submit <word>`.'
+    check: { type: answer_equals, from_file: /opt/tq/secret/passphrase }
+hints:
+  - 'Files starting with a dot are hidden. Plain `ls` skips them — the attic looks boring on purpose.'
+  - '`ls -a` (or --all) reveals hidden files. Look inside the attic.'
+  - 'Try: `ls -la attic`, then `cat attic/.secret`, then `tux submit <the word inside>`.'
+explain:
+  - command: 'ls -la attic'
+    parts:
+      - { token: 'ls', meaning: 'list directory contents' }
+      - { token: '-la', meaning: '-l long format, -a show hidden files (dotfiles) too' }
+      - { token: 'attic', meaning: 'which directory to list' }
+  - command: 'cat attic/.secret'
+    parts:
+      - { token: 'cat', meaning: 'print a file to the terminal' }
+      - { token: 'attic/.secret', meaning: 'the hidden file — its name starts with a dot' }
+cheatsheet:
+  - {
+      skill: hidden-files,
+      syntax: 'ls -la [PATH]',
+      note: 'Show hidden dotfiles too. -l long format, -a include hidden.',
+    }
+  - { skill: cat, syntax: 'cat FILE', note: 'Print a whole file to the terminal.' }
+success_message: 'Found it. Dotfiles hide config, keys, and my spare fish. Now you see them.'
+solutions: { reference: solution.sh, wrong: [wrong/wrong-decoy.sh] }
