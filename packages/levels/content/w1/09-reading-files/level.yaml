@@ -1,0 +1,54 @@
+id: w1-09-reading-files
+world: 1
+order: 9
+title: 'Reading Files'
+kind: lesson
+difficulty: 2
+estimated_minutes: 7
+story: |
+  Tux-9000: "Five hundred lines of server log. Somewhere in there: the first
+  request, the last request, and the one three from the end. head reads the
+  top, tail reads the bottom, pipes chain them. less scrolls the whole beast
+  for humans. Extract three lines. Read."
+teaches: [head-tail, less]
+par_commands: 7
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  generators:
+    - { script: setup/gen.sh }
+objectives:
+  - id: first-line
+    text: 'Submit the first line of `server.log` (use `head`).'
+    check: { type: answer_equals, from_file: /opt/tq/secret/first_line }
+  - id: last-line
+    text: 'Submit the last line of `server.log` (use `tail`).'
+    check: { type: answer_equals, from_file: /opt/tq/secret/last_line }
+  - id: third-from-last
+    text: 'Submit line 1 of the last 3 lines (`tail -n 3 ... | head -n 1`).'
+    check: { type: answer_equals, from_file: /opt/tq/secret/third_line }
+hints:
+  - '`head -n 1` prints the first line, `tail -n 1` the last. Both take a file argument.'
+  - '`tail -n 3` prints the last three lines. Pipe them into another command to pick exactly one.'
+  - 'Try: `tux submit "$(head -n 1 server.log)"`, then the tail twin, then `tux submit "$(tail -n 3 server.log | head -n 1)"`.'
+explain:
+  - command: 'head -n 1 server.log'
+    parts:
+      - { token: 'head', meaning: 'print the top of a file' }
+      - { token: '-n 1', meaning: 'just one line' }
+  - command: 'tail -n 1 server.log'
+    parts:
+      - { token: 'tail', meaning: 'print the bottom of a file' }
+  - command: 'tail -n 3 server.log | head -n 1'
+    parts:
+      - { token: '|', meaning: 'pipe — feed the left command output into the right command' }
+      - { token: 'head -n 1', meaning: 'keep only the first of those three lines' }
+cheatsheet:
+  - {
+      skill: head-tail,
+      syntax: 'head [-n N] FILE / tail [-n N] FILE',
+      note: 'Peek at file edges. tail -f follows live growth.',
+    }
+  - { skill: less, syntax: 'less FILE', note: 'Scroll big files (arrows, / to search, q quits).' }
+success_message: 'Three lines, exact. You sip logs through a straw instead of the firehose.'
+solutions: { reference: solution.sh, wrong: [wrong/off-by-one.sh] }

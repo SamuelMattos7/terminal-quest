@@ -178,3 +178,12 @@ _Append below this line. Continue numbering from D-011._
 - **Decision:** In the base Dockerfile, delete the dpkg exclusion and `apt-get install --reinstall` the toolset so their pages land on disk (mandb rebuilt by the man-db trigger).
 - **Alternatives considered:** Designing w1-10 around `--help` only (weakens the `man` teaching beat the curriculum requires); running `mandb` per-level in setup (slow, fragile).
 - **Consequences:** Image grows by the man pages (~tens of MB); requires `pnpm images:build` + a full `levels:test --world 1` re-run to confirm nothing regressed.
+
+### D-019 — `answer_equals` matches any submitted answer, not just the latest
+
+- **Date:** 2026-10-16
+- **Status:** Accepted
+- **Context:** plan.md §8.2 defines `answer_equals` as "compares latest `tux submit` text". That works live (the server re-evaluates after every command, so each submit is briefly "latest" and stickiness keeps it), but `levels:test` drives the whole solution then evaluates once — so multi-answer levels (w1-09 now, w2-15 boss later: `answer_equals` ×4) can never complete in the harness: only the last answer matches.
+- **Decision:** `checkAnswerEquals` passes if **any** submitted answer matches (after trim/case rules). Live behavior is unchanged for sticky objectives (the only realistic kind for answers): a correct submit still completes immediately and stays done; a later wrong submit cannot un-complete it.
+- **Alternatives considered:** Per-line evaluation in `levels:test` (harness restructure + slower runs for harness/production fidelity); single-answer-per-level design constraint (breaks the w2-15 curriculum row).
+- **Consequences:** Deviates from the §8.2 one-liner; noted with a dated annotation in plan.md §8.2. New unit cases cover multi-answer accumulation.

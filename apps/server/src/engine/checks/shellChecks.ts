@@ -41,8 +41,11 @@ export async function checkAnswerEquals(
   check: AnswerEquals,
   ctx: CheckContext,
 ): Promise<boolean> {
-  const latest = ctx.answers.at(-1);
-  if (latest === undefined) {
+  // Any-match (D-019): a level may require several answers submitted over
+  // time (w1-09, w2-15). Objectives are sticky, so each correct submit
+  // completes its objective the moment it arrives live; the harness, which
+  // evaluates once after the whole solution, needs every past submit visible.
+  if (ctx.answers.length === 0) {
     return false;
   }
   let expected: string | undefined;
@@ -58,10 +61,12 @@ export async function checkAnswerEquals(
     return false;
   }
   const trim = check.trim ?? true;
-  const actual = trim ? latest.replace(/\s+$/, '').replace(/^\s+/, '') : latest;
-  const want = trim ? expected.replace(/\s+$/, '').replace(/^\s+/, '') : expected;
-  if (check.case_sensitive ?? true) {
-    return actual === want;
-  }
-  return actual.toLowerCase() === want.toLowerCase();
+  const normalize = (s: string): string => (trim ? s.replace(/\s+$/, '').replace(/^\s+/, '') : s);
+  const want = normalize(expected);
+  const candidates =
+    (check.case_sensitive ?? true)
+      ? ctx.answers.map(normalize)
+      : ctx.answers.map((a) => normalize(a).toLowerCase());
+  const target = (check.case_sensitive ?? true) ? want : want.toLowerCase();
+  return candidates.includes(target);
 }

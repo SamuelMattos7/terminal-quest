@@ -132,6 +132,24 @@ describe('shell, network, and exec checks', () => {
     ).toBe(false);
   });
 
+  it('answer_equals matches any submitted answer (D-019), not just the latest', async () => {
+    const multi = baseCtx({ answers: ['first-line', 'second-line'] });
+    expect(
+      await runCheck(fx.provider, fx.handle, { type: 'answer_equals', value: 'first-line' }, multi),
+    ).toBe(true);
+    expect(
+      await runCheck(
+        fx.provider,
+        fx.handle,
+        { type: 'answer_equals', value: 'second-line' },
+        multi,
+      ),
+    ).toBe(true);
+    expect(
+      await runCheck(fx.provider, fx.handle, { type: 'answer_equals', value: 'third-line' }, multi),
+    ).toBe(false);
+  });
+
   it('port_listening detects the python listener only on its port', async () => {
     const ctx = baseCtx();
     const check: Check = { type: 'port_listening', port: 18099, proto: 'tcp' };

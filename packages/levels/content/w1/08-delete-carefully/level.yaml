@@ -1,0 +1,84 @@
+id: w1-08-delete-carefully
+world: 1
+order: 8
+title: 'Delete Carefully'
+kind: lesson
+difficulty: 2
+estimated_minutes: 6
+story: |
+  Tux-9000: "Spring cleaning. The junk mail, the empty clutter folder, and the
+  whole junk-drawer tree go. But important.txt stays — delete it and you fail.
+  rm removes files, rmdir removes empty folders, rm -r takes whole trees. Aim
+  carefully. For real work, rm -i asks first."
+teaches: [rm, rmdir]
+par_commands: 4
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  dirs:
+    - { path: /home/player/clutter, owner: player, mode: '755' }
+    - { path: /home/player/junk-drawer, owner: player, mode: '755' }
+    - { path: /home/player/junk-drawer/sub, owner: player, mode: '755' }
+  files:
+    - {
+        path: /home/player/junk-mail.txt,
+        owner: player,
+        mode: '644',
+        content: "You never wanted this.\n",
+      }
+    - {
+        path: /home/player/junk-drawer/drawer-note.txt,
+        owner: player,
+        mode: '644',
+        content: "Old drawer scribbles.\n",
+      }
+    - {
+        path: /home/player/junk-drawer/sub/old.txt,
+        owner: player,
+        mode: '644',
+        content: "Ancient history.\n",
+      }
+    - {
+        path: /home/player/important.txt,
+        owner: player,
+        mode: '644',
+        content: "Do not delete. Tux is watching.\n",
+      }
+objectives:
+  - id: delete-junk-file
+    text: 'Delete the junk mail file.'
+    check: { type: file_absent, path: /home/player/junk-mail.txt }
+  - id: delete-empty-dir
+    text: 'Remove the empty `clutter` directory (`rmdir`).'
+    check: { type: file_absent, path: /home/player/clutter }
+  - id: delete-tree
+    text: 'Remove the whole `junk-drawer` tree (`rm -r`).'
+    check: { type: file_absent, path: /home/player/junk-drawer }
+  - id: keep-important
+    text: '`important.txt` must survive the cleaning.'
+    hold: true
+    check: { type: file_exists, path: /home/player/important.txt, kind: file }
+hints:
+  - 'rm deletes files, rmdir deletes empty directories, rm -r deletes full trees. Match the tool to the target.'
+  - 'Plain rm refuses directories. The tree needs -r; the empty folder wants rmdir.'
+  - 'Try: `rm junk-mail.txt`, `rmdir clutter`, `rm -r junk-drawer`. Re-read any * glob before it touches important.txt.'
+explain:
+  - command: 'rm junk-mail.txt'
+    parts:
+      - { token: 'rm', meaning: 'remove files — there is no trash can' }
+      - { token: 'junk-mail.txt', meaning: 'the file to delete' }
+  - command: 'rmdir clutter'
+    parts:
+      - { token: 'rmdir', meaning: 'remove an empty directory (refuses non-empty ones)' }
+  - command: 'rm -r junk-drawer'
+    parts:
+      - { token: '-r', meaning: 'recursive — descend and delete everything inside' }
+cheatsheet:
+  - {
+      skill: rm,
+      syntax: 'rm [-ri] FILE...',
+      note: 'Delete files. -r recurses into trees, -i asks first. No undo.',
+    }
+  - { skill: rmdir, syntax: 'rmdir DIR...', note: 'Delete empty directories only.' }
+success_message: 'Clean. Junk gone, important intact. Restraint is a sysadmin virtue.'
+solutions: { reference: solution.sh, wrong: [wrong/wrong-star.sh, wrong/wrong-no-recursive.sh] }

@@ -101,6 +101,8 @@ docs/                  deploy.md, loadtest.md
 - `no-new-privileges` breaks `sudo`; only use it in the `basic` profile.
 - Debian cron has a minimal environment; that's the point of the cron-pitfalls level, don't "fix" it.
 - Reset creates a **new seed**; never reuse the old one.
+- YAML single-quoted strings do **not** process `\n` — level `setup.files[].content` with newlines must use double quotes, or files land with literal backslash-n bytes (breaks `file_content equals`; found by w1-07).
+- Reference/wrong scripts must never invoke interactive commands (`less`, `man`, `vim`, `rm -i`): under `driveScript` they block on a prompt until the phase timeout. Teach them via story/hints only, never check them.
 - Real systemd is not available in sandboxes; the `systemctl` shim (T10.4) is intentional and must be disclosed to the player on the level page.
 
 ## 10. Definition of done (per task)
