@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** M6 → T6.1 (M5 gate green)
+**Current focus:** Audit remediation, starting with P1 A01 (user-requested priority); M8 is the next unfinished milestone (M5 gate green).
 
 ---
 
@@ -178,6 +178,13 @@ Columns: **A** = authored (level.yaml, setup, solution, wrong, hints, explain) �
 | w5-10-boss-prod-is-down              | [ ] | [ ] | [ ] |
 
 ---
+
+## Audit remediation
+
+Each branch records its own regression and verification evidence. The milestone checkboxes above remain tied to their original acceptance criteria.
+
+- [x] A01 — concurrent starts/reset and global capacity; branch `codex/a01-session-concurrency`. ✅ `pnpm verify`: build/lint + 268 tests passed (9 new regressions). Gated tests reproduced same-user overlap, cross-user over-capacity, and reset/start overlap before the fix; verify release after failure, stale resets, and independent users. Docker integration run in progress; no content changes.
+- [ ] A02–A08 — remaining deployment-blocking audit findings; see `PROJECT_AUDIT.md`.
 
 ## Known gaps
 

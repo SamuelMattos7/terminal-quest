@@ -42,6 +42,7 @@ export interface SweepResult {
 
 export class SessionManager {
   private readonly sessions = new Map<string, Session>();
+  private pendingCreates = 0;
 
   constructor(private readonly opts: SessionManagerOptions) {}
 
@@ -54,14 +55,21 @@ export class SessionManager {
   }
 
   async create(spec: SandboxSpec): Promise<Session> {
-    if (this.sessions.size >= this.opts.maxContainers) {
+    if (this.sessions.size + this.pendingCreates >= this.opts.maxContainers) {
       throw new CapacityError(this.opts.maxContainers);
     }
-    const handle = await this.opts.provider.create(spec);
-    const now = this.now();
-    const session: Session = { id: randomUUID(), handle, createdAt: now, lastInputAt: now };
-    this.sessions.set(session.id, session);
-    return session;
+    // Reserve synchronously, before yielding to Docker. Other users may
+    // create concurrently, but cannot consume this slot a second time.
+    this.pendingCreates += 1;
+    try {
+      const handle = await this.opts.provider.create(spec);
+      const now = this.now();
+      const session: Session = { id: randomUUID(), handle, createdAt: now, lastInputAt: now };
+      this.sessions.set(session.id, session);
+      return session;
+    } finally {
+      this.pendingCreates -= 1;
+    }
   }
 
   get(id: string): Session | undefined {

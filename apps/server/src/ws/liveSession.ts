@@ -29,6 +29,26 @@ export interface LiveSession {
 export class LiveSessionRegistry {
   private readonly sessions = new Map<string, LiveSession>();
   private readonly byUser = new Map<string, string>();
+  private readonly userOperations = new Map<string, Promise<void>>();
+
+  /** Serialize lifecycle operations, including launches not yet registered. */
+  async runForUser<T>(userId: string, operation: () => Promise<T>): Promise<T> {
+    const previous = this.userOperations.get(userId);
+    let release!: () => void;
+    const current = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    this.userOperations.set(userId, current);
+    await previous;
+    try {
+      return await operation();
+    } finally {
+      release();
+      if (this.userOperations.get(userId) === current) {
+        this.userOperations.delete(userId);
+      }
+    }
+  }
 
   set(id: string, live: LiveSession): string | undefined {
     const replaced = this.byUser.get(live.userId);

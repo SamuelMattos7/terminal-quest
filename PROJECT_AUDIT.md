@@ -36,6 +36,12 @@ Tests used the existing local `tq-base` image; the image was not rebuilt during 
 
 ## P1 — fix before public deployment
 
+Remediation is tracked separately from this dated audit snapshot:
+
+| Finding | Status | Branch / evidence |
+| --- | --- | --- |
+| A01 | Fixed | `codex/a01-session-concurrency`; capacity reservations + per-user lifecycle queue; `pnpm verify` passes (268 tests, 9 new concurrency regressions). |
+
 ### A01. Concurrent starts bypass both capacity and single-session limits — reproduced
 
 Locations: `apps/server/src/sandbox/sessionManager.ts:56`, `apps/server/src/routes/sessions.ts:70`.
