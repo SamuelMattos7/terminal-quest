@@ -304,34 +304,36 @@ export async function registerProgressRoutes(app: FastifyInstance): Promise<void
     if (userId === undefined) {
       return reply.code(401).send({ error: 'unauthorized' });
     }
-    const live = app.live.getByUser(userId);
-    if (live !== undefined) {
-      await closeLiveSession(
-        {
-          provider: app.provider,
-          manager: app.manager,
-          live: app.live,
-          coachRules: app.coachRules,
-          badgeList: app.badgeList,
-          skills: app.levels.skills,
-          db: app.db,
-          levelsByWorld: app.levels.byWorld,
-          levelsById: app.levels.byId,
-          unlockAll: app.config.UNLOCK_ALL === 1,
-        },
-        live,
-        'abandoned',
-      );
-    }
-    await app.db.delete(attempts).where(eq(attempts.userId, userId)).run();
-    await app.db.delete(levelProgress).where(eq(levelProgress.userId, userId)).run();
-    await app.db.delete(skillProgress).where(eq(skillProgress.userId, userId)).run();
-    await app.db.delete(badges).where(eq(badges.userId, userId)).run();
-    await app.db
-      .update(users)
-      .set({ xp: 0, streakDays: 0, lastActiveDay: null })
-      .where(eq(users.id, userId))
-      .run();
-    return reply.send(OkResponseSchema.parse({ ok: true }));
+    return app.live.runForUser(userId, async () => {
+      const live = app.live.getByUser(userId);
+      if (live !== undefined) {
+        await closeLiveSession(
+          {
+            provider: app.provider,
+            manager: app.manager,
+            live: app.live,
+            coachRules: app.coachRules,
+            badgeList: app.badgeList,
+            skills: app.levels.skills,
+            db: app.db,
+            levelsByWorld: app.levels.byWorld,
+            levelsById: app.levels.byId,
+            unlockAll: app.config.UNLOCK_ALL === 1,
+          },
+          live,
+          'abandoned',
+        );
+      }
+      await app.db.delete(attempts).where(eq(attempts.userId, userId)).run();
+      await app.db.delete(levelProgress).where(eq(levelProgress.userId, userId)).run();
+      await app.db.delete(skillProgress).where(eq(skillProgress.userId, userId)).run();
+      await app.db.delete(badges).where(eq(badges.userId, userId)).run();
+      await app.db
+        .update(users)
+        .set({ xp: 0, streakDays: 0, lastActiveDay: null })
+        .where(eq(users.id, userId))
+        .run();
+      return reply.send(OkResponseSchema.parse({ ok: true }));
+    });
   });
 }

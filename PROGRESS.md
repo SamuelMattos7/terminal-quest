@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** Audit remediation, starting with P1 A01 (user-requested priority); M8 is the next unfinished milestone (M5 gate green).
+**Current focus:** Audit remediation: A01/A02/A13 fixed; next P1 is A03 (stream/queue bounds). M8 is the next unfinished milestone (M5 gate green).
 
 ---
 
@@ -183,8 +183,9 @@ Columns: **A** = authored (level.yaml, setup, solution, wrong, hints, explain) �
 
 Each branch records its own regression and verification evidence. The milestone checkboxes above remain tied to their original acceptance criteria.
 
-- [x] A01 — concurrent starts/reset and global capacity; branch `codex/a01-session-concurrency`. ✅ `pnpm verify`: build/lint + 268 tests passed (9 new regressions). Gated tests reproduced same-user overlap, cross-user over-capacity, and reset/start overlap before the fix; verify release after failure, stale resets, and independent users. Docker integration run in progress; no content changes.
-- [ ] A02–A08 — remaining deployment-blocking audit findings; see `PROJECT_AUDIT.md`.
+- [x] A01 — concurrent starts/reset and global capacity; branch `codex/a01-session-concurrency`, commit `6871e9e`. ✅ `pnpm verify`: build/lint + 268 tests passed (9 new regressions); `pnpm test:docker`: 58 passed, including the full W1 socket progression chain. Gated tests reproduced same-user overlap, cross-user over-capacity, and reset/start overlap before the fix; verify release after failure, stale resets, and independent users.
+- [x] A02 + A13 — invalidate closed/expiring sessions, serialize progress reset with launches/completion, and atomically credit an active attempt once; branch `codex/a02-completion-lifecycle` stacked on A01. ✅ `pnpm verify`: build/lint + 287 tests passed (19 new regressions on this branch, 28 across both branches); `pnpm test:docker`: 58 passed including the full W1 progression chain; `pnpm e2e`: Chromium smoke passed (10.3 s). Thirteen initial regressions failed before the fix. Covers abandon/reset/progress reset/shutdown, idle/max-age expiry during slow destruction, queued checks, late timeout after DB close, duplicate/retired/mismatched attempts, full rollback on late badge failure, and retry after persistence failure.
+- [ ] A03–A08 — remaining deployment-blocking audit findings; see `PROJECT_AUDIT.md`.
 
 ## Known gaps
 
@@ -195,7 +196,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 | 2026-10-06 | skills.yaml prereqs | W1 skill edges authored in M7; W2+ skills still have empty `prereqs` | Author remaining edges during M8 |
 | 2026-10-06 | cron daemon start   | `needs_cron` field present (default true); daemon start not implemented                 | Implement in T10.1 admin polish; no admin levels exist yet |
 | 2026-10-11 | Web bundle size     | `dist` JS is ~576 KB (xterm.js); vite emits a chunk-size warning, no code-splitting yet | Consider `React.lazy` for `/play` during polish            |
-| 2026-11-04 | Repository audit | 31 prioritized findings covering session races/cleanup, resource bounds, production setup, progression/recovery, checks, UI, CI, and documentation; see [PROJECT_AUDIT.md](PROJECT_AUDIT.md). Fresh verify (259 unit), Docker (58), W1 three-seed matrix, and e2e all pass despite these gaps. | Triage A01–A08 before public deployment; add regression coverage and resolve the remaining findings alongside the planned milestones. |
+| 2026-11-04 | Repository audit | 31 original prioritized findings; A01, A02, and A13 now fixed with regressions (see Audit remediation above). Remaining resource bounds, cleanup, production, progression/recovery, checks, UI, CI, and documentation gaps are detailed in [PROJECT_AUDIT.md](PROJECT_AUDIT.md). | Address A03–A08 before public deployment; resolve the other remaining findings alongside planned milestones. |
 
 ## Blockers
 

@@ -82,9 +82,11 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
       if (expired === undefined) {
         return;
       }
+      expired.closed = true;
       if (!expired.attemptFinished) {
         try {
           endAttempt(db, expired.attemptId, 'expired');
+          expired.attemptFinished = true;
         } catch (err) {
           logger.warn({ err, id }, 'failed to mark expired attempt');
         }

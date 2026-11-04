@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { attempts } from '../db/schema.js';
 import type { Db } from '../db/client.js';
 
@@ -49,13 +49,13 @@ export function finishAttempt(
       xpAwarded: input.xpAwarded,
       rank: input.rank,
     })
-    .where(eq(attempts.id, id))
+    .where(and(eq(attempts.id, id), eq(attempts.status, 'active')))
     .run();
 }
 
 export function endAttempt(db: Db, id: string, status: AttemptEndStatus, now = Date.now()): void {
   db.update(attempts)
     .set({ endedAt: Math.floor(now / 1000), status })
-    .where(eq(attempts.id, id))
+    .where(and(eq(attempts.id, id), eq(attempts.status, 'active')))
     .run();
 }

@@ -1,0 +1,225 @@
+import { randomUUID } from 'node:crypto';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { attempts, badges, events, levelProgress, skillProgress, users } from '../db/schema.js';
+import { deferred, guestCookie, makeLevel, makeTestContext } from '../testUtils.js';
+import type { ExecResult } from '../sandbox/provider.js';
+import { evaluateAndReport, requestHint, type FlowDeps } from './sessionFlow.js';
+import * as review from '../progression/review.js';
+
+afterEach(() => vi.restoreAllMocks());
+
+async function setup() {
+  const ctx = await makeTestContext([makeLevel('a', 1, 1)]);
+  const { app } = ctx;
+  vi.spyOn(app.provider, 'create').mockImplementation(async (spec) => ({ id: randomUUID(), spec }));
+  vi.spyOn(app.provider, 'putFiles').mockResolvedValue();
+  const exec = vi
+    .spyOn(app.provider, 'exec')
+    .mockResolvedValue({ code: 0, stdout: '', stderr: '', timedOut: false });
+  vi.spyOn(app.provider, 'openShell').mockImplementation(async () => ({
+    write: vi.fn(),
+    resize: vi.fn(),
+    onData: vi.fn(),
+    onClose: vi.fn(),
+    close: vi.fn(),
+  }));
+  vi.spyOn(app.provider, 'watchFile').mockResolvedValue({ stop: vi.fn() });
+  const destroy = vi.spyOn(app.provider, 'destroy').mockResolvedValue();
+  const cookie = await guestCookie(app);
+  expect(
+    (await app.inject({ method: 'POST', url: '/api/levels/w1-01-a/start', headers: { cookie } }))
+      .statusCode,
+  ).toBe(200);
+  const live = [...app.live.values()][0];
+  if (!live) throw new Error('session missing');
+  const send = vi.fn();
+  live.socket = { send, close: vi.fn() };
+  const deps: FlowDeps = {
+    provider: app.provider,
+    manager: app.manager,
+    live: app.live,
+    db: ctx.db,
+    coachRules: app.coachRules,
+    badgeList: app.badgeList,
+    skills: app.levels.skills,
+    levelsByWorld: app.levels.byWorld,
+    levelsById: app.levels.byId,
+    unlockAll: false,
+  };
+  const pause = async () => {
+    const entered = deferred();
+    const gate = deferred<ExecResult>();
+    exec.mockImplementationOnce(async () => {
+      entered.resolve();
+      return gate.promise;
+    });
+    const pending = evaluateAndReport(deps, live);
+    await entered.promise;
+    return { pending, gate };
+  };
+  return { ...ctx, live, deps, exec, destroy, cookie, send, pause };
+}
+
+describe('completion lifecycle races (A02/A13)', () => {
+  it.each(['abandon', 'reset', 'progress', 'shutdown'] as const)(
+    'ignores running and queued checks after %s',
+    async (action) => {
+      const ctx = await setup();
+      const paused = await ctx.pause();
+      const queued = evaluateAndReport(ctx.deps, ctx.live);
+      try {
+        if (action === 'shutdown') await ctx.app.close();
+        else {
+          const url =
+            action === 'progress'
+              ? '/api/progress'
+              : `/api/sessions/${ctx.live.session.id}${action === 'reset' ? '/reset' : ''}`;
+          expect(
+            (
+              await ctx.app.inject({
+                method: action === 'reset' ? 'POST' : 'DELETE',
+                url,
+                headers: { cookie: ctx.cookie },
+              })
+            ).statusCode,
+          ).toBe(200);
+        }
+        paused.gate.resolve({ code: 0, stdout: '', stderr: '', timedOut: false });
+        await Promise.all([paused.pending, queued]);
+        expect(ctx.live.completed).toBe(false);
+        expect(ctx.db.select().from(users).get()?.xp).toBe(0);
+        expect(ctx.db.select().from(levelProgress).all()).toEqual([]);
+        expect(ctx.db.select().from(skillProgress).all()).toEqual([]);
+        expect(ctx.db.select().from(badges).all()).toEqual([]);
+        expect(
+          ctx.db
+            .select()
+            .from(attempts)
+            .all()
+            .find((a) => a.id === ctx.live.attemptId)?.status,
+        ).toBe(action === 'progress' ? undefined : 'abandoned');
+        expect(
+          ctx.db
+            .select()
+            .from(events)
+            .all()
+            .filter((e) => ['level_complete', 'objective_complete'].includes(e.type)),
+        ).toEqual([]);
+        expect(ctx.exec).toHaveBeenCalledTimes(action === 'reset' ? 3 : 2);
+        requestHint(ctx.deps, ctx.live);
+        expect(ctx.live.hints.tiersUsed).toEqual([]);
+      } finally {
+        paused.gate.resolve({ code: 0, stdout: '', stderr: '', timedOut: false });
+        await Promise.allSettled([paused.pending, queued]);
+        await ctx.cleanup();
+      }
+    },
+  );
+
+  it.each(['idle', 'max_age'] as const)(
+    'invalidates %s expiry before slow container destruction finishes',
+    async (reason) => {
+      const ctx = await setup();
+      const paused = await ctx.pause();
+      const entered = deferred();
+      const destroyGate = deferred();
+      ctx.destroy.mockImplementationOnce(async () => {
+        entered.resolve();
+        await destroyGate.promise;
+      });
+      const at =
+        ctx.live.session.createdAt +
+        (reason === 'idle' ? ctx.app.config.IDLE_TTL_SECONDS : ctx.app.config.MAX_AGE_SECONDS) *
+          1000;
+      const sweep = ctx.app.manager.sweepOnce(at);
+      await entered.promise;
+      try {
+        paused.gate.resolve({ code: 0, stdout: '', stderr: '', timedOut: false });
+        await paused.pending;
+        destroyGate.resolve();
+        await sweep;
+        expect(ctx.db.select().from(attempts).get()?.status).toBe('expired');
+        expect(ctx.db.select().from(users).get()?.xp).toBe(0);
+        expect(ctx.db.select().from(levelProgress).all()).toEqual([]);
+        expect(ctx.live.completed).toBe(false);
+        expect(
+          ctx.send.mock.calls.some(([payload]) => String(payload).includes('level_complete')),
+        ).toBe(false);
+      } finally {
+        paused.gate.resolve({ code: 0, stdout: '', stderr: '', timedOut: false });
+        destroyGate.resolve();
+        await Promise.allSettled([paused.pending, sweep]);
+        await ctx.cleanup();
+      }
+    },
+  );
+
+  it('retries completion after persistence fails without falsely marking it completed', async () => {
+    const ctx = await setup();
+    try {
+      ctx.db.$client.exec(
+        "CREATE TRIGGER fail_xp BEFORE UPDATE OF xp ON users BEGIN SELECT RAISE(ABORT, 'xp write failed'); END",
+      );
+      await expect(evaluateAndReport(ctx.deps, ctx.live)).rejects.toThrow('xp write failed');
+      expect(ctx.live.completed).toBe(false);
+      expect(ctx.live.attemptFinished).toBe(false);
+      expect(ctx.db.select().from(attempts).get()?.status).toBe('active');
+      ctx.db.$client.exec('DROP TRIGGER fail_xp');
+      await evaluateAndReport(ctx.deps, ctx.live);
+      expect(ctx.live.completed).toBe(true);
+      expect(ctx.db.select().from(users).get()?.xp).toBe(55);
+      expect(ctx.db.select().from(levelProgress).get()?.completions).toBe(1);
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+
+  it.each(['progress', 'expiry'] as const)(
+    'synchronizes %s with the final completion reads',
+    async (action) => {
+      const ctx = await setup();
+      const entered = deferred();
+      const gate = deferred<boolean>();
+      vi.spyOn(review, 'wasReviewDue').mockImplementationOnce(async () => {
+        entered.resolve();
+        return gate.promise;
+      });
+      const pending = evaluateAndReport(ctx.deps, ctx.live);
+      await entered.promise;
+      const closing =
+        action === 'progress'
+          ? ctx.app
+              .inject({ method: 'DELETE', url: '/api/progress', headers: { cookie: ctx.cookie } })
+              .then((r) => r)
+          : ctx.app.manager.sweepOnce(
+              ctx.live.session.createdAt + ctx.app.config.MAX_AGE_SECONDS * 1000,
+            );
+      try {
+        if (action === 'expiry') await closing;
+        gate.resolve(false);
+        await Promise.all([pending, closing]);
+        expect(ctx.db.select().from(users).get()?.xp).toBe(0);
+        expect(ctx.db.select().from(levelProgress).all()).toEqual([]);
+        expect(ctx.db.select().from(skillProgress).all()).toEqual([]);
+        expect(ctx.db.select().from(attempts).get()?.status).toBe(
+          action === 'expiry' ? 'expired' : undefined,
+        );
+      } finally {
+        gate.resolve(false);
+        await Promise.allSettled([pending, closing]);
+        await ctx.cleanup();
+      }
+    },
+  );
+
+  it('ignores late check timeouts even after shutdown closes the database', async () => {
+    const ctx = await setup();
+    const paused = await ctx.pause();
+    try {
+      await ctx.cleanup();
+    } finally {
+      paused.gate.resolve({ code: -1, stdout: '', stderr: '', timedOut: true });
+      await expect(paused.pending).resolves.toBeUndefined();
+    }
+  });
+});
