@@ -61,6 +61,23 @@ async function setup() {
 }
 
 describe('completion lifecycle races (A02/A13)', () => {
+  it('coalesces a flood into one running evaluation plus one rerun (A03)', async () => {
+    const ctx = await setup();
+    const paused = await ctx.pause();
+    try {
+      const requests = Array.from({ length: 1000 }, () => evaluateAndReport(ctx.deps, ctx.live));
+      expect(new Set(requests).size).toBe(1);
+      ctx.exec.mockResolvedValue({ code: 1, stdout: '', stderr: '', timedOut: false });
+      paused.gate.resolve({ code: 1, stdout: '', stderr: '', timedOut: false });
+      await Promise.all([paused.pending, ...requests]);
+      expect(ctx.exec).toHaveBeenCalledTimes(3); // setup + running + single rerun
+    } finally {
+      paused.gate.resolve({ code: 1, stdout: '', stderr: '', timedOut: false });
+      await paused.pending;
+      await ctx.cleanup();
+    }
+  });
+
   it.each(['abandon', 'reset', 'progress', 'shutdown'] as const)(
     'ignores running and queued checks after %s',
     async (action) => {

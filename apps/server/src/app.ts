@@ -6,7 +6,7 @@ import websocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse as parseYaml } from 'yaml';
-import { CoachRuleSchema, type CoachRule } from '@terminal-quest/shared';
+import { CoachRuleSchema, MAX_CLIENT_FRAME_BYTES, type CoachRule } from '@terminal-quest/shared';
 import { loadLevels, type LoadedLevels } from './engine/levelLoader.js';
 import { getDb, type Db } from './db/client.js';
 import type { User } from './db/schema.js';
@@ -124,7 +124,9 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
 
   await app.register(cookie);
   await app.register(rateLimit, { max: 60, timeWindow: '1 minute' });
-  await app.register(websocket);
+  await app.register(websocket, {
+    options: { maxPayload: MAX_CLIENT_FRAME_BYTES, perMessageDeflate: false },
+  });
 
   // Session auth for /api/* (guest creation itself is public).
   app.addHook('onRequest', async (request, reply) => {

@@ -11,6 +11,7 @@ import { recordEvent } from '../progression/events.js';
 import { recordLevelCompletion } from '../progression/progress.js';
 import type { LiveSession } from './liveSession.js';
 import { attemptScope, isActive, send, type FlowDeps } from './sessionContext.js';
+import { logger } from '../util/logger.js';
 
 async function completedIds(db: Db, userId: string): Promise<Set<string>> {
   const rows = await db.select().from(levelProgress).where(eq(levelProgress.userId, userId)).all();
@@ -40,26 +41,41 @@ export async function computeUnlocked(
   return unlocked.sort();
 }
 
-// Evaluations for one session run strictly in order. Without this, two
-// cmdlog lines landing together interleave two evaluations on the shared
-// tracker (TOCTOU between the wasDone read and the done write) and both
-// report the same objectives as newly done — duplicating objective frames,
-// telemetry, and potentially completion handling (T6.3 caught this live).
-const evalChains = new WeakMap<LiveSession, Promise<void>>();
+// One running evaluation plus a dirty bit. All callers share the drain
+// promise, so a slow check cannot build an unbounded chain of closures.
+const evaluations = new WeakMap<LiveSession, { dirty: boolean; pending: Promise<void> }>();
+const observed = new WeakSet<Promise<void>>();
 
-export async function evaluateAndReport(deps: FlowDeps, live: LiveSession): Promise<void> {
-  const previous = evalChains.get(live) ?? Promise.resolve();
-  let release!: () => void;
-  const current = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  evalChains.set(live, current);
-  await previous;
-  try {
-    await runEvaluation(deps, live);
-  } finally {
-    release();
+export function evaluateAndReport(deps: FlowDeps, live: LiveSession): Promise<void> {
+  const current = evaluations.get(live);
+  if (current) {
+    current.dirty = true;
+    return current.pending;
   }
+  const state = { dirty: true, pending: Promise.resolve() };
+  state.pending = Promise.resolve().then(async () => {
+    try {
+      while (state.dirty && isActive(deps, live) && !live.completed) {
+        state.dirty = false;
+        await runEvaluation(deps, live);
+      }
+    } finally {
+      evaluations.delete(live);
+    }
+  });
+  evaluations.set(live, state);
+  return state.pending;
+}
+
+/** Watchers/socket events attach only one rejection handler per drain. */
+export function scheduleEvaluation(deps: FlowDeps, live: LiveSession): void {
+  const pending = evaluateAndReport(deps, live);
+  if (observed.has(pending)) return;
+  observed.add(pending);
+  void pending.catch((err: unknown) => {
+    logger.warn({ err, ...attemptScope(live) }, 'session evaluation failed');
+    send(live, { t: 'error', message: 'evaluation failed' });
+  });
 }
 
 async function runEvaluation(deps: FlowDeps, live: LiveSession): Promise<void> {

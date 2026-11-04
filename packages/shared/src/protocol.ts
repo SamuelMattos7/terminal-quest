@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { PublicLevelSchema } from './api.js';
 import { ExplainCardSchema } from './level.js';
+import { boundedText, MAX_CLIENT_FRAME_BYTES } from './limits.js';
 
 // WebSocket protocol for `/ws/sessions/:sessionId` (plan.md §6.1).
 // Text frames containing JSON. Behavioural rules (rate limits, frame size,
@@ -10,7 +11,7 @@ import { ExplainCardSchema } from './level.js';
 const StdinMessageSchema = z
   .object({
     t: z.literal('stdin'),
-    d: z.string().max(16 * 1024, 'stdin frame must fit in 16 KB'),
+    d: boundedText(MAX_CLIENT_FRAME_BYTES),
   })
   .strict();
 

@@ -1,15 +1,14 @@
 import type { FastifyInstance } from 'fastify';
-import { ClientMessageSchema } from '@terminal-quest/shared';
+import { ClientMessageSchema, MAX_CLIENT_FRAME_BYTES } from '@terminal-quest/shared';
 import { userFromToken, requestToken } from '../auth.js';
-import { createStdinLimiter, type LiveSession } from './liveSession.js';
+import type { LiveSession } from './liveSession.js';
+import { boundedSocket, sessionBudgets } from './socketLimits.js';
+import { scheduleEvaluation } from './sessionEvaluation.js';
+import { send, attemptScope } from './sessionContext.js';
+import { logger } from '../util/logger.js';
 import { requiredObjectives } from '../engine/objectiveTracker.js';
 import { tuxIntro } from '../progression/dialogue.js';
-import {
-  evaluateAndReport,
-  requestHint,
-  sessionStateMessage,
-  type FlowDeps,
-} from './sessionFlow.js';
+import { requestHint, sessionStateMessage, type FlowDeps } from './sessionFlow.js';
 
 // WebSocket endpoint for plan.md §6.1: streams terminal I/O and drives
 // evaluation, hints, and coaching. Origin is checked against PUBLIC_ORIGIN
@@ -21,16 +20,26 @@ export interface SocketRouteDeps extends FlowDeps {
 }
 
 function sendError(live: LiveSession, message: string): void {
-  live.socket?.send(JSON.stringify({ t: 'error', message }));
+  send(live, { t: 'error', message });
 }
 
 async function handleMessage(
   deps: SocketRouteDeps,
   live: LiveSession,
-  limiter: ReturnType<typeof createStdinLimiter>,
   raw: unknown,
 ): Promise<void> {
   if (live.closed || deps.manager.get(live.session.id) === undefined) return;
+  const budgets = sessionBudgets(live);
+  if (!budgets.messages.take()) {
+    live.socket?.close(1008);
+    return;
+  }
+  // maxPayload rejects oversized wire messages before parsing; this also
+  // protects direct/injected handlers, and applies to every message type.
+  if (Buffer.byteLength(String(raw)) > MAX_CLIENT_FRAME_BYTES) {
+    live.socket?.close(1009);
+    return;
+  }
   let parsed: unknown;
   try {
     parsed = JSON.parse(String(raw));
@@ -45,7 +54,7 @@ async function handleMessage(
   }
   switch (msg.data.t) {
     case 'stdin': {
-      if (!limiter.take(Buffer.byteLength(msg.data.d, 'utf8'))) {
+      if (!budgets.stdin.take(Buffer.byteLength(msg.data.d, 'utf8'))) {
         sendError(live, 'stdin rate exceeded');
         return;
       }
@@ -60,7 +69,7 @@ async function handleMessage(
       live.socket?.send(JSON.stringify({ t: 'pong' }));
       return;
     case 'check':
-      await evaluateAndReport(deps, live);
+      scheduleEvaluation(deps, live);
       return;
     case 'hint':
       requestHint(deps, live);
@@ -85,14 +94,7 @@ export async function registerSessionSocket(
         socket.close(4401, 'unauthorized');
         return;
       }
-      const adapter = {
-        send: (payload: string) => {
-          socket.send(payload);
-        },
-        close: (code?: number) => {
-          socket.close(code);
-        },
-      };
+      const adapter = boundedSocket(socket);
       live.socket = adapter;
       const s = sessionStateMessage(live);
       live.socket.send(JSON.stringify({ t: 'session_state', ...s, hintsTotal: 3 }));
@@ -105,9 +107,13 @@ export async function registerSessionSocket(
           }),
         );
       }
-      const limiter = createStdinLimiter();
       socket.on('message', (raw: unknown) => {
-        void handleMessage(deps, live, limiter, raw).catch(() => undefined);
+        if (live.socket !== adapter) return;
+        void handleMessage(deps, live, raw).catch((err: unknown) => {
+          logger.warn({ err, ...attemptScope(live) }, 'socket message failed');
+          sendError(live, 'message failed');
+          adapter.close(1008);
+        });
       });
       socket.on('close', () => {
         // Only detach our own adapter: a stale close from a replaced socket

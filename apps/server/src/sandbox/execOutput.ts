@@ -1,0 +1,74 @@
+import { PassThrough, type Duplex } from 'node:stream';
+import type Docker from 'dockerode';
+import type { ExecResult } from './provider.js';
+import { MAX_EXEC_OUTPUT_BYTES } from './streamLimits.js';
+import { ResourceLimitError } from '../util/resourceLimits.js';
+
+export function collectExecOutput(
+  exec: Pick<Docker.Exec, 'inspect'>,
+  stream: Duplex,
+  demux: (stdout: PassThrough, stderr: PassThrough) => void,
+  timeoutMs: number,
+  stdin?: string,
+): Promise<ExecResult> {
+  // Fixed buffers avoid per-chunk array overhead for tiny-chunk floods.
+  const out = Buffer.alloc(MAX_EXEC_OUTPUT_BYTES);
+  const err = Buffer.alloc(MAX_EXEC_OUTPUT_BYTES);
+  let outSize = 0;
+  let errSize = 0;
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const stdout = new PassThrough();
+    const stderr = new PassThrough();
+    const cleanup = (): void => {
+      clearTimeout(timer);
+      stream.destroy();
+      stdout.destroy();
+      stderr.destroy();
+    };
+    const result = (code: number, timedOut = false): ExecResult => ({
+      code,
+      timedOut,
+      stdout: out.toString('utf8', 0, outSize),
+      stderr: err.toString('utf8', 0, errSize),
+    });
+    const finish = (code: number, timedOut = false): void => {
+      if (done) return;
+      done = true;
+      cleanup();
+      resolve(result(code, timedOut));
+    };
+    const timer = setTimeout(() => finish(-1, true), timeoutMs);
+    timer.unref?.();
+    const collect = (target: Buffer, chunk: Buffer, isOut: boolean): void => {
+      if (done) return;
+      if (outSize + errSize + chunk.length > MAX_EXEC_OUTPUT_BYTES) {
+        done = true;
+        cleanup();
+        reject(new ResourceLimitError('exec output bytes'));
+        return;
+      }
+      chunk.copy(target, isOut ? outSize : errSize);
+      if (isOut) outSize += chunk.length;
+      else errSize += chunk.length;
+    };
+    stdout.on('data', (chunk: Buffer) => collect(out, chunk, true));
+    stderr.on('data', (chunk: Buffer) => collect(err, chunk, false));
+    stream.on('end', () => {
+      if (!done)
+        void exec.inspect().then(
+          (info) => finish(info.ExitCode ?? -1),
+          () => finish(-1),
+        );
+    });
+    stream.on('error', () => finish(-1));
+    stream.on('close', () => {
+      if (!stream.readableEnded) finish(-1);
+    });
+    demux(stdout, stderr);
+    if (stdin !== undefined) {
+      stream.write(stdin);
+      stream.end();
+    }
+  });
+}
