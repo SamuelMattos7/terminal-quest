@@ -188,6 +188,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 | 2026-10-06 | skills.yaml prereqs | W1 skill edges authored in M7; W2+ skills still have empty `prereqs` | Author remaining edges during M8 |
 | 2026-10-06 | cron daemon start   | `needs_cron` field present (default true); daemon start not implemented                 | Implement in T10.1 admin polish; no admin levels exist yet |
 | 2026-10-11 | Web bundle size     | `dist` JS is ~576 KB (xterm.js); vite emits a chunk-size warning, no code-splitting yet | Consider `React.lazy` for `/play` during polish            |
+| 2026-11-04 | Repository audit | 31 prioritized findings covering session races/cleanup, resource bounds, production setup, progression/recovery, checks, UI, CI, and documentation; see [PROJECT_AUDIT.md](PROJECT_AUDIT.md). Fresh verify (259 unit), Docker (58), W1 three-seed matrix, and e2e all pass despite these gaps. | Triage A01–A08 before public deployment; add regression coverage and resolve the remaining findings alongside the planned milestones. |
 
 ## Blockers
 
