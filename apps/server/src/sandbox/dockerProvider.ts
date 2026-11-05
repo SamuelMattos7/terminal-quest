@@ -1,13 +1,13 @@
-import { StringDecoder } from 'node:string_decoder';
 import { PassThrough, type Duplex } from 'node:stream';
 import { posix } from 'node:path';
 import Docker from 'dockerode';
 import { pack } from 'tar-stream';
 import { buildHostConfig, buildLabels } from './profiles.js';
 import { dockerExec } from './dockerExec.js';
-import { createLineReader, MAX_SHELL_INPUT_BUFFER_BYTES } from './streamLimits.js';
-import { ResourceLimitError } from '../util/resourceLimits.js';
+import { createLineReader } from './streamLimits.js';
+import { openDockerShell } from './dockerShell.js';
 import { logger } from '../util/logger.js';
+import { SandboxCreateError } from './provider.js';
 import type {
   DockerClient,
   ExecOptions,
@@ -82,8 +82,22 @@ export class DockerProvider implements SandboxProvider {
       Labels: buildLabels(spec),
       HostConfig: buildHostConfig(spec),
     });
-    await container.start();
-    return { id: container.id, spec };
+    const handle = { id: container.id, spec };
+    try {
+      await container.start();
+      return handle;
+    } catch (err) {
+      try {
+        await this.destroy(handle);
+      } catch (cleanupError) {
+        logger.error(
+          { err: cleanupError, attemptId: spec.attemptId, levelId: spec.levelId },
+          'failed-start sandbox cleanup failed',
+        );
+        throw new SandboxCreateError(handle, err, cleanupError);
+      }
+      throw err;
+    }
   }
 
   async putFiles(h: SandboxHandle, entries: PutFilesEntry[]): Promise<void> {
@@ -132,71 +146,8 @@ export class DockerProvider implements SandboxProvider {
     return dockerExec(this.docker.getContainer(h.id), h, cmd, opts);
   }
 
-  async openShell(h: SandboxHandle, size: { cols: number; rows: number }): Promise<ShellStream> {
-    const container = this.docker.getContainer(h.id);
-    const exec = await container.exec({
-      Cmd: ['/bin/bash', '--rcfile', '/opt/tq/bashrc', '-i'],
-      User: 'player',
-      WorkingDir: h.spec.startCwd,
-      Env: ['TERM=xterm-256color', 'LANG=C.UTF-8', ...toEnvList(h.spec.env)],
-      AttachStdin: true,
-      AttachStdout: true,
-      AttachStderr: true,
-      Tty: true,
-    });
-    const stream = (await exec.start({
-      hijack: true,
-      stdin: true,
-      Tty: true,
-    })) as unknown as Duplex;
-    await exec.resize({ h: size.rows, w: size.cols });
-
-    const dataCbs: ((chunk: Buffer) => void)[] = [];
-    const closeCbs: (() => void)[] = [];
-    let closed = false;
-    const decoder = new StringDecoder('utf8');
-    stream.on('data', (chunk: Buffer) => {
-      const text = decoder.write(chunk);
-      if (text.length === 0) {
-        return;
-      }
-      const buf = Buffer.from(text, 'utf8');
-      for (const cb of dataCbs) {
-        cb(buf);
-      }
-    });
-    const fireClose = (): void => {
-      if (!closed) {
-        closed = true;
-        for (const cb of closeCbs) {
-          cb();
-        }
-      }
-    };
-    stream.on('end', fireClose);
-    stream.on('close', fireClose);
-
-    return {
-      write(data: string): void {
-        if (stream.writableLength + Buffer.byteLength(data) > MAX_SHELL_INPUT_BUFFER_BYTES) {
-          throw new ResourceLimitError('shell input buffer');
-        }
-        stream.write(data);
-      },
-      resize(cols: number, rows: number): void {
-        void exec.resize({ h: rows, w: cols });
-      },
-      onData(cb: (chunk: Buffer) => void): void {
-        dataCbs.push(cb);
-      },
-      onClose(cb: () => void): void {
-        closeCbs.push(cb);
-      },
-      close(): void {
-        stream.end();
-        stream.destroy();
-      },
-    };
+  openShell(h: SandboxHandle, size: { cols: number; rows: number }): Promise<ShellStream> {
+    return openDockerShell(this.docker.getContainer(h.id), h, size);
   }
 
   async watchFile(
@@ -247,7 +198,12 @@ export class DockerProvider implements SandboxProvider {
       }
     });
     stream.on('error', fail);
-    container.modem.demuxStream(stream, stdout, stderr);
+    try {
+      container.modem.demuxStream(stream, stdout, stderr);
+    } catch (err) {
+      stop();
+      throw err;
+    }
     return { stop };
   }
 
