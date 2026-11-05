@@ -5,6 +5,7 @@ import type { TrackerState } from '../engine/objectiveTracker.js';
 import type { NudgeState } from '../progression/dialogue.js';
 import type { Session } from '../sandbox/sessionManager.js';
 import type { ShellStream } from '../sandbox/provider.js';
+import { createBudget } from '../util/resourceLimits.js';
 
 // Live per-connection session state for plan.md §4.1/§6.1 (T3.2). The
 // SessionManager owns TTLs and sandboxes; this registry owns everything
@@ -21,14 +22,36 @@ export interface LiveSession {
   hints: HintState;
   coach: Coach;
   shell: ShellStream | undefined;
+  watchers: { stop(): void }[];
   socket: { send(payload: string): void; close(code?: number): void } | undefined;
   completed: boolean;
+  closed: boolean;
   dialogue: NudgeState & { welcomed: boolean };
 }
 
 export class LiveSessionRegistry {
   private readonly sessions = new Map<string, LiveSession>();
   private readonly byUser = new Map<string, string>();
+  private readonly userOperations = new Map<string, Promise<void>>();
+
+  /** Serialize lifecycle operations, including launches not yet registered. */
+  async runForUser<T>(userId: string, operation: () => Promise<T>): Promise<T> {
+    const previous = this.userOperations.get(userId);
+    let release!: () => void;
+    const current = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    this.userOperations.set(userId, current);
+    await previous;
+    try {
+      return await operation();
+    } finally {
+      release();
+      if (this.userOperations.get(userId) === current) {
+        this.userOperations.delete(userId);
+      }
+    }
+  }
 
   set(id: string, live: LiveSession): string | undefined {
     const replaced = this.byUser.get(live.userId);
@@ -73,17 +96,5 @@ export interface StdinLimiter {
 }
 
 export function createStdinLimiter(now: () => number = Date.now): StdinLimiter {
-  let windowStart = now();
-  let used = 0;
-  return {
-    take(bytes: number): boolean {
-      const at = now();
-      if (at - windowStart >= 1000) {
-        windowStart = at;
-        used = 0;
-      }
-      used += bytes;
-      return used <= STDIN_BUDGET_BYTES_PER_SECOND;
-    },
-  };
+  return createBudget(STDIN_BUDGET_BYTES_PER_SECOND, now);
 }

@@ -64,6 +64,29 @@ describe('process checks', () => {
     ).toBe(false);
   });
 
+  it('ignores the exec supervisor when matching process names and command lines (A04)', async () => {
+    const ctx = baseCtx();
+    expect(
+      await runCheck(fx.provider, fx.handle, { type: 'process_running', name: 'python3' }, ctx),
+    ).toBe(false);
+    expect(
+      await runCheck(
+        fx.provider,
+        fx.handle,
+        { type: 'process_absent', cmdline_regex: 'a04-no-such-service' },
+        ctx,
+      ),
+    ).toBe(true);
+    expect(
+      await runCheck(
+        fx.provider,
+        fx.handle,
+        { type: 'process_state', cmdline_regex: 'a04-no-such-service', state: 'S' },
+        ctx,
+      ),
+    ).toBe(false);
+  });
+
   it('process_state matches the first stat character', async () => {
     const ctx = baseCtx();
     expect(

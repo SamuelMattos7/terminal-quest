@@ -206,7 +206,7 @@ describe('session socket over the w1-02 sample', () => {
       socket.send(JSON.stringify({ t: 'ping' }));
       await waitFor(collected, (m) => m.t === 'pong', 10_000, 'pong');
       socket.send(JSON.stringify({ t: 'stdin', d: 'x'.repeat(20 * 1024) }));
-      await waitFor(collected, (m) => m.t === 'error', 10_000, 'oversize error');
+      expect(await waitClose(collected, 10_000, 'oversize transport close')).toBe(1009);
     } finally {
       for (const s of sockets) {
         s.close();

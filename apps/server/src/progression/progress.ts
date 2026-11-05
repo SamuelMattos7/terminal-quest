@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import type { Level, Skill } from '@terminal-quest/shared';
-import { levelProgress, users } from '../db/schema.js';
+import { attempts, levelProgress, users } from '../db/schema.js';
 import type { Db } from '../db/client.js';
 import type { LoggedCommand } from '../engine/checks/context.js';
 import { countCommands } from '../engine/cmdlog.js';
@@ -41,13 +41,34 @@ export interface CompletionInput {
 }
 
 export interface CompletionResult {
+  recorded: boolean;
   newBadges: string[];
 }
 
-export async function recordLevelCompletion(
-  db: Db,
-  input: CompletionInput,
-): Promise<CompletionResult> {
+export function recordLevelCompletion(db: Db, input: CompletionInput): CompletionResult {
+  // better-sqlite3 transactions must stay synchronous. Every mutation,
+  // including badge evaluation, commits together or rolls back for retry.
+  return db.$client.transaction(() => {
+    const attempt = db
+      .select()
+      .from(attempts)
+      .where(
+        and(
+          eq(attempts.id, input.attemptId),
+          eq(attempts.userId, input.userId),
+          eq(attempts.levelId, input.level.id),
+          eq(attempts.seed, input.seed),
+        ),
+      )
+      .get();
+    if (attempt?.status !== 'active') {
+      return { recorded: false, newBadges: [] };
+    }
+    return persistCompletion(db, input);
+  })();
+}
+
+function persistCompletion(db: Db, input: CompletionInput): CompletionResult {
   const now = input.now ?? Date.now();
   const commandTexts = input.commands.map((c) => c.command);
 
@@ -118,7 +139,7 @@ export async function recordLevelCompletion(
       .filter((r) => r.completions > 0)
       .map((r) => r.levelId),
   );
-  const newBadges = await evaluateBadges(
+  const newBadges = evaluateBadges(
     db,
     input.userId,
     input.badgeList,
@@ -132,5 +153,5 @@ export async function recordLevelCompletion(
     completedIds,
     now,
   );
-  return { newBadges };
+  return { recorded: true, newBadges };
 }

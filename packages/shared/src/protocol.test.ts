@@ -24,6 +24,11 @@ describe('ClientMessageSchema', () => {
     expect(() => ClientMessageSchema.parse({ t: 'stdin', d: 'x'.repeat(16 * 1024 + 1) })).toThrow();
   });
 
+  it('measures stdin in UTF-8 bytes instead of characters (A03)', () => {
+    expect(ClientMessageSchema.safeParse({ t: 'stdin', d: 'é'.repeat(8192) }).success).toBe(true);
+    expect(ClientMessageSchema.safeParse({ t: 'stdin', d: 'é'.repeat(8193) }).success).toBe(false);
+  });
+
   it('rejects out-of-range resize and unknown message types', () => {
     expect(() => ClientMessageSchema.parse({ t: 'resize', cols: 0, rows: 24 })).toThrow();
     expect(() => ClientMessageSchema.parse({ t: 'stdout', d: 'x' })).toThrow();

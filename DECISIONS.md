@@ -205,3 +205,48 @@ _Append below this line. Continue numbering from D-011._
 - **Decision:** Strip a leading `checks/` segment in `checkExec` (after leading slashes, before the `..` guard). Bare names keep resolving as before for hand-built fixtures.
 - **Alternatives considered:** Changing the convention to bare names (breaks the schema test + lint test + plan §8.1 wording); changing the compiler upload layout (touches every future level).
 - **Consequences:** w1-12 uses `script: checks/verify.sh`; new docker case pins both forms.
+
+### D-022 — Prioritize audit fixes and serialize per-user lifecycle operations
+
+- **Date:** 2026-11-04
+- **Status:** Accepted
+- **Context:** The user requested audit remediation in priority order, overriding the normal first-unfinished-milestone workflow (M8). A01 shows asynchronous launches bypass capacity and single-session limits.
+- **Decision:** Work on audit findings before new content. Reserve global capacity before provider creation; serialize each user's start/reset/delete operation in the app-owned live registry, including ownership/state lookup after acquiring the queue. Keep unrelated users concurrent. Use a dedicated `codex/a01-session-concurrency` branch for A01.
+- **Alternatives considered:** A global launch lock (unnecessarily blocks all users); locking only provider creation (does not cover setup/registration/replacement).
+- **Consequences:** Concurrent same-user starts preserve replacement semantics; stale resets return 404 after replacement. Failed operations release their queue and capacity reservation. Cleanup failure recovery remains tracked separately as A05.
+
+### D-023 — Treat completion as an atomic active-attempt transition
+
+- **Date:** 2026-11-04
+- **Status:** Accepted
+- **Context:** A02 permits closed sessions to award XP; A13 permits partial and duplicate completion writes. Both concern the boundary between an async check and authoritative persistence.
+- **Decision:** Group A02/A13 on `codex/a02-completion-lifecycle`, stacked on A01. Invalidate live sessions immediately on close; require live-registry and manager ownership before/after async work. Share the per-user lifecycle queue with final completion and progress reset. Persist attempt/progress/XP/streak/skills/badges in one synchronous better-sqlite3 transaction, guarded by matching active attempt, user, level, and seed; update in-memory completion only after commit. Badge evaluation uses synchronous SQLite calls so the transaction never yields. Extract session evaluation/context to keep touched modules focused and under approximately 300 lines.
+- **Alternatives considered:** Waiting for all checks during teardown (unnecessarily delays close and does not repair partial writes); async transaction callbacks (unsupported by better-sqlite3).
+- **Consequences:** Already-running container checks may finish, but closed sessions cannot persist their results or execute queued checks. Failed transactions roll back and can retry; duplicate or retired attempts earn nothing. Manager removal invalidates expiry before slow Docker teardown finishes. Remaining stream/queue bounds and process termination are still A03/A04; teardown retry remains A05.
+
+### D-024 — Bound player streams and coalesce evaluations
+
+- **Date:** 2026-11-04
+- **Status:** Accepted
+- **Context:** A03 exposes unbounded host memory/work through player-written inbox/cmdlog files, retained evidence, exec output, and WebSocket traffic. The user requested A03 on its own branch with resource-limit regressions.
+- **Decision:** Use `codex/a03-resource-bounds`, stacked on A02/A13. Enforce a 16 KiB WebSocket message limit (the whole UTF-8 JSON envelope, including fragmented messages), 128 messages/s/session, and the existing 64 KiB/s stdin budget across attachments. Stop queueing outbound data at 256 KiB and terminate slow sockets. Cap queued PTY input at 64 KiB and terminal output at 1 MiB/s/session. Watchers use a fixed 16 KiB raw-byte line buffer, 256 KiB/s and 128 lines/s per watched file, validating inbox and command-log fields with shared zod schemas; buffering raw bytes preserves split UTF-8. Retain at most 4096 commands/1 MiB and 256 answers/256 KiB, with 8 KiB text fields. Exceeding watcher/history/output budgets abandons the attempt and destroys its sandbox; do not evict evidence and silently alter scoring. Exec collection rejects combined stdout/stderr over 1 MiB and releases its stream buffers. Evaluations use one running operation plus one dirty bit and one shared drain promise/rejection observer.
+- **Alternatives considered:** Dropping old commands/answers (changes check, rank, and badge semantics); retaining a promise per check request (still grows with slow checks); buffering all terminal output for slow clients (unbounded).
+- **Consequences:** Excessive traffic is explicitly refused and abuse can end an attempt. Ordinary gameplay keeps complete evidence within the caps. Socket limits are tested with a local loopback server; the unit suite still needs no Docker. Exec process termination remains A04 and teardown retry remains A05; stream disconnection alone does not solve those findings. The watched-byte implementation also addresses the split-character defect in A28.
+
+### D-025 — Enforce exec deadlines inside the sandbox and reap descendants
+
+- **Date:** 2026-11-04
+- **Status:** Accepted
+- **Context:** A04 shows that disconnecting Docker exec only releases the host stream; commands continue running. Process-group signals alone miss detached or double-forked children. The user requested A04 on its own branch with process-termination regressions.
+- **Decision:** Use `codex/a04-exec-termination`, stacked on A03. Run a Python supervisor (Python is already in tq-base) as root inside the sandbox, mark it a Linux child subreaper, and launch only the command with the requested uid/gid/supplementary groups. At the deadline, SIGKILL and reap direct/adopted children repeatedly until no descendants remain, then emit a per-exec timeout marker. The collector strips that marker and preserves the `code: -1, timedOut: true` contract, distinguishing ordinary exits 124/137. A host watchdog allows 5 seconds for cleanup/transport after the command deadline; if cleanup stalls, kill and wait for the whole sandbox, surfacing Docker failures. Successful commands retain Docker's background-service behavior: drain ready output, return the main command's status, and leave intentional services running. Process probes use `pgrep -A` to exclude their supervisor and other ancestors.
+- **Alternatives considered:** Closing the stream (leaks work); GNU timeout/process groups (detached descendants escape); scanning all container processes (risks killing unrelated services); stopping the entire sandbox on every timeout (disrupts normal checks and intended services).
+- **Consequences:** Timeouts report only after termination, including reaping zombies; player scripts cannot signal the root supervisor. No new image build, capabilities, host shell execution, or runtime network dependency is required. Each finite exec uses a small supervisor process. Compatibility regressions also exposed missing finite stdin forwarding on Windows named pipes; argv-safe base64 chunks now supply a temporary input descriptor with reliable EOF. Sandbox teardown retry remains A05.
+
+### D-026 — Retain teardown ownership and unwind complete launches
+
+- **Date:** 2026-11-04
+- **Status:** Accepted
+- **Context:** A05 loses container ownership and capacity accounting when Docker destruction fails, and launch cleanup covers only setup/shell failures. The user requested A05 on its own branch with teardown recovery and launch cleanup regressions.
+- **Decision:** Use `codex/a05-teardown-recovery`, stacked on A04. Separate active sessions from pending sandbox cleanup: invalidate active ownership immediately, retain the handle and capacity until destruction succeeds, share in-flight destruction, and retry on periodic sweeps and shutdown. Continue sweeping other sessions after individual failures. Expiry releases the live session, socket, watchers, shell, and attempt before awaiting Docker. Remove failed-start containers immediately; if removal fails, a typed acquisition error transfers the handle to manager cleanup. Wrap all post-creation launch stages in one unwind path, preserving the original launch error while logging cleanup errors. Store watcher handles and stop every acquired resource independently, including resources returned after a startup error or expiry.
+- **Alternatives considered:** Forgetting failures and relying on a restart orphan sweep (leaks capacity/resources until restart); leaving failed teardown sessions active (permits late completion); releasing capacity before Docker confirms removal (can exceed the container cap).
+- **Consequences:** Unavailable Docker can keep capacity occupied until a later retry succeeds, so launches safely return 429 rather than oversubscribe. Failed launches finish opened attempts as abandoned; failed expiry teardown stays expired and cannot award XP. Shutdown retries cleanup for launches and sessions no longer present in the live registry. The separate A06 issue (installing the periodic timer when the boot orphan sweep fails) remains open.

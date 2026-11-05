@@ -1,5 +1,5 @@
 import Docker from 'dockerode';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { connectOptions, DockerProvider } from './dockerProvider.js';
 import type { SandboxHandle, SandboxSpec } from './provider.js';
 
@@ -46,6 +46,32 @@ describe('DockerProvider basic sandbox', () => {
     expect(res.timedOut).toBe(false);
     expect(res.code).toBe(0);
     expect(res.stdout.trim()).toBe('1000');
+  }, 30_000);
+
+  it('rejects bounded exec output overflow from the real Docker stream (A03)', async () => {
+    await expect(provider.exec(h, ['head', '-c', '1048577', '/dev/zero'])).rejects.toThrow(
+      'exec output bytes limit',
+    );
+    expect((await provider.exec(h, ['true'])).code).toBe(0);
+  }, 30_000);
+
+  it('stops a real watcher on a newline-free oversized line (A03)', async () => {
+    await provider.exec(h, ['bash', '-c', 'head -c 16385 /dev/zero > /tmp/a03-watch']);
+    const errors: Error[] = [];
+    const lines: string[] = [];
+    const watcher = await provider.watchFile(
+      h,
+      '/tmp/a03-watch',
+      (line) => lines.push(line),
+      (err) => errors.push(err),
+    );
+    try {
+      await vi.waitFor(() => expect(errors).toHaveLength(1), { timeout: 10000 });
+      expect(errors[0]?.message).toContain('watch line bytes limit');
+      expect(lines).toEqual([]);
+    } finally {
+      watcher.stop();
+    }
   }, 30_000);
 
   it('has no network access', async () => {

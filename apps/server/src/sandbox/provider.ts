@@ -37,6 +37,18 @@ export interface SandboxHandle {
   spec: SandboxSpec;
 }
 
+/** A failed acquisition still owns a container that must be reaped. */
+export class SandboxCreateError extends Error {
+  constructor(
+    readonly handle: SandboxHandle,
+    cause: unknown,
+    readonly cleanupError: unknown,
+  ) {
+    super(cause instanceof Error ? cause.message : 'sandbox creation failed', { cause });
+    this.name = 'SandboxCreateError';
+  }
+}
+
 export interface PutFilesEntry {
   path: string;
   content: Buffer;
@@ -68,6 +80,7 @@ export interface SandboxProvider {
     h: SandboxHandle,
     path: string,
     onLine: (line: string) => void,
+    onError?: (error: Error) => void,
   ): Promise<{ stop(): void }>;
   destroy(h: SandboxHandle): Promise<void>;
   listManaged(): Promise<ManagedSandbox[]>;

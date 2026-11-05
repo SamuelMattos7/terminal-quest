@@ -16,6 +16,15 @@ import { users } from './db/schema.js';
 
 const migrationsFolder = fileURLToPath(new URL('./db/migrations', import.meta.url));
 
+/** Explicit async gate for deterministic lifecycle race regressions. */
+export function deferred<T = void>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
 export interface TempDb {
   db: Db;
   cleanup: () => void;

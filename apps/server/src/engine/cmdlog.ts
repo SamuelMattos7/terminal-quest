@@ -1,4 +1,5 @@
 import type { LoggedCommand } from './checks/context.js';
+import { CmdlogEntrySchema, MAX_WATCH_LINE_BYTES, utf8Bytes } from '@terminal-quest/shared';
 
 // cmdlog parsing for plan.md §7.4: each finished command lands in
 // `/run/tq/cmdlog` as `epoch<TAB>exit<TAB>cwd<TAB>command`. Junk lines
@@ -10,6 +11,7 @@ export interface CmdlogEntry extends LoggedCommand {
 }
 
 export function parseCmdlogLine(line: string): CmdlogEntry | undefined {
+  if (utf8Bytes(line) > MAX_WATCH_LINE_BYTES) return undefined;
   const first = line.indexOf('\t');
   if (first < 0) {
     return undefined;
@@ -26,10 +28,10 @@ export function parseCmdlogLine(line: string): CmdlogEntry | undefined {
   const exitCode = Number(line.slice(first + 1, second));
   const cwd = line.slice(second + 1, third);
   const command = line.slice(third + 1);
-  if (!Number.isInteger(epoch) || !Number.isInteger(exitCode) || cwd === '' || command === '') {
+  if (line.slice(0, first).trim() === '' || line.slice(first + 1, second).trim() === '')
     return undefined;
-  }
-  return { epoch, exitCode, cwd, command };
+  const parsed = CmdlogEntrySchema.safeParse({ epoch, exitCode, cwd, command });
+  return parsed.success ? parsed.data : undefined;
 }
 
 /**

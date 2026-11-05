@@ -6,7 +6,7 @@ import websocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse as parseYaml } from 'yaml';
-import { CoachRuleSchema, type CoachRule } from '@terminal-quest/shared';
+import { CoachRuleSchema, MAX_CLIENT_FRAME_BYTES, type CoachRule } from '@terminal-quest/shared';
 import { loadLevels, type LoadedLevels } from './engine/levelLoader.js';
 import { getDb, type Db } from './db/client.js';
 import type { User } from './db/schema.js';
@@ -20,8 +20,8 @@ import { SessionManager } from './sandbox/sessionManager.js';
 import { Reaper } from './sandbox/reaper.js';
 import { LiveSessionRegistry } from './ws/liveSession.js';
 import { loadBadges, type Badge } from './progression/badges.js';
-import { endAttempt } from './progression/attempts.js';
 import { closeLiveSession } from './ws/sessionFlow.js';
+import { invalidateLiveSession } from './ws/sessionCleanup.js';
 import { registerSessionSocket } from './ws/sessionSocket.js';
 import { registerHealthRoute } from './routes/health.js';
 import { registerAuthRoutes } from './routes/auth.js';
@@ -78,22 +78,10 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
     maxAgeMs: config.MAX_AGE_SECONDS * 1000,
     onExpire: (id, reason) => {
       const expired = live.get(id);
-      live.delete(id);
       if (expired === undefined) {
         return;
       }
-      if (!expired.attemptFinished) {
-        try {
-          endAttempt(db, expired.attemptId, 'expired');
-        } catch (err) {
-          logger.warn({ err, id }, 'failed to mark expired attempt');
-        }
-      }
-      if (expired.socket !== undefined) {
-        expired.socket.send(JSON.stringify({ t: 'closing', reason }));
-        expired.socket.close();
-        expired.socket = undefined;
-      }
+      invalidateLiveSession(flowDeps, expired, reason);
     },
   });
 
@@ -122,7 +110,9 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
 
   await app.register(cookie);
   await app.register(rateLimit, { max: 60, timeWindow: '1 minute' });
-  await app.register(websocket);
+  await app.register(websocket, {
+    options: { maxPayload: MAX_CLIENT_FRAME_BYTES, perMessageDeflate: false },
+  });
 
   // Session auth for /api/* (guest creation itself is public).
   app.addHook('onRequest', async (request, reply) => {
@@ -161,8 +151,17 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   app.addHook('onClose', async () => {
     reaper.stop();
     for (const active of [...live.values()]) {
-      await closeLiveSession(flowDeps, active, 'server_shutdown');
+      try {
+        await closeLiveSession(flowDeps, active, 'server_shutdown');
+      } catch (err) {
+        logger.warn(
+          { err, attemptId: active.attemptId, levelId: active.level.id },
+          'shutdown session cleanup failed; retrying sandbox teardown',
+        );
+      }
     }
+    // Includes failed launches/manual closes that no longer have a live entry.
+    await manager.closeAll();
   });
 
   return app;

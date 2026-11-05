@@ -1,9 +1,13 @@
-import { StringDecoder } from 'node:string_decoder';
 import { PassThrough, type Duplex } from 'node:stream';
 import { posix } from 'node:path';
 import Docker from 'dockerode';
 import { pack } from 'tar-stream';
 import { buildHostConfig, buildLabels } from './profiles.js';
+import { dockerExec } from './dockerExec.js';
+import { createLineReader } from './streamLimits.js';
+import { openDockerShell } from './dockerShell.js';
+import { logger } from '../util/logger.js';
+import { SandboxCreateError } from './provider.js';
 import type {
   DockerClient,
   ExecOptions,
@@ -15,8 +19,6 @@ import type {
   SandboxSpec,
   ShellStream,
 } from './provider.js';
-
-const DEFAULT_EXEC_TIMEOUT_MS = 5000;
 
 function statusCodeOf(err: unknown): number | undefined {
   if (typeof err === 'object' && err !== null && 'statusCode' in err) {
@@ -80,8 +82,22 @@ export class DockerProvider implements SandboxProvider {
       Labels: buildLabels(spec),
       HostConfig: buildHostConfig(spec),
     });
-    await container.start();
-    return { id: container.id, spec };
+    const handle = { id: container.id, spec };
+    try {
+      await container.start();
+      return handle;
+    } catch (err) {
+      try {
+        await this.destroy(handle);
+      } catch (cleanupError) {
+        logger.error(
+          { err: cleanupError, attemptId: spec.attemptId, levelId: spec.levelId },
+          'failed-start sandbox cleanup failed',
+        );
+        throw new SandboxCreateError(handle, err, cleanupError);
+      }
+      throw err;
+    }
   }
 
   async putFiles(h: SandboxHandle, entries: PutFilesEntry[]): Promise<void> {
@@ -127,158 +143,18 @@ export class DockerProvider implements SandboxProvider {
   }
 
   exec(h: SandboxHandle, cmd: string[], opts?: ExecOptions): Promise<ExecResult> {
-    const container = this.docker.getContainer(h.id);
-    const timeoutMs = opts?.timeoutMs ?? DEFAULT_EXEC_TIMEOUT_MS;
-    return (async () => {
-      const exec = await container.exec({
-        Cmd: cmd,
-        User: opts?.user ?? 'root',
-        WorkingDir: opts?.cwd,
-        Env: opts?.env === undefined ? undefined : toEnvList(opts.env),
-        AttachStdout: true,
-        AttachStderr: true,
-      });
-      const stream = (await exec.start({
-        hijack: true,
-        stdin: opts?.stdin !== undefined,
-      })) as unknown as Duplex;
-
-      const stdoutChunks: Buffer[] = [];
-      const stderrChunks: Buffer[] = [];
-      return await new Promise<ExecResult>((resolve) => {
-        let done = false;
-        const finish = (result: ExecResult): void => {
-          if (!done) {
-            done = true;
-            clearTimeout(timer);
-            resolve(result);
-          }
-        };
-        const timer = setTimeout(() => {
-          // Docker exec has no kill API: resolve the timeout and let the
-          // process die with the container (bounded by the T1.3 reaper).
-          stream.destroy();
-          finish({
-            code: -1,
-            stdout: Buffer.concat(stdoutChunks).toString('utf8'),
-            stderr: Buffer.concat(stderrChunks).toString('utf8'),
-            timedOut: true,
-          });
-        }, timeoutMs);
-        timer.unref?.();
-        const stdoutWrite = new PassThrough();
-        const stderrWrite = new PassThrough();
-        stdoutWrite.on('data', (c: Buffer) => {
-          stdoutChunks.push(c);
-        });
-        stderrWrite.on('data', (c: Buffer) => {
-          stderrChunks.push(c);
-        });
-        container.modem.demuxStream(stream, stdoutWrite, stderrWrite);
-        if (opts?.stdin !== undefined) {
-          stream.write(opts.stdin);
-          stream.end();
-        }
-        stream.on('end', () => {
-          void exec.inspect().then(
-            (info) => {
-              finish({
-                code: info.ExitCode ?? -1,
-                stdout: Buffer.concat(stdoutChunks).toString('utf8'),
-                stderr: Buffer.concat(stderrChunks).toString('utf8'),
-                timedOut: false,
-              });
-            },
-            () => {
-              finish({
-                code: -1,
-                stdout: Buffer.concat(stdoutChunks).toString('utf8'),
-                stderr: Buffer.concat(stderrChunks).toString('utf8'),
-                timedOut: false,
-              });
-            },
-          );
-        });
-        stream.on('error', () => {
-          finish({
-            code: -1,
-            stdout: Buffer.concat(stdoutChunks).toString('utf8'),
-            stderr: Buffer.concat(stderrChunks).toString('utf8'),
-            timedOut: false,
-          });
-        });
-      });
-    })();
+    return dockerExec(this.docker.getContainer(h.id), h, cmd, opts);
   }
 
-  async openShell(h: SandboxHandle, size: { cols: number; rows: number }): Promise<ShellStream> {
-    const container = this.docker.getContainer(h.id);
-    const exec = await container.exec({
-      Cmd: ['/bin/bash', '--rcfile', '/opt/tq/bashrc', '-i'],
-      User: 'player',
-      WorkingDir: h.spec.startCwd,
-      Env: ['TERM=xterm-256color', 'LANG=C.UTF-8', ...toEnvList(h.spec.env)],
-      AttachStdin: true,
-      AttachStdout: true,
-      AttachStderr: true,
-      Tty: true,
-    });
-    const stream = (await exec.start({
-      hijack: true,
-      stdin: true,
-      Tty: true,
-    })) as unknown as Duplex;
-    await exec.resize({ h: size.rows, w: size.cols });
-
-    const dataCbs: ((chunk: Buffer) => void)[] = [];
-    const closeCbs: (() => void)[] = [];
-    let closed = false;
-    const decoder = new StringDecoder('utf8');
-    stream.on('data', (chunk: Buffer) => {
-      const text = decoder.write(chunk);
-      if (text.length === 0) {
-        return;
-      }
-      const buf = Buffer.from(text, 'utf8');
-      for (const cb of dataCbs) {
-        cb(buf);
-      }
-    });
-    const fireClose = (): void => {
-      if (!closed) {
-        closed = true;
-        for (const cb of closeCbs) {
-          cb();
-        }
-      }
-    };
-    stream.on('end', fireClose);
-    stream.on('close', fireClose);
-
-    return {
-      write(data: string): void {
-        stream.write(data);
-      },
-      resize(cols: number, rows: number): void {
-        void exec.resize({ h: rows, w: cols });
-      },
-      onData(cb: (chunk: Buffer) => void): void {
-        dataCbs.push(cb);
-      },
-      onClose(cb: () => void): void {
-        closeCbs.push(cb);
-      },
-      close(): void {
-        stream.end();
-        stream.destroy();
-      },
-    };
+  openShell(h: SandboxHandle, size: { cols: number; rows: number }): Promise<ShellStream> {
+    return openDockerShell(this.docker.getContainer(h.id), h, size);
   }
 
   async watchFile(
     h: SandboxHandle,
     path: string,
     onLine: (line: string) => void,
+    onError?: (error: Error) => void,
   ): Promise<{ stop(): void }> {
     if (!path.startsWith('/')) {
       throw new Error(`watchFile path must be absolute: ${path}`);
@@ -296,22 +172,39 @@ export class DockerProvider implements SandboxProvider {
     const stdout = new PassThrough();
     const stderr = new PassThrough();
     stderr.resume();
-    container.modem.demuxStream(stream, stdout, stderr);
-    let pending = '';
+    let stopped = false;
+    const stop = (): void => {
+      stopped = true;
+      stream.destroy();
+      stdout.destroy();
+      stderr.destroy();
+    };
+    const fail = (error: Error): void => {
+      if (stopped) return;
+      stop();
+      logger.warn(
+        { err: error, attemptId: h.spec.attemptId, levelId: h.spec.levelId, path },
+        'file watcher stopped',
+      );
+      onError?.(error);
+    };
+    const read = createLineReader(onLine);
     stdout.on('data', (chunk: Buffer) => {
-      pending += chunk.toString('utf8');
-      let idx = pending.indexOf('\n');
-      while (idx >= 0) {
-        onLine(pending.slice(0, idx).replace(/\r$/, ''));
-        pending = pending.slice(idx + 1);
-        idx = pending.indexOf('\n');
+      if (stopped) return;
+      try {
+        read(chunk);
+      } catch (error) {
+        fail(error instanceof Error ? error : new Error(String(error)));
       }
     });
-    return {
-      stop(): void {
-        stream.destroy();
-      },
-    };
+    stream.on('error', fail);
+    try {
+      container.modem.demuxStream(stream, stdout, stderr);
+    } catch (err) {
+      stop();
+      throw err;
+    }
+    return { stop };
   }
 
   async destroy(h: SandboxHandle): Promise<void> {

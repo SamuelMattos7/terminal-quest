@@ -36,6 +36,20 @@ Tests used the existing local `tq-base` image; the image was not rebuilt during 
 
 ## P1 — fix before public deployment
 
+Remediation is tracked separately from this dated audit snapshot:
+
+| Finding | Status | Branch / evidence |
+| --- | --- | --- |
+| A01 | Fixed | `codex/a01-session-concurrency`, commit `6871e9e`; capacity reservations + per-user lifecycle queue; `pnpm verify` passes (268 tests, 9 new concurrency regressions); Docker suite 58 passed. |
+| A02 | Fixed | `codex/a02-completion-lifecycle` (stacked on A01); immediate close invalidation, manager/registry ownership guards around async work, progress reset serialized with launch/completion. |
+| A13 | Fixed | Same branch as A02: synchronous active-attempt transaction for attempt/progress/XP/streak/skills/badges, idempotent credit, rollback and retry. Final evidence for A02/A13: `pnpm verify` 287 tests (19 new on this branch); Docker 58 tests including W1 progression; Chromium smoke 1 passed (10.3 s). |
+| A03 | Fixed | `codex/a03-resource-bounds` (stacked on A02/A13); byte/line/rate/history/output caps, shared inbox/cmdlog schemas, transport maxPayload, socket/PTY buffer limits, session-scoped budgets, and one coalesced evaluation rerun. `pnpm verify`: 318 tests (31 new); Docker: 60 tests (2 new), including W1 progression; Chromium smoke: 1 passed (9.6 s). D-024 records limits and overflow behavior. |
+| A28 | Fixed within A03 | Fixed raw-byte line buffering preserves UTF-8 across watched-stream chunks; regression splits accented text and emoji into individual bytes. |
+| A04 | Fixed | `codex/a04-exec-termination` (stacked on A03); root-protected in-container subreaper kills/reaps timed-out commands and detached descendants before reporting timeout, with a sandbox-stop watchdog fallback. `pnpm verify`: 327 tests (9 new); Docker: 70 tests (10 new), including W1 progression; Chromium smoke: 1 passed (9.4 s). Four termination regressions reproduced surviving processes before the fix. D-025 records semantics and compatibility. |
+| A05 | Fixed | `codex/a05-teardown-recovery` (stacked on A04); pending cleanup retains handles/capacity, periodic sweeps and shutdown retry failed destruction, expiry immediately closes local resources, failed starts remove containers or transfer cleanup ownership, and every launch stage unwinds watchers/shell/attempt/registry state. `pnpm verify`: 353 tests (26 new); Docker: 74 tests (4 new), including W1 progression; Chromium smoke: 1 passed (7.9 s). Twenty initial regressions failed before the fix; real Docker regressions confirm removal after recovery. D-026 records semantics. |
+
+A06 is the next unresolved P1 finding. A06–A08 and the other remaining P2/P3 findings are still open; the original reproduction notes below are retained as the audit snapshot. No World 2 content or production-hardening milestone was marked complete by these fixes.
+
 ### A01. Concurrent starts bypass both capacity and single-session limits — reproduced
 
 Locations: `apps/server/src/sandbox/sessionManager.ts:56`, `apps/server/src/routes/sessions.ts:70`.
