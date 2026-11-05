@@ -205,3 +205,12 @@ _Append below this line. Continue numbering from D-011._
 - **Decision:** Strip a leading `checks/` segment in `checkExec` (after leading slashes, before the `..` guard). Bare names keep resolving as before for hand-built fixtures.
 - **Alternatives considered:** Changing the convention to bare names (breaks the schema test + lint test + plan §8.1 wording); changing the compiler upload layout (touches every future level).
 - **Consequences:** w1-12 uses `script: checks/verify.sh`; new docker case pins both forms.
+
+### D-022 — Prioritize audit fixes and serialize per-user lifecycle operations
+
+- **Date:** 2026-11-04
+- **Status:** Accepted
+- **Context:** The user requested audit remediation in priority order, overriding the normal first-unfinished-milestone workflow (M8). A01 shows asynchronous launches bypass capacity and single-session limits.
+- **Decision:** Work on audit findings before new content. Reserve global capacity before provider creation; serialize each user's start/reset/delete operation in the app-owned live registry, including ownership/state lookup after acquiring the queue. Keep unrelated users concurrent. Use a dedicated `codex/a01-session-concurrency` branch for A01.
+- **Alternatives considered:** A global launch lock (unnecessarily blocks all users); locking only provider creation (does not cover setup/registration/replacement).
+- **Consequences:** Concurrent same-user starts preserve replacement semantics; stale resets return 404 after replacement. Failed operations release their queue and capacity reservation. Cleanup failure recovery remains tracked separately as A05.

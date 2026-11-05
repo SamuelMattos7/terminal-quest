@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type {
   ExecResult,
   ManagedSandbox,
@@ -9,6 +9,7 @@ import type {
   ShellStream,
 } from './provider.js';
 import { CapacityError, SessionManager } from './sessionManager.js';
+import { deferred } from '../testUtils.js';
 
 // In-memory fake: no Docker needed. Destroyed ids are recorded so tests
 // can assert expiry actually tore the sandbox down.
@@ -87,6 +88,31 @@ describe('SessionManager', () => {
     const { manager } = setup(1);
     await manager.create(baseSpec);
     await expect(manager.create(baseSpec)).rejects.toThrow(CapacityError);
+    expect(manager.size).toBe(1);
+  });
+
+  it('reserves capacity while container creation is pending', async () => {
+    const { provider, manager } = setup(1);
+    const gate = deferred<SandboxHandle>();
+    const create = vi.spyOn(provider, 'create').mockReturnValueOnce(gate.promise);
+    const first = manager.create(baseSpec);
+    try {
+      await expect(manager.create({ ...baseSpec, userId: 'user-2' })).rejects.toThrow(
+        CapacityError,
+      );
+      expect(create).toHaveBeenCalledTimes(1);
+    } finally {
+      gate.resolve({ id: 'container-1', spec: baseSpec });
+      await first;
+    }
+    expect(manager.size).toBe(1);
+  });
+
+  it('releases the capacity reservation when container creation fails', async () => {
+    const { provider, manager } = setup(1);
+    vi.spyOn(provider, 'create').mockRejectedValueOnce(new Error('Docker unavailable'));
+    await expect(manager.create(baseSpec)).rejects.toThrow('Docker unavailable');
+    await manager.create(baseSpec);
     expect(manager.size).toBe(1);
   });
 
