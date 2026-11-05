@@ -23,6 +23,7 @@ export interface LiveSession {
   shell: ShellStream | undefined;
   socket: { send(payload: string): void; close(code?: number): void } | undefined;
   completed: boolean;
+  closed: boolean;
   dialogue: NudgeState & { welcomed: boolean };
 }
 

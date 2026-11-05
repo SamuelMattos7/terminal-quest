@@ -30,6 +30,7 @@ async function handleMessage(
   limiter: ReturnType<typeof createStdinLimiter>,
   raw: unknown,
 ): Promise<void> {
+  if (live.closed || deps.manager.get(live.session.id) === undefined) return;
   let parsed: unknown;
   try {
     parsed = JSON.parse(String(raw));

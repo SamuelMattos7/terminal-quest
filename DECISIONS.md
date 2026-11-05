@@ -214,3 +214,12 @@ _Append below this line. Continue numbering from D-011._
 - **Decision:** Work on audit findings before new content. Reserve global capacity before provider creation; serialize each user's start/reset/delete operation in the app-owned live registry, including ownership/state lookup after acquiring the queue. Keep unrelated users concurrent. Use a dedicated `codex/a01-session-concurrency` branch for A01.
 - **Alternatives considered:** A global launch lock (unnecessarily blocks all users); locking only provider creation (does not cover setup/registration/replacement).
 - **Consequences:** Concurrent same-user starts preserve replacement semantics; stale resets return 404 after replacement. Failed operations release their queue and capacity reservation. Cleanup failure recovery remains tracked separately as A05.
+
+### D-023 — Treat completion as an atomic active-attempt transition
+
+- **Date:** 2026-11-04
+- **Status:** Accepted
+- **Context:** A02 permits closed sessions to award XP; A13 permits partial and duplicate completion writes. Both concern the boundary between an async check and authoritative persistence.
+- **Decision:** Group A02/A13 on `codex/a02-completion-lifecycle`, stacked on A01. Invalidate live sessions immediately on close; require live-registry and manager ownership before/after async work. Share the per-user lifecycle queue with final completion and progress reset. Persist attempt/progress/XP/streak/skills/badges in one synchronous better-sqlite3 transaction, guarded by matching active attempt, user, level, and seed; update in-memory completion only after commit. Badge evaluation uses synchronous SQLite calls so the transaction never yields. Extract session evaluation/context to keep touched modules focused and under approximately 300 lines.
+- **Alternatives considered:** Waiting for all checks during teardown (unnecessarily delays close and does not repair partial writes); async transaction callbacks (unsupported by better-sqlite3).
+- **Consequences:** Already-running container checks may finish, but closed sessions cannot persist their results or execute queued checks. Failed transactions roll back and can retry; duplicate or retired attempts earn nothing. Manager removal invalidates expiry before slow Docker teardown finishes. Remaining stream/queue bounds and process termination are still A03/A04; teardown retry remains A05.

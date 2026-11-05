@@ -40,7 +40,11 @@ Remediation is tracked separately from this dated audit snapshot:
 
 | Finding | Status | Branch / evidence |
 | --- | --- | --- |
-| A01 | Fixed | `codex/a01-session-concurrency`; capacity reservations + per-user lifecycle queue; `pnpm verify` passes (268 tests, 9 new concurrency regressions). |
+| A01 | Fixed | `codex/a01-session-concurrency`, commit `6871e9e`; capacity reservations + per-user lifecycle queue; `pnpm verify` passes (268 tests, 9 new concurrency regressions); Docker suite 58 passed. |
+| A02 | Fixed | `codex/a02-completion-lifecycle` (stacked on A01); immediate close invalidation, manager/registry ownership guards around async work, progress reset serialized with launch/completion. |
+| A13 | Fixed | Same branch as A02: synchronous active-attempt transaction for attempt/progress/XP/streak/skills/badges, idempotent credit, rollback and retry. Final evidence for A02/A13: `pnpm verify` 287 tests (19 new on this branch); Docker 58 tests including W1 progression; Chromium smoke 1 passed (10.3 s). |
+
+A03 is the next unresolved P1 finding. A03–A08 and the remaining P2/P3 findings are still open; the original reproduction notes below are retained as the audit snapshot. No World 2 content or production-hardening milestone was marked complete by these fixes.
 
 ### A01. Concurrent starts bypass both capacity and single-session limits — reproduced
 

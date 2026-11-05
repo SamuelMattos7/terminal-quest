@@ -52,14 +52,14 @@ function worldLevels(catalog: BadgeCatalog, world: number): string[] {
   return (catalog.levelsByWorld.get(world) ?? []).map((l) => l.id);
 }
 
-async function ruleHolds(
+function ruleHolds(
   db: Db,
   userId: string,
   badge: Badge,
   event: BadgeEvent,
   catalog: BadgeCatalog,
   completedIds: Set<string>,
-): Promise<boolean> {
+): boolean {
   switch (badge.rule) {
     case 'first-command':
       return true;
@@ -74,17 +74,13 @@ async function ruleHolds(
       if (!ids.every((id) => completedIds.has(id))) {
         return false;
       }
-      const rows = await db.select().from(attempts).where(eq(attempts.userId, userId)).all();
+      const rows = db.select().from(attempts).where(eq(attempts.userId, userId)).all();
       return rows.filter((r) => ids.includes(r.levelId)).every((r) => r.hintsUsed === 0);
     }
     case 'level-done':
       return badge.level !== undefined && completedIds.has(badge.level);
     case 'cron-whisperer': {
-      const rows = await db
-        .select()
-        .from(levelProgress)
-        .where(eq(levelProgress.userId, userId))
-        .all();
+      const rows = db.select().from(levelProgress).where(eq(levelProgress.userId, userId)).all();
       const byId = new Map(rows.map((r) => [r.levelId, r.bestRank]));
       return (
         rankAtLeast(byId.get('w4-12-cron-basics') ?? null, 'B') &&
@@ -93,11 +89,11 @@ async function ruleHolds(
     }
     case 'streak-3':
     case 'streak-7': {
-      const [user] = await db.select().from(users).where(eq(users.id, userId)).all();
+      const [user] = db.select().from(users).where(eq(users.id, userId)).all();
       return (user?.streakDays ?? 0) >= (badge.rule === 'streak-7' ? 7 : 3);
     }
     case 's-rank-10': {
-      const rows = await db.select().from(attempts).where(eq(attempts.userId, userId)).all();
+      const rows = db.select().from(attempts).where(eq(attempts.userId, userId)).all();
       return rows.filter((r) => r.rank === 'S').length >= 10;
     }
     case 'boss-done': {
@@ -114,7 +110,7 @@ async function ruleHolds(
 }
 
 /** Evaluate all rules after a completion; insert + return newly earned ids. */
-export async function evaluateBadges(
+export function evaluateBadges(
   db: Db,
   userId: string,
   badgeList: Badge[],
@@ -122,20 +118,22 @@ export async function evaluateBadges(
   catalog: Omit<BadgeCatalog, 'badges'>,
   completedIds: Set<string>,
   now = Date.now(),
-): Promise<string[]> {
+): string[] {
   const earned = new Set(
-    (await db.select().from(badges).where(eq(badges.userId, userId)).all()).map((b) => b.badgeId),
+    db
+      .select()
+      .from(badges)
+      .where(eq(badges.userId, userId))
+      .all()
+      .map((b) => b.badgeId),
   );
   const fresh: string[] = [];
   for (const badge of badgeList) {
     if (earned.has(badge.id)) {
       continue;
     }
-    if (
-      await ruleHolds(db, userId, badge, event, { ...catalog, badges: badgeList }, completedIds)
-    ) {
-      await db
-        .insert(badges)
+    if (ruleHolds(db, userId, badge, event, { ...catalog, badges: badgeList }, completedIds)) {
+      db.insert(badges)
         .values({ userId, badgeId: badge.id, earnedAt: Math.floor(now / 1000) })
         .onConflictDoNothing()
         .run();
