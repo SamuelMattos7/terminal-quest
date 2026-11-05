@@ -292,3 +292,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A10 found that disabling a world hid its map card while direct API requests could still open or start its levels. The release allow-list in §14.1 also applies when the developer progression override in §6 is active.
 - **Decision:** Stack `codex/a10-world-availability` on A09. Return the existing unknown-level response for disabled detail, start, and owned reset requests. Restrict progression states, completion unlocks, and review candidates to enabled worlds. Review scoring uses the same candidate restriction as the review endpoint.
 - **Consequences:** `UNLOCK_ALL` skips progression prerequisites within enabled worlds. Historical boss completions still qualify as prerequisites for an enabled successor world, and historical progress remains in the database.
+
+### D-032 — Select playable daily challenges and credit UTC finishes
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A11 found that the daily endpoint could offer a locked level and treat a lifetime completion as completion of today's challenge.
+- **Decision:** Apply the same enabled-world and unlock rules as level access before choosing a daily. An explicit `daily_eligible` value overrides the default; a lesson qualifies by default at difficulty 3 or lower after the player completes every boss in its world. Count successful attempts by this player on the selected level with an end time from the selected UTC midnight up to, but excluding, the next midnight.
+- **Consequences:** Players without eligible levels get the existing empty-pool response. Attempts started on an earlier day can count if they finish on the selected date.

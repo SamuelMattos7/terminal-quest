@@ -6,7 +6,6 @@ import {
   ReviewResponseSchema,
   SkillsResponseSchema,
   SpellbookResponseSchema,
-  DailyResponseSchema,
 } from '@terminal-quest/shared';
 import {
   attempts,
@@ -242,26 +241,6 @@ describe('DELETE /api/progress', () => {
       expect((await ctx.app.inject({ method: 'DELETE', url: '/api/progress' })).statusCode).toBe(
         401,
       );
-    } finally {
-      await ctx.cleanup();
-    }
-  });
-});
-
-describe('GET /api/daily', () => {
-  it('returns a deterministic level with completion state', async () => {
-    const ctx = await makeTestContext(tree);
-    try {
-      const cookie = await guestCookie(ctx.app);
-      const first = DailyResponseSchema.parse(
-        (await ctx.app.inject({ method: 'GET', url: '/api/daily', headers: { cookie } })).json(),
-      );
-      const second = DailyResponseSchema.parse(
-        (await ctx.app.inject({ method: 'GET', url: '/api/daily', headers: { cookie } })).json(),
-      );
-      expect(first.levelId).toBe(second.levelId);
-      expect(first.completed).toBe(false);
-      expect(first.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     } finally {
       await ctx.cleanup();
     }

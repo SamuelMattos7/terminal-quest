@@ -29,6 +29,7 @@ import { registerMeRoutes } from './routes/me.js';
 import { registerWorldsRoutes } from './routes/worlds.js';
 import { registerLevelRoutes } from './routes/levels.js';
 import { registerProgressRoutes } from './routes/progress.js';
+import { registerDailyRoute } from './routes/daily.js';
 import { registerSessionRoutes } from './routes/sessions.js';
 import { registerWebDelivery } from './webDelivery.js';
 
@@ -151,6 +152,7 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   await registerWorldsRoutes(app);
   await registerLevelRoutes(app);
   await registerProgressRoutes(app);
+  await registerDailyRoute(app);
   await registerSessionRoutes(app, { ...flowDeps, config });
   await registerSessionSocket(app, { ...flowDeps, config });
 
