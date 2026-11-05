@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** Audit remediation: A01–A16 and A28 fixed. A17 is the next open audit finding. M8 is the next unfinished milestone (M5 gate green).
+**Current focus:** Audit remediation: A01–A17 and A28 fixed. A18 is the next open audit finding. M8 is the next unfinished milestone (M5 gate green).
 
 ---
 
@@ -201,6 +201,8 @@ Each branch records its own regression and verification evidence. The milestone 
 - [x] A15 — close replaced WebSockets and give the latest authorized socket exclusive shell control. ✅ `pnpm verify`: build/lint + 407 tests passed. Regressions cover queued stale frames, replacement socket ownership after close, shared stdin and message budgets across reconnects, and no automatic reconnect on replacement. See D-035.
 - [x] A16 — recover missed terminal output, issued hints, and committed completion results on reconnect. ✅ `pnpm verify`: build/lint + 416 tests passed (9 new regressions). Coverage includes startup output before shell subscription and terminal mount, cursor replay over a real WebSocket, byte and frame limits, duplicate suppression, modal recovery, and retry exhaustion despite brief opens. See D-036.
 
+- [x] A17 — send a pending update when a hold objective stops passing. ✅ `pnpm verify`: build/lint + 417 tests passed. The regression reproduced the missing frame and now verifies that deleting and recreating the required file sends `done → pending → done` without repeating the pending update, then completes after the remaining objective passes.
+
 ## Known gaps
 
 _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing silent._
@@ -210,7 +212,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 | 2026-10-06 | skills.yaml prereqs | W1 skill edges authored in M7; W2+ skills still have empty `prereqs` | Author remaining edges during M8 |
 | 2026-10-06 | cron daemon start   | `needs_cron` field present (default true); daemon start not implemented                 | Implement in T10.1 admin polish; no admin levels exist yet |
 | 2026-10-11 | Web bundle size     | `dist` JS is ~576 KB (xterm.js); vite emits a chunk-size warning, no code-splitting yet | Consider `React.lazy` for `/play` during polish            |
-| 2026-11-04 | Repository audit | 31 original prioritized findings; A01–A16 and A28 fixed with regressions (see Audit remediation above). Remaining progression/recovery, checks, UI, CI, and documentation gaps are detailed in [PROJECT_AUDIT.md](PROJECT_AUDIT.md). | Resolve remaining findings alongside planned milestones and complete M9 production validation. |
+| 2026-11-04 | Repository audit | 31 original prioritized findings; A01–A17 and A28 fixed with regressions (see Audit remediation above). Remaining progression/recovery, checks, UI, CI, and documentation gaps are detailed in [PROJECT_AUDIT.md](PROJECT_AUDIT.md). | Resolve remaining findings alongside planned milestones and complete M9 production validation. |
 
 ## Blockers
 

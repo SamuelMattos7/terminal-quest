@@ -1,5 +1,9 @@
 import { randomUUID } from 'node:crypto';
+import { existsSync, mkdtempSync, rmdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ServerMessageSchema } from '@terminal-quest/shared';
 import { attempts, badges, events, levelProgress, skillProgress, users } from '../db/schema.js';
 import { deferred, guestCookie, makeLevel, makeTestContext } from '../testUtils.js';
 import type { ExecResult } from '../sandbox/provider.js';
@@ -68,6 +72,60 @@ async function setup(levels = [makeLevel('a', 1, 1)]) {
   };
   return { ...ctx, live, deps, exec, destroy, cookie, send, pause };
 }
+
+it('reports a required hold file as pending after deletion and done after recreation (A17)', async () => {
+  const fixture = makeLevel('a', 1, 1);
+  fixture.level.objectives = [
+    {
+      id: 'keep-file',
+      text: 'Keep important.txt.',
+      hold: true,
+      check: { type: 'file_exists', path: '/home/player/important.txt', kind: 'file' },
+    },
+    { id: 'ran-pwd', text: 'Run pwd.', check: { type: 'command_used', regex: '^pwd$' } },
+  ];
+  const ctx = await setup([fixture]);
+  const dir = mkdtempSync(join(tmpdir(), 'tq-hold-'));
+  const file = join(dir, 'important.txt');
+  const check = () => evaluateAndReport(ctx.deps, ctx.live);
+  const holdUpdates = () =>
+    ctx.send.mock.calls
+      .map(([payload]) => ServerMessageSchema.parse(JSON.parse(String(payload))))
+      .flatMap((frame) =>
+        frame.t === 'objective' && frame.id === 'keep-file' ? [frame.status] : [],
+      );
+  try {
+    // The sandbox's file probe reads the fixture file without starting Docker.
+    ctx.exec.mockImplementation(async () => ({
+      code: existsSync(file) ? 0 : 1,
+      stdout: '',
+      stderr: '',
+      timedOut: false,
+    }));
+    writeFileSync(file, 'keep me');
+    await check();
+    expect(holdUpdates()).toEqual(['done']);
+
+    rmSync(file);
+    await check();
+    await check();
+    expect(holdUpdates()).toEqual(['done', 'pending']);
+    expect(ctx.live.completed).toBe(false);
+
+    writeFileSync(file, 'restored');
+    await check();
+    expect(holdUpdates()).toEqual(['done', 'pending', 'done']);
+    expect(ctx.live.completed).toBe(false);
+
+    noteCommand(ctx.live.tracker, { command: 'pwd', exitCode: 0, cwd: '/home/player', epoch: 1 });
+    await check();
+    expect(ctx.live.completed).toBe(true);
+  } finally {
+    rmSync(file, { force: true });
+    rmdirSync(dir);
+    await ctx.cleanup();
+  }
+});
 
 it('omits a disabled next world from the completion payload (A10)', async () => {
   const ctx = await setup([makeLevel('a', 1, 1, 'boss'), makeLevel('a', 2, 1)]);
