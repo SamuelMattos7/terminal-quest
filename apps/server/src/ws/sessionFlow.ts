@@ -18,7 +18,7 @@ import { closeLiveSession } from './sessionCleanup.js';
 import { tuxStatus, tuxExplain } from './sessionMessages.js';
 
 export type { FlowDeps } from './sessionContext.js';
-export { evaluateAndReport, computeUnlocked } from './sessionEvaluation.js';
+export { evaluateAndReport } from './sessionEvaluation.js';
 export { closeLiveSession, type CloseReason } from './sessionCleanup.js';
 
 // Live-session lifecycle shared by the session routes and the socket:

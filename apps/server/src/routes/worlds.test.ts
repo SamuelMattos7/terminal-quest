@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { WorldsResponseSchema, type WorldsResponse } from '@terminal-quest/shared';
-import { levelProgress, users } from '../db/schema.js';
+import { levelProgress, skillProgress, users } from '../db/schema.js';
 import { guestCookie, makeLevel, makeTestContext, type TestContext } from '../testUtils.js';
 
 const tree = [
@@ -103,6 +103,56 @@ describe('GET /api/worlds', () => {
       const cookie = await guestCookie(ctx.app);
       const worlds = await getWorlds(ctx, cookie);
       expect(worlds.worlds.map((w) => w.id)).toEqual([1]);
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+});
+
+describe('disabled worlds (A10)', () => {
+  it.each([[[]], [[1]]] as const)(
+    'blocks level detail and start with UNLOCK_ALL and enabled worlds %j',
+    async (enabledWorlds) => {
+      const ctx = await makeTestContext(tree, { ENABLE_WORLDS: [...enabledWorlds], UNLOCK_ALL: 1 });
+      const create = vi
+        .spyOn(ctx.app.provider, 'create')
+        .mockRejectedValue(new Error('unexpected sandbox'));
+      try {
+        const cookie = await guestCookie(ctx.app);
+        const headers = { cookie };
+        expect((await getWorlds(ctx, cookie)).worlds.map((world) => world.id)).toEqual(
+          enabledWorlds,
+        );
+        const url = enabledWorlds.length === 0 ? '/api/levels/w1-01-a' : '/api/levels/w2-01-a';
+        const detail = await ctx.app.inject({ method: 'GET', url, headers });
+        const start = await ctx.app.inject({ method: 'POST', url: `${url}/start`, headers });
+        expect([detail.statusCode, start.statusCode]).toEqual([404, 404]);
+        expect(create).not.toHaveBeenCalled();
+      } finally {
+        await ctx.cleanup();
+      }
+    },
+  );
+
+  it('recommends only enabled levels for review, even with historical completions', async () => {
+    const ctx = await makeTestContext(tree, { ENABLE_WORLDS: [2], UNLOCK_ALL: 1 });
+    try {
+      const cookie = await guestCookie(ctx.app);
+      const user = ctx.db.select().from(users).get();
+      if (user === undefined) throw new Error('guest user missing');
+      markDone(ctx, user.id, 'w1-01-a');
+      markDone(ctx, user.id, 'w2-01-a');
+      ctx.db
+        .insert(skillProgress)
+        .values({ userId: user.id, skillId: 'pwd', uses: 1, lastUsedAt: 1 })
+        .run();
+      const review = await ctx.app.inject({
+        method: 'GET',
+        url: '/api/review',
+        headers: { cookie },
+      });
+      expect(review.statusCode).toBe(200);
+      expect(review.json()).toEqual({ due: [{ skillId: 'pwd', levelId: 'w2-01-a' }] });
     } finally {
       await ctx.cleanup();
     }

@@ -13,6 +13,7 @@ describe('POST /api/guest', () => {
       const setCookie = res.headers['set-cookie'];
       expect(String(setCookie)).toContain('tq_session=');
       expect(String(setCookie)).toContain('HttpOnly');
+      expect(String(setCookie)).not.toContain('; Secure');
     } finally {
       await ctx.cleanup();
     }

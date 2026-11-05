@@ -6,8 +6,7 @@ import type { Db } from './db/client.js';
 
 // Guest auth for plan.md §6 / D-003: httpOnly SameSite=Lax cookie
 // `tq_session` with a random 32-byte token; only its sha256 is stored.
-// `secure` stays false in dev (plain http); TLS terminates at the reverse
-// proxy in prod — revisit under T9.1.
+// Production requires a Secure cookie even though TLS terminates at Caddy.
 
 export const SESSION_COOKIE = 'tq_session';
 
@@ -44,12 +43,12 @@ export async function userFromToken(db: Db, token: string | undefined): Promise<
   return user;
 }
 
-export function setSessionCookie(reply: FastifyReply, token: string): void {
+export function setSessionCookie(reply: FastifyReply, token: string, secure: boolean): void {
   void reply.setCookie(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: 'lax',
     path: '/',
-    secure: false,
+    secure,
   });
 }
 

@@ -250,3 +250,45 @@ _Append below this line. Continue numbering from D-011._
 - **Decision:** Use `codex/a05-teardown-recovery`, stacked on A04. Separate active sessions from pending sandbox cleanup: invalidate active ownership immediately, retain the handle and capacity until destruction succeeds, share in-flight destruction, and retry on periodic sweeps and shutdown. Continue sweeping other sessions after individual failures. Expiry releases the live session, socket, watchers, shell, and attempt before awaiting Docker. Remove failed-start containers immediately; if removal fails, a typed acquisition error transfers the handle to manager cleanup. Wrap all post-creation launch stages in one unwind path, preserving the original launch error while logging cleanup errors. Store watcher handles and stop every acquired resource independently, including resources returned after a startup error or expiry.
 - **Alternatives considered:** Forgetting failures and relying on a restart orphan sweep (leaks capacity/resources until restart); leaving failed teardown sessions active (permits late completion); releasing capacity before Docker confirms removal (can exceed the container cap).
 - **Consequences:** Unavailable Docker can keep capacity occupied until a later retry succeeds, so launches safely return 429 rather than oversubscribe. Failed launches finish opened attempts as abandoned; failed expiry teardown stays expired and cannot award XP. Shutdown retries cleanup for launches and sessions no longer present in the live registry. The separate A06 issue (installing the periodic timer when the boot orphan sweep fails) remains open.
+
+### D-027 — Start periodic cleanup independently of boot orphan discovery
+
+- **Date:** 2026-11-04
+- **Status:** Accepted
+- **Context:** A06 leaves the reaper permanently disabled if Docker fails during the boot orphan sweep; a failed listing also leaves pre-existing containers undiscovered.
+- **Decision:** Use `codex/a06-reaper-startup`, branched from main after A05. Install the unref'd 30-second timer before awaiting the boot sweep. Preserve startup rejection for the app's warning, while periodic expiry and retained teardown retries continue. Retry orphan discovery on ticks until a sweep succeeds, with at most one orphan sweep in flight and failures logged independently of session sweeps. Repeated starts keep one timer; stop clears it even after startup failure or during pending discovery.
+- **Alternatives considered:** Installing only in a finally block (slow boot discovery still delays expiry); timer-only recovery (failed listings leave unknown orphans until restart); permanently listing on every tick (unnecessary after successful discovery).
+- **Consequences:** Docker recovery restores idle/max-age cleanup and orphan removal without a server restart. Shutdown prevents future ticks; in-flight Docker operations may finish without reinstalling the timer. No sandbox policy, API, content, or plan changes are required.
+
+### D-028 — Serve the built web on the production API port
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A07 reproduces 404s for the game and its assets behind the documented Caddy proxy. The plan (§14.3) already specifies Fastify static hosting on one port.
+- **Decision:** Use `codex/a07-production-delivery`, based on the completed A06 branch. The compiled entry point opts into `@fastify/static` delivery of Vite's `/assets/*` and an index fallback for GET/HEAD client navigations. Resolve the web build relative to the server module; fail startup clearly if the index is missing. Reserve API, WebSocket, health, and asset namespaces from fallback; reject encoded/dotted file paths rather than substituting HTML. Keep HTML and assets revalidatable (`max-age=0`). The tsx development entry point continues using Vite without requiring a web build.
+- **Alternatives considered:** Serving the web separately with Caddy (deviates from the planned topology); unconditional static hosting in every test/development app (requires a web build for unrelated API work); a catch-all HTML response (masks missing assets and API errors).
+- **Consequences:** Deployments must retain `apps/web/dist` alongside `apps/server/dist`. Production regressions require `pnpm build` first, as already ordered by `pnpm verify`; they use the compiled entry point, a temporary migrated DB, an unavailable Docker socket, and an unrelated working directory. A08 security/proxy/shutdown work and clean-VM T9.3 verification remain separate. No plan change is needed.
+
+### D-029 — Apply production security at the compiled entry point
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A08 found missing Secure cookies and CSP, rate limits shared by clients behind Caddy, and signal exits that skipped cleanup.
+- **Decision:** Stack `codex/a08-production-hardening` on A07. The compiled server binds to IPv4 loopback, trusts only the first forwarding hop from `127.0.0.1`, and always sets Secure guest cookies. The HTML policy allows local assets, a WebSocket at the configured public origin, and inline styles for xterm and dynamic UI styles. Both SIGTERM and SIGINT share one Fastify close operation. Begin active session cleanup before the WebSocket plugin closes connections, then await teardown and clean up any sessions created by requests that were still draining.
+- **Consequences:** The documented deployment requires same-host Caddy and the external HTTPS `PUBLIC_ORIGIN`. Vite development keeps plain-HTTP cookies. The compiled-server regressions exercise Caddy-style forwarding headers and use a Docker stub for signal-driven teardown. On Windows they emit Node's signal events over IPC because Windows child-process termination bypasses those handlers.
+
+### D-030 — Calculate completion unlocks from prior progress
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A09 found that the completion event calculated both sets of unlocks after the new completion was already in the database.
+- **Decision:** Stack `codex/a09-completion-unlocks` on A08. Reuse the progress snapshot read for scoring inside the per-user queue and compare it with the same set plus the current level. Send the difference only after completion is recorded successfully.
+- **Consequences:** First clears report newly available levels, and replays report no new unlocks. The existing modal uses the reported IDs to show its Next level button.
+
+### D-031 — Apply the world allow-list before progression unlocks
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A10 found that disabling a world hid its map card while direct API requests could still open or start its levels. The release allow-list in §14.1 also applies when the developer progression override in §6 is active.
+- **Decision:** Stack `codex/a10-world-availability` on A09. Return the existing unknown-level response for disabled detail, start, and owned reset requests. Restrict progression states, completion unlocks, and review candidates to enabled worlds. Review scoring uses the same candidate restriction as the review endpoint.
+- **Consequences:** `UNLOCK_ALL` skips progression prerequisites within enabled worlds. Historical boss completions still qualify as prerequisites for an enabled successor world, and historical progress remains in the database.

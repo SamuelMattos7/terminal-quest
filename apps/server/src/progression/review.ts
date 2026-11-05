@@ -66,7 +66,13 @@ export async function wasReviewDue(
   userId: string,
   level: Level,
   levelsById: Map<string, Level>,
-  now = Math.floor(Date.now() / 1000),
+  {
+    now = Math.floor(Date.now() / 1000),
+    enabledWorlds,
+  }: {
+    now?: number;
+    enabledWorlds?: readonly number[];
+  } = {},
 ): Promise<boolean> {
   const [skillRows, progressRows] = await Promise.all([
     db.select().from(skillProgress).where(eq(skillProgress.userId, userId)).all(),
@@ -78,7 +84,7 @@ export async function wasReviewDue(
   }
   const teachesByLevel = new Map<string, string[]>();
   for (const [id, other] of levelsById) {
-    if (completed.has(id)) {
+    if (completed.has(id) && (enabledWorlds?.includes(other.world) ?? true)) {
       teachesByLevel.set(id, other.teaches);
     }
   }

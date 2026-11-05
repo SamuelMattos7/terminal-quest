@@ -9,18 +9,21 @@ export function levelStates(
   levelsByWorld: Map<number, Level[]>,
   completedIds: Set<string>,
   unlockAll: boolean,
+  enabledWorlds?: readonly number[],
 ): Map<string, LevelState> {
   const states = new Map<string, LevelState>();
+  const worlds = [...levelsByWorld.keys()]
+    .filter((world) => enabledWorlds?.includes(world) ?? true)
+    .sort((a, b) => a - b);
   if (unlockAll) {
-    for (const levels of levelsByWorld.values()) {
-      for (const level of levels) {
+    for (const world of worlds) {
+      for (const level of levelsByWorld.get(world) ?? []) {
         states.set(level.id, completedIds.has(level.id) ? 'completed' : 'available');
       }
     }
     return states;
   }
 
-  const worlds = [...levelsByWorld.keys()].sort((a, b) => a - b);
   for (const world of worlds) {
     const levels = [...(levelsByWorld.get(world) ?? [])].sort((a, b) => a.order - b.order);
     let gateOpen = world === 1;

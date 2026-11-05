@@ -80,7 +80,7 @@ describe('wasReviewDue', () => {
       seed(userId, db, now - 10 * day);
       const level = makeLevel();
       await expect(
-        wasReviewDue(db, userId, level, new Map([[level.id, level]]), now),
+        wasReviewDue(db, userId, level, new Map([[level.id, level]]), { now }),
       ).resolves.toBe(true);
     } finally {
       cleanup();
@@ -97,7 +97,7 @@ describe('wasReviewDue', () => {
         .values({ userId, skillId: 'pwd', uses: 1, lastUsedAt: now - 10 * day })
         .run();
       await expect(
-        wasReviewDue(db, userId, level, new Map([[level.id, level]]), now),
+        wasReviewDue(db, userId, level, new Map([[level.id, level]]), { now }),
       ).resolves.toBe(false);
       // Completed but used yesterday: not overdue.
       db.insert(levelProgress)
@@ -109,7 +109,7 @@ describe('wasReviewDue', () => {
       const level2 = makeLevel({ id: 'w1-02-b', teaches: ['ls'] });
       db.insert(levelProgress).values({ userId, levelId: 'w1-02-b', completions: 1 }).run();
       await expect(
-        wasReviewDue(db, userId, level2, new Map([[level2.id, level2]]), now),
+        wasReviewDue(db, userId, level2, new Map([[level2.id, level2]]), { now }),
       ).resolves.toBe(false);
     } finally {
       cleanup();
