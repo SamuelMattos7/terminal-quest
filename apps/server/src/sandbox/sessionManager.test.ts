@@ -10,6 +10,8 @@ import type {
 } from './provider.js';
 import { CapacityError, SessionManager } from './sessionManager.js';
 import { deferred } from '../testUtils.js';
+import { Reaper, REAPER_INTERVAL_MS } from './reaper.js';
+import { logger } from '../util/logger.js';
 
 // In-memory fake: no Docker needed. Destroyed ids are recorded so tests
 // can assert expiry actually tore the sandbox down.
@@ -167,5 +169,150 @@ describe('SessionManager', () => {
     expect(provider.destroyed).toContain('orphan-1');
     expect(provider.destroyed).toContain('orphan-2');
     expect(provider.destroyed).not.toContain(live.handle.id);
+  });
+
+  it('retains failed manual teardown capacity and retries on the next sweep (A05)', async () => {
+    const { provider, manager } = setup(1);
+    const session = await manager.create(baseSpec);
+    const destroy = vi.spyOn(provider, 'destroy').mockRejectedValueOnce(new Error('Docker down'));
+    await expect(manager.close(session.id, 'manual')).rejects.toThrow('Docker down');
+    expect(manager.get(session.id)).toBeUndefined();
+    expect(manager.size).toBe(1);
+    await expect(manager.create(baseSpec)).rejects.toThrow(CapacityError);
+    await manager.sweepOnce();
+    expect(destroy).toHaveBeenCalledTimes(2);
+    expect(manager.size).toBe(0);
+    await manager.create(baseSpec);
+  });
+
+  it('shares in-flight teardown between close and overlapping sweeps (A05)', async () => {
+    const { provider, manager } = setup(1);
+    const session = await manager.create(baseSpec);
+    const entered = deferred();
+    const gate = deferred();
+    const destroy = vi.spyOn(provider, 'destroy').mockImplementationOnce(async () => {
+      entered.resolve();
+      await gate.promise;
+    });
+    const closing = manager.close(session.id, 'manual');
+    await entered.promise;
+    try {
+      expect(manager.get(session.id)).toBeUndefined();
+      expect(manager.size).toBe(1);
+      await expect(manager.create(baseSpec)).rejects.toThrow(CapacityError);
+      const retry = manager.close(session.id, 'manual');
+      const sweep = manager.sweepOnce();
+      expect(destroy).toHaveBeenCalledTimes(1);
+      gate.resolve();
+      await Promise.all([closing, retry, sweep]);
+      expect(manager.size).toBe(0);
+    } finally {
+      gate.resolve();
+      await closing;
+    }
+  });
+
+  it.each(['idle', 'max_age'] as const)(
+    'invalidates %s immediately, continues sweeping after failure, and notifies once (A05)',
+    async (reason) => {
+      const provider = new FakeProvider();
+      const expired = vi.fn();
+      const manager = new SessionManager({
+        provider,
+        maxContainers: 2,
+        idleTtlMs: 100,
+        maxAgeMs: 200,
+        now: () => 0,
+        onExpire: expired,
+      });
+      const first = await manager.create(baseSpec);
+      const second = await manager.create(baseSpec);
+      vi.spyOn(provider, 'destroy').mockRejectedValueOnce(new Error('Docker down'));
+      await expect(manager.sweepOnce(reason === 'idle' ? 100 : 200)).rejects.toThrow();
+      expect(manager.get(first.id)).toBeUndefined();
+      expect(manager.get(second.id)).toBeUndefined();
+      expect(expired.mock.calls).toEqual([
+        [first.id, reason],
+        [second.id, reason],
+      ]);
+      expect(manager.size).toBe(1);
+      await manager.sweepOnce(0);
+      expect(manager.size).toBe(0);
+      expect(expired).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it('retains failed boot orphan cleanup for periodic retry without another listing (A05)', async () => {
+    const { provider, manager } = setup(1);
+    provider.orphanIds = ['ghost-1', 'ghost-2'];
+    const destroy = vi.spyOn(provider, 'destroy').mockRejectedValueOnce(new Error('Docker down'));
+    await expect(manager.sweepOrphans()).rejects.toThrow();
+    expect(destroy).toHaveBeenCalledTimes(2);
+    expect(manager.size).toBe(1);
+    provider.orphanIds = [];
+    await manager.sweepOnce();
+    expect(destroy).toHaveBeenCalledTimes(3);
+    expect(manager.size).toBe(0);
+  });
+
+  it('keeps retrying teardown across failed periodic reaper ticks (A05)', async () => {
+    vi.useFakeTimers();
+    const { provider, manager } = setup(1);
+    const reaper = new Reaper(manager, logger);
+    try {
+      await reaper.start();
+      const session = await manager.create(baseSpec);
+      const destroy = vi
+        .spyOn(provider, 'destroy')
+        .mockRejectedValueOnce(new Error('Docker down'))
+        .mockRejectedValueOnce(new Error('Docker still down'));
+      await expect(manager.close(session.id, 'manual')).rejects.toThrow('Docker down');
+      await vi.advanceTimersByTimeAsync(REAPER_INTERVAL_MS);
+      expect(manager.get(session.id)).toBeUndefined();
+      expect(manager.size).toBe(1);
+      await expect(manager.create(baseSpec)).rejects.toThrow(CapacityError);
+      await vi.advanceTimersByTimeAsync(REAPER_INTERVAL_MS);
+      expect(destroy).toHaveBeenCalledTimes(3);
+      expect(manager.size).toBe(0);
+    } finally {
+      reaper.stop();
+      vi.useRealTimers();
+    }
+  });
+
+  it('notifies each expiry once when two sweeps overlap (A05)', async () => {
+    const provider = new FakeProvider();
+    const expired = vi.fn();
+    const manager = new SessionManager({
+      provider,
+      maxContainers: 2,
+      idleTtlMs: 100,
+      maxAgeMs: 200,
+      now: () => 0,
+      onExpire: expired,
+    });
+    const first = await manager.create(baseSpec);
+    const second = await manager.create(baseSpec);
+    const entered = deferred();
+    const gate = deferred();
+    const destroy = vi.spyOn(provider, 'destroy').mockImplementationOnce(async () => {
+      entered.resolve();
+      await gate.promise;
+    });
+    const one = manager.sweepOnce(200);
+    await entered.promise;
+    const two = manager.sweepOnce(200);
+    try {
+      gate.resolve();
+      await Promise.all([one, two]);
+      expect(expired.mock.calls).toEqual([
+        [first.id, 'max_age'],
+        [second.id, 'max_age'],
+      ]);
+      expect(destroy).toHaveBeenCalledTimes(2);
+    } finally {
+      gate.resolve();
+      await Promise.allSettled([one, two]);
+    }
   });
 });

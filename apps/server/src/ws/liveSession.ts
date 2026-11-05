@@ -22,6 +22,7 @@ export interface LiveSession {
   hints: HintState;
   coach: Coach;
   shell: ShellStream | undefined;
+  watchers: { stop(): void }[];
   socket: { send(payload: string): void; close(code?: number): void } | undefined;
   completed: boolean;
   closed: boolean;
