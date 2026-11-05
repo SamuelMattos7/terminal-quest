@@ -84,6 +84,23 @@ describe('Docker resource acquisition cleanup (A05)', () => {
 });
 
 describe('Docker shell and watcher failures (A14)', () => {
+  it('keeps shell output that arrives during initial resize (A16)', async () => {
+    const ctx = setup();
+    const greeting = Buffer.from('Welcome 🐧');
+    ctx.exec.resize.mockImplementationOnce(async () => {
+      ctx.stream.write(greeting);
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    });
+    const shell = await ctx.provider.openShell({ id: 'container', spec }, { cols: 80, rows: 24 });
+    try {
+      const onData = vi.fn();
+      shell.onData(onData);
+      await vi.waitFor(() => expect(onData).toHaveBeenCalledWith(greeting));
+    } finally {
+      shell.close();
+    }
+  });
+
   it('returns a rejected resize to the caller and leaves the shell available', async () => {
     const ctx = setup();
     const shell = await ctx.provider.openShell({ id: 'container', spec }, { cols: 80, rows: 24 });

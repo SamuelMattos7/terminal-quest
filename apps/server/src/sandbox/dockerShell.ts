@@ -29,6 +29,8 @@ export async function openDockerShell(
     stdin: true,
     Tty: true,
   })) as unknown as Duplex;
+  // Keep the greeting in the stream's read buffer until the session subscribes.
+  stream.pause();
   const dataCbs: ((chunk: Buffer) => void)[] = [];
   const closeCbs: ((error?: Error) => void)[] = [];
   let termination: { error?: Error } | undefined;
@@ -77,6 +79,7 @@ export async function openDockerShell(
     },
     onData(cb: (chunk: Buffer) => void): void {
       dataCbs.push(cb);
+      stream.resume();
     },
     onClose(cb: (error?: Error) => void): void {
       if (termination === undefined) closeCbs.push(cb);

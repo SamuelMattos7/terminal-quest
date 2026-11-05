@@ -6,6 +6,7 @@ import type { NudgeState } from '../progression/dialogue.js';
 import type { Session } from '../sandbox/sessionManager.js';
 import type { ShellStream } from '../sandbox/provider.js';
 import { createBudget } from '../util/resourceLimits.js';
+import type { SessionReplay } from './sessionReplay.js';
 
 // Live per-connection session state for plan.md §4.1/§6.1 (T3.2). The
 // SessionManager owns TTLs and sandboxes; this registry owns everything
@@ -25,6 +26,7 @@ export interface LiveSession {
   watchers: { stop(): void }[];
   socket: { send(payload: string): void; close(code?: number): void } | undefined;
   completed: boolean;
+  replay: SessionReplay;
   closed: boolean;
   dialogue: NudgeState & { welcomed: boolean };
 }

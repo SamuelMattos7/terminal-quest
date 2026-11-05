@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import WebSocket from 'ws';
-import { MAX_CLIENT_FRAME_BYTES } from '@terminal-quest/shared';
+import { MAX_CLIENT_FRAME_BYTES, ServerMessageSchema } from '@terminal-quest/shared';
 import { guestCookie, makeTestContext } from '../testUtils.js';
 import { attempts, events, users } from '../db/schema.js';
 import { ResourceLimitError } from '../util/resourceLimits.js';
@@ -36,7 +36,9 @@ async function setup() {
     },
   }));
   const errors: ((err: Error) => void)[] = [];
-  vi.spyOn(app.provider, 'watchFile').mockImplementation(async (_h, _path, _onLine, onError) => {
+  const lines = new Map<string, (line: string) => void>();
+  vi.spyOn(app.provider, 'watchFile').mockImplementation(async (_h, path, onLine, onError) => {
+    lines.set(path, onLine);
     if (onError) errors.push(onError);
     return { stop: vi.fn() };
   });
@@ -49,10 +51,13 @@ async function setup() {
   await app.listen({ port: 0, host: '127.0.0.1' });
   const address = app.server.address();
   if (address === null || typeof address !== 'object') throw new Error('server did not bind');
-  const connect = () => {
-    const socket = new WebSocket(`ws://127.0.0.1:${address.port}/ws/sessions/${live.session.id}`, {
-      headers: { cookie },
-    });
+  const connect = (query = '') => {
+    const socket = new WebSocket(
+      `ws://127.0.0.1:${address.port}/ws/sessions/${live.session.id}${query}`,
+      {
+        headers: { cookie },
+      },
+    );
     sockets.push(socket);
     return socket;
   };
@@ -81,6 +86,7 @@ async function setup() {
     resize,
     errors,
     destroy,
+    lines,
     output: (chunk: Buffer) => output(chunk),
     shellClosed: (error?: Error) => shellClosed(error),
     connect,
@@ -91,6 +97,56 @@ async function setup() {
     },
   };
 }
+
+it('replays the startup greeting and missed output, hints, and committed result on attach (A16)', async () => {
+  const ctx = await setup();
+  const collect = async (query?: string) => {
+    const socket = ctx.connect(query);
+    const messages: unknown[] = [];
+    socket.on('message', (frame) =>
+      messages.push(ServerMessageSchema.parse(JSON.parse(String(frame)))),
+    );
+    await once(socket, 'message');
+    socket.send('{"t":"ping"}');
+    await vi.waitFor(() => expect(messages.at(-1)).toEqual({ t: 'pong' }));
+    return { socket, messages };
+  };
+  try {
+    ctx.output(Buffer.from('greeting 🐧'));
+    const first = await collect();
+    expect(first.messages).toContainEqual({ t: 'stdout', seq: 1, d: 'greeting 🐧' });
+    expect(first.messages).not.toContainEqual(expect.objectContaining({ t: 'hint' }));
+    const closed = once(first.socket, 'close');
+    first.socket.close();
+    await closed;
+    await vi.waitFor(() => expect(ctx.live.socket).toBeUndefined());
+
+    ctx.output(Buffer.from('missed output'));
+    ctx.lines.get('/run/tq/inbox')?.('{"cmd":"hint"}');
+    ctx.lines.get('/run/tq/cmdlog')?.('1\t0\t/home/player\ttouch done');
+    await vi.waitFor(() => expect(ctx.live.completed).toBe(true));
+
+    const resumed = await collect('?after=1');
+    expect(resumed.messages[0]).toMatchObject({
+      t: 'session_state',
+      completed: true,
+      hintsUsed: 1,
+    });
+    expect(resumed.messages.slice(1, -1)).toEqual([
+      expect.objectContaining({ t: 'hint', tier: 1, text: expect.any(String) }),
+      expect.objectContaining({
+        t: 'level_complete',
+        result: expect.objectContaining({ xp: expect.any(Number) }),
+      }),
+      { t: 'stdout', seq: 2, d: 'missed output' },
+    ]);
+    expect(ctx.db.select().from(attempts).all()).toEqual([
+      expect.objectContaining({ status: 'completed' }),
+    ]);
+  } finally {
+    await ctx.cleanup();
+  }
+});
 
 describe('session resource boundaries (A03)', () => {
   it.each(['single', 'fragmented', 'utf8'] as const)(

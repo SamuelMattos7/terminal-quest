@@ -324,3 +324,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A15 found that replacing a WebSocket left the previous transport open. The adapter identity guard and session budgets already existed, but the reconnect test detached the first socket manually and bypassed the real handoff.
 - **Decision:** Assign the new adapter before closing the old one with code 4409. Accept frames only from the current open transport, and let close handlers detach only their own adapter. Keep both traffic budgets on the live session. The browser treats 4409 as a final close to prevent tabs from repeatedly replacing each other.
 - **Consequences:** A replacement keeps the same shell and remaining traffic allowance. Ordinary network disconnects still use the existing retry policy.
+
+### D-036 — Resume the terminal tail and recover issued outcomes
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A16 found that the session snapshot could say a level was completed without restoring its result, and that hints and shell output were lost between socket attachments. Even brief opens refilled all reconnect attempts.
+- **Decision:** Keep the latest 64 KiB of serialized terminal output, up to 256 frames, per live attempt. Number the frames and resume after the browser's last received sequence. Resend up to three issued hints and one committed completion result after the state snapshot. Apply them idempotently in the browser, and buffer a bounded tail until the terminal mounts. Refill the three-retry budget after 10 seconds of continuous connection.
+- **Consequences:** Reconnects can restore the score and revealed hints without reissuing hints or awarding XP again. A long gap can exceed the terminal tail; the browser then receives the newest retained output. Replay ends when the live attempt closes.

@@ -3,6 +3,7 @@ import {
   ClientMessageSchema,
   MAX_CLIENT_FRAME_BYTES,
   SESSION_SOCKET_REPLACED,
+  SessionReplayQuerySchema,
 } from '@terminal-quest/shared';
 import { userFromToken, requestToken } from '../auth.js';
 import type { LiveSession } from './liveSession.js';
@@ -114,6 +115,11 @@ export async function registerSessionSocket(
           socket.close(4401, 'unauthorized');
           return;
         }
+        const query = SessionReplayQuerySchema.safeParse(request.query);
+        if (!query.success) {
+          socket.close(1008, 'bad replay cursor');
+          return;
+        }
         const adapter = boundedSocket(socket);
         const previous = live.socket;
         // Revoke ownership before closing: frames and close events from the
@@ -122,6 +128,7 @@ export async function registerSessionSocket(
         previous?.close(SESSION_SOCKET_REPLACED);
         const s = sessionStateMessage(live);
         live.socket.send(JSON.stringify({ t: 'session_state', ...s, hintsTotal: 3 }));
+        live.replay.replay(query.data.after ?? 0, adapter.send);
         if (!live.dialogue.welcomed) {
           live.dialogue.welcomed = true;
           live.socket.send(

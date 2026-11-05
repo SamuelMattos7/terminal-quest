@@ -21,7 +21,9 @@ export interface FlowDeps {
 
 export function send(live: LiveSession, msg: ServerMessage): void {
   if (live.closed && msg.t !== 'closing') return;
-  live.socket?.send(JSON.stringify(msg));
+  const payload = JSON.stringify(msg);
+  if (msg.t === 'hint' || msg.t === 'level_complete') live.replay.remember(msg, payload);
+  live.socket?.send(payload);
 }
 
 export function isActive(deps: FlowDeps, live: LiveSession): boolean {

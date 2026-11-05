@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { toPublicLevel } from './api.js';
-import { ClientMessageSchema, ServerMessageSchema } from './protocol.js';
+import { ClientMessageSchema, ServerMessageSchema, SessionReplayQuerySchema } from './protocol.js';
 import { LevelSchema } from './level.js';
 import { validLevelInput } from './test-fixtures.js';
+
+it('accepts an optional safe replay cursor and rejects malformed or duplicate values', () => {
+  expect(SessionReplayQuerySchema.parse({})).toEqual({});
+  expect(SessionReplayQuerySchema.parse({ after: '123' })).toEqual({ after: 123 });
+  for (const after of ['-1', '1.5', '9007199254740992', ['1', '2']]) {
+    expect(SessionReplayQuerySchema.safeParse({ after }).success).toBe(false);
+  }
+});
 
 describe('ClientMessageSchema', () => {
   it('parses stdin, resize, hint, check, ping', () => {
@@ -51,9 +59,10 @@ describe('ServerMessageSchema', () => {
   });
 
   it('parses stdout, objective, tux, coach, error, pong, closing', () => {
-    expect(ServerMessageSchema.parse({ t: 'stdout', d: 'hi' })).toEqual({
+    expect(ServerMessageSchema.parse({ t: 'stdout', d: 'hi', seq: 1 })).toEqual({
       t: 'stdout',
       d: 'hi',
+      seq: 1,
     });
     expect(ServerMessageSchema.parse({ t: 'objective', id: 'a', status: 'done' })).toMatchObject({
       t: 'objective',

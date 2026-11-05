@@ -7,6 +7,7 @@ import {
 
 /** Framework-free WebSocket wrapper for `/ws/sessions/:sessionId` (plan.md §6.1). */
 export const MAX_RECONNECT_ATTEMPTS = 3;
+export const STABLE_CONNECTION_MS = 10_000;
 
 const BACKOFF_MS = [1000, 2000, 4000];
 
@@ -39,6 +40,7 @@ export class SessionSocket {
   private ws: WebSocket | null = null;
   private closedByClient = false;
   private reconnects = 0;
+  private lastOutputSeq = 0;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private readonly createSocket: SocketFactory;
 
@@ -75,16 +77,26 @@ export class SessionSocket {
   }
 
   private openSocket(): void {
-    const ws = this.createSocket(this.url);
+    const separator = this.url.includes('?') ? '&' : '?';
+    const target =
+      this.lastOutputSeq === 0 ? this.url : `${this.url}${separator}after=${this.lastOutputSeq}`;
+    const ws = this.createSocket(target);
     this.ws = ws;
+    let openedAt: number | undefined;
     ws.addEventListener('open', () => {
-      this.reconnects = 0;
+      if (this.ws !== ws) return;
+      openedAt = Date.now();
       this.onEvent({ kind: 'open' });
     });
     ws.addEventListener('message', (event: Event) => {
+      if (this.ws !== ws || this.closedByClient) return;
       this.handleFrame((event as MessageEvent).data);
     });
     ws.addEventListener('close', (event: Event) => {
+      if (this.ws !== ws) return;
+      if (openedAt !== undefined && Date.now() - openedAt >= STABLE_CONNECTION_MS) {
+        this.reconnects = 0;
+      }
       this.handleClose((event as CloseEvent).code);
     });
   }
@@ -104,6 +116,10 @@ export class SessionSocket {
     if (!msg.success) {
       console.warn('[tq] ignoring malformed socket frame');
       return;
+    }
+    if (msg.data.t === 'stdout') {
+      if (msg.data.seq <= this.lastOutputSeq) return;
+      this.lastOutputSeq = msg.data.seq;
     }
     this.onEvent({ kind: 'message', message: msg.data });
   }

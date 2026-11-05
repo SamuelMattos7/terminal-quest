@@ -5,6 +5,17 @@ import { boundedText, MAX_CLIENT_FRAME_BYTES } from './limits.js';
 
 export const SESSION_SOCKET_REPLACED = 4409;
 
+export const SessionReplayQuerySchema = z
+  .object({
+    after: z
+      .string()
+      .regex(/^\d{1,16}$/)
+      .transform(Number)
+      .pipe(z.number().int().safe())
+      .optional(),
+  })
+  .strict();
+
 // WebSocket protocol for `/ws/sessions/:sessionId` (plan.md §6.1).
 // Text frames containing JSON. Behavioural rules (rate limits, frame size,
 // 4401 ownership close) are enforced by the server socket layer (T3.2);
@@ -73,7 +84,9 @@ export const ServerMessageSchema = z.discriminatedUnion('t', [
       completed: z.boolean(),
     })
     .strict(),
-  z.object({ t: z.literal('stdout'), d: z.string() }).strict(),
+  z
+    .object({ t: z.literal('stdout'), d: z.string(), seq: z.number().int().positive().safe() })
+    .strict(),
   z
     .object({
       t: z.literal('objective'),

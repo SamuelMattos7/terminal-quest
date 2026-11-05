@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { SessionSocket, type SessionEvent } from './socket.js';
+import { SessionSocket, STABLE_CONNECTION_MS, type SessionEvent } from './socket.js';
 
 /** Minimal scriptable WebSocket stand-in. */
 class FakeWebSocket {
@@ -96,17 +96,17 @@ describe('SessionSocket', () => {
     const ws = FakeWebSocket.instances[0] as FakeWebSocket;
     ws.open();
     events.length = 0;
-    ws.receive(JSON.stringify({ t: 'stdout', d: 'hi' }));
+    ws.receive(JSON.stringify({ t: 'stdout', d: 'hi', seq: 1 }));
     ws.receive('not json');
     ws.receive(JSON.stringify({ t: 'bogus' }));
     ws.receive(JSON.stringify({ t: 'objective', id: 'o1', status: 'done' }));
     expect(events).toEqual([
-      { kind: 'message', message: { t: 'stdout', d: 'hi' } },
+      { kind: 'message', message: { t: 'stdout', d: 'hi', seq: 1 } },
       { kind: 'message', message: { t: 'objective', id: 'o1', status: 'done' } },
     ]);
   });
 
-  it('reconnects with backoff after an abnormal close and resets on open', () => {
+  it('reconnects with backoff and restores the budget after a stable connection', () => {
     const { events, socket } = setup();
     socket.connect();
     const first = FakeWebSocket.instances[0] as FakeWebSocket;
@@ -120,29 +120,53 @@ describe('SessionSocket', () => {
     const second = FakeWebSocket.instances[1] as FakeWebSocket;
     second.open();
     expect(events.at(-1)).toEqual({ kind: 'open' });
-    // Counter reset: the next drop starts at attempt 1 again.
+    vi.advanceTimersByTime(STABLE_CONNECTION_MS);
     events.length = 0;
     second.drop(1006);
     expect(events).toEqual([{ kind: 'reconnecting', attempt: 1 }]);
   });
 
-  it('gives up after three failed reconnects', () => {
+  it.each([false, true])('gives up after three failed reconnects (brief opens: %s)', (opens) => {
     const { events, socket } = setup();
     socket.connect();
     (FakeWebSocket.instances[0] as FakeWebSocket).open();
     events.length = 0;
     for (let i = 0; i < 3; i += 1) {
       const current = FakeWebSocket.instances.at(-1) as FakeWebSocket;
+      if (opens && i > 0) current.open();
       current.drop(1006);
       vi.advanceTimersByTime(5000);
     }
     const attempts = events.filter((e) => e.kind === 'reconnecting');
     expect(attempts.map((e) => (e.kind === 'reconnecting' ? e.attempt : 0))).toEqual([1, 2, 3]);
-    (FakeWebSocket.instances.at(-1) as FakeWebSocket).drop(1006);
+    const last = FakeWebSocket.instances.at(-1) as FakeWebSocket;
+    if (opens) last.open();
+    last.drop(1006);
     expect(events.at(-1)).toEqual({ kind: 'closed', code: 1006, gaveUp: true });
     expect(FakeWebSocket.instances).toHaveLength(4);
     vi.advanceTimersByTime(30000);
     expect(FakeWebSocket.instances).toHaveLength(4);
+  });
+
+  it('resumes after the last received terminal frame and ignores duplicate and stale output', () => {
+    const { events, socket } = setup();
+    socket.connect();
+    const first = FakeWebSocket.instances[0]!;
+    first.open();
+    first.receive('{"t":"stdout","d":"seen","seq":5}');
+    first.drop();
+    first.receive('{"t":"stdout","d":"stale","seq":6}');
+    vi.advanceTimersByTime(1000);
+    const second = FakeWebSocket.instances[1]!;
+    expect(second.url).toBe('/ws/sessions/s1?after=5');
+    second.open();
+    second.receive('{"t":"stdout","d":"seen","seq":5}');
+    second.receive('{"t":"stdout","d":"missed","seq":6}');
+    expect(
+      events.flatMap((e) =>
+        e.kind === 'message' && e.message.t === 'stdout' ? [e.message.d] : [],
+      ),
+    ).toEqual(['seen', 'missed']);
   });
 
   it('never reconnects after authorization failure or socket replacement', () => {

@@ -54,7 +54,7 @@ function lastSocket(): MockSessionSocket {
   return socket;
 }
 
-function sessionStateMessage(): ServerMessage {
+function sessionStateMessage(): Extract<ServerMessage, { t: 'session_state' }> {
   return {
     t: 'session_state',
     level: {
@@ -112,7 +112,7 @@ describe('useSession', () => {
     const socket = await startLive();
     const written: string[] = [];
     useSession.getState().setStdoutWriter((d) => written.push(d));
-    socket.handler({ kind: 'message', message: { t: 'stdout', d: 'hi' } });
+    socket.handler({ kind: 'message', message: { t: 'stdout', d: 'hi', seq: 1 } });
     expect(written).toEqual(['hi']);
     useSession.getState().sendStdin('pwd\n');
     useSession.getState().sendResize(100, 30);
@@ -120,6 +120,28 @@ describe('useSession', () => {
     expect(socket.send).toHaveBeenCalledWith({ t: 'resize', cols: 100, rows: 30 });
     useSession.getState().sendStdin('');
     expect(socket.send).toHaveBeenCalledTimes(2);
+  });
+
+  it('flushes early terminal output once when the terminal mounts', async () => {
+    useSession.getState().setStdoutWriter(null);
+    const socket = await startLive();
+    socket.handler({ kind: 'message', message: { t: 'stdout', d: 'greeting 🐧', seq: 1 } });
+    const writer = vi.fn();
+    useSession.getState().setStdoutWriter(writer);
+    useSession.getState().setStdoutWriter(writer);
+    expect(writer).toHaveBeenCalledTimes(1);
+    expect(writer).toHaveBeenCalledWith('greeting 🐧');
+  });
+
+  it('restores missed hint text without double-counting snapshot or replayed hints', async () => {
+    const socket = await startLive();
+    const hint = { t: 'hint', tier: 1, text: 'try pwd', penaltyPct: 5 } as const;
+    socket.handler({ kind: 'message', message: hint });
+    socket.handler({ kind: 'message', message: { ...sessionStateMessage(), hintsUsed: 2 } });
+    socket.handler({ kind: 'message', message: hint });
+    socket.handler({ kind: 'message', message: { ...hint, tier: 2, text: 'look at the path' } });
+    expect(useSession.getState().hints.map((h) => h.text)).toEqual(['try pwd', 'look at the path']);
+    expect(useSession.getState().hintsUsed).toBe(2);
   });
 
   it('tracks objectives, hints, toasts, and completion', async () => {

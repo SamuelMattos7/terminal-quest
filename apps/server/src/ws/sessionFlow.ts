@@ -16,6 +16,7 @@ import { logger } from '../util/logger.js';
 import { TERMINAL_BYTES_PER_SECOND } from './socketLimits.js';
 import { closeLiveSession } from './sessionCleanup.js';
 import { tuxStatus, tuxExplain } from './sessionMessages.js';
+import { SessionReplay } from './sessionReplay.js';
 
 export type { FlowDeps } from './sessionContext.js';
 export { evaluateAndReport } from './sessionEvaluation.js';
@@ -114,6 +115,7 @@ export async function launchLevelSession(
       watchers: [],
       socket: undefined,
       completed: false,
+      replay: new SessionReplay(),
       closed: false,
       dialogue: {
         welcomed: false,
@@ -157,18 +159,14 @@ export async function launchLevelSession(
     };
     shell.onClose((err) => stopForFailure(err ?? new Error('shell closed unexpectedly'), 'shell'));
     assertLaunching();
-    // Provider chunks are already UTF-8 boundary-safe (T1.2); forward them.
-    // send() no-ops while no socket is attached, so this is wired once here.
+    // Provider chunks are already UTF-8 boundary-safe (T1.2).
     shell.onData((chunk) => {
       if (launching.closed) return;
       if (!outputBudget.take(chunk.length)) {
         stopForFailure(new ResourceLimitError('terminal output rate'), 'shell');
         return;
       }
-      const text = chunk.toString('utf8');
-      if (text !== '') {
-        send(launching, { t: 'stdout', d: text });
-      }
+      launching.replay.write(chunk.toString('utf8'), (payload) => launching.socket?.send(payload));
     });
     stage = 'inbox';
     const inbox = await deps.provider.watchFile(
