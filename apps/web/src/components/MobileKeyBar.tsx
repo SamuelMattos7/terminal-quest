@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react';
 import { strings } from '../strings.js';
 
 interface KeypadKey {
@@ -34,38 +35,81 @@ interface MobileKeyBarProps {
  * screens only; desktop keeps its physical keyboard.
  */
 export function MobileKeyBar({ ctrlArmed, onToggleCtrl, onKey }: MobileKeyBarProps) {
+  const spacerRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const spacer = spacerRef.current;
+    const toolbar = toolbarRef.current;
+    if (spacer === null || toolbar === null) return;
+
+    const viewport = window.visualViewport;
+    const updatePosition = (): void => {
+      const bottom = viewport
+        ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+        : 0;
+      toolbar.style.bottom = `${bottom}px`;
+      toolbar.style.maxHeight = viewport ? `${viewport.height}px` : '';
+    };
+    const reserveSpace = (): void => {
+      spacer.style.height = `${toolbar.offsetHeight}px`;
+    };
+
+    updatePosition();
+    reserveSpace();
+    viewport?.addEventListener('resize', updatePosition);
+    viewport?.addEventListener('scroll', updatePosition);
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(reserveSpace) : null;
+    observer?.observe(toolbar);
+    return () => {
+      observer?.disconnect();
+      viewport?.removeEventListener('resize', updatePosition);
+      viewport?.removeEventListener('scroll', updatePosition);
+    };
+  }, []);
+
   return (
-    <div
-      role="toolbar"
-      aria-label={strings.keybarLabel}
-      data-testid="mobile-keybar"
-      className="hidden flex-wrap gap-1 rounded-lg border border-border bg-panel p-2 [@media(pointer:coarse)]:flex lg:hidden"
-    >
-      <button
-        type="button"
-        aria-label="Ctrl"
-        aria-pressed={ctrlArmed}
-        title={ctrlArmed ? strings.ctrlArmed : undefined}
-        onClick={onToggleCtrl}
-        className={`min-h-9 min-w-9 rounded px-2 py-2 font-mono text-sm ${
-          ctrlArmed ? 'bg-green text-bg' : 'border border-border text-text'
-        }`}
+    <>
+      <div ref={spacerRef} aria-hidden="true" />
+      <div
+        ref={toolbarRef}
+        role="toolbar"
+        aria-label={strings.keybarLabel}
+        data-testid="mobile-keybar"
+        className="fixed inset-x-0 bottom-0 z-10 hidden max-h-dvh flex-wrap gap-1 overflow-y-auto overscroll-contain rounded-t-lg border border-border bg-panel p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] max-lg:[@media(pointer:coarse)]:flex"
+        onPointerDown={(event) => {
+          if (event.pointerType === 'touch' || event.pointerType === 'pen') {
+            // Keep the terminal's input focused so tapping a key leaves the keyboard open.
+            event.preventDefault();
+          }
+        }}
       >
-        Ctrl
-      </button>
-      {KEYS.map((key) => (
         <button
-          key={key.ariaLabel}
           type="button"
-          aria-label={key.ariaLabel}
-          onClick={() => {
-            onKey(key.seq);
-          }}
-          className="min-h-9 min-w-9 rounded border border-border px-2 py-2 font-mono text-sm text-text"
+          aria-label="Ctrl"
+          aria-pressed={ctrlArmed}
+          title={ctrlArmed ? strings.ctrlArmed : undefined}
+          onClick={onToggleCtrl}
+          className={`min-h-9 min-w-9 rounded px-2 py-2 font-mono text-sm ${
+            ctrlArmed ? 'bg-green text-bg' : 'border border-border text-text'
+          }`}
         >
-          {key.label}
+          Ctrl
         </button>
-      ))}
-    </div>
+        {KEYS.map((key) => (
+          <button
+            key={key.ariaLabel}
+            type="button"
+            aria-label={key.ariaLabel}
+            onClick={() => {
+              onKey(key.seq);
+            }}
+            className="min-h-9 min-w-9 rounded border border-border px-2 py-2 font-mono text-sm text-text"
+          >
+            {key.label}
+          </button>
+        ))}
+      </div>
+    </>
   );
 }

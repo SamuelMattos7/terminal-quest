@@ -372,3 +372,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A25 found that root CSS preferences did not update xterm. A26 found that activating panel controls could send focus back to the terminal.
 - **Decision:** Map the three font choices to 15, 17, and 19 px, matching the rounded page scale from xterm's 15 px default. Use a black-and-white theme with a contrast ratio target of 7 for terminal text in high-contrast mode. Turn off cursor blinking when reduced motion is enabled. Apply settings directly to xterm and refit. Keep click-to-focus for non-interactive quest-panel content.
 - **Consequences:** Players can change terminal preferences without losing terminal output or reconnecting, and panel controls keep their normal focus behavior.
+
+### D-042 — Use a native completion dialog and position the mobile keybar in the visible viewport
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A26 found that completion left keyboard focus on the game behind the dialog, short screens could hide actions, and the software keyboard could cover the keybar.
+- **Decision:** Open a native modal dialog, focus its heading, wrap Tab among the actions, and bound its scrolling to the viewport. Keep the existing completion actions as the way out of the dialog. Restore focus to the previous element if it still exists, or to the new terminal after replay. Dock the keybar to the visible viewport and reserve its height below the page content. Keep terminal focus on touch key presses.
+- **Consequences:** Completion content and actions remain reachable on short screens. The browser regression checks keyboard resize and pan through Chromium touch emulation with simulated viewport changes.

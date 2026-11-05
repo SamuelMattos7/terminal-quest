@@ -1,4 +1,5 @@
 import type { ServerMessage } from '@terminal-quest/shared';
+import { useLayoutEffect, useRef } from 'react';
 import { strings } from '../strings.js';
 
 type CompletionResult = Extract<ServerMessage, { t: 'level_complete' }>['result'];
@@ -12,16 +13,57 @@ interface CompleteModalProps {
 
 /** Level-complete celebration with rank, XP, skills, and next steps (plan.md §9.3). */
 export function CompleteModal({ result, onNext, onReplay, onBackToMap }: CompleteModalProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const firstActionRef = useRef<HTMLButtonElement>(null);
+  const lastActionRef = useRef<HTMLButtonElement>(null);
+
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current;
+    if (dialog === null) return;
+    const previousFocus = document.activeElement;
+    dialog.showModal();
+    headingRef.current?.focus();
+    dialog.scrollTop = 0;
+    return () => {
+      dialog.close();
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) {
+        previousFocus.focus({ preventScroll: true });
+      }
+    };
+  }, []);
+
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={strings.completeTitle}
+    <dialog
+      ref={dialogRef}
+      aria-labelledby="completion-title"
       data-testid="complete-modal"
-      className="fixed inset-0 z-10 flex items-center justify-center bg-bg/80 p-4"
+      className="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg overflow-y-auto overscroll-contain rounded-lg border border-green bg-panel text-text backdrop:bg-bg/80"
+      onCancel={(event) => {
+        event.preventDefault();
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== 'Tab') return;
+        const first = firstActionRef.current;
+        const last = lastActionRef.current;
+        if (event.shiftKey && (event.target === first || event.target === headingRef.current)) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && event.target === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }}
     >
-      <div className="w-full max-w-lg rounded-lg border border-green bg-panel p-6">
-        <h2 className="font-mono text-2xl text-green">{strings.completeTitle}</h2>
+      <div className="p-6">
+        <h2
+          ref={headingRef}
+          id="completion-title"
+          tabIndex={-1}
+          className="font-mono text-2xl text-green"
+        >
+          {strings.completeTitle}
+        </h2>
         <p className="mt-2 text-sm italic text-muted" data-testid="complete-message">
           Tux-9000: “{result.message}”
         </p>
@@ -78,6 +120,7 @@ export function CompleteModal({ result, onNext, onReplay, onBackToMap }: Complet
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
           {onNext !== null && (
             <button
+              ref={firstActionRef}
               type="button"
               onClick={onNext}
               data-testid="complete-next"
@@ -87,6 +130,7 @@ export function CompleteModal({ result, onNext, onReplay, onBackToMap }: Complet
             </button>
           )}
           <button
+            ref={onNext === null ? firstActionRef : undefined}
             type="button"
             onClick={onReplay}
             data-testid="complete-replay"
@@ -95,6 +139,7 @@ export function CompleteModal({ result, onNext, onReplay, onBackToMap }: Complet
             {strings.replayLevel}
           </button>
           <button
+            ref={lastActionRef}
             type="button"
             onClick={onBackToMap}
             data-testid="complete-back"
@@ -104,6 +149,6 @@ export function CompleteModal({ result, onNext, onReplay, onBackToMap }: Complet
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }
