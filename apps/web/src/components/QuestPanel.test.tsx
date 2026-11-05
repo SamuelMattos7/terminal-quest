@@ -85,8 +85,23 @@ describe('QuestPanel', () => {
 
   it('focuses the terminal when the panel is clicked', () => {
     const { onFocusTerminal } = renderPanel();
-    fireEvent.click(screen.getByLabelText(strings.missionTab));
-    expect(onFocusTerminal).toHaveBeenCalled();
+    fireEvent.click(screen.getByText(level.story));
+    expect(onFocusTerminal).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets panel controls handle clicks without moving focus to the terminal', () => {
+    const { onFocusTerminal, onRequestHint } = renderPanel();
+    const hintsTab = screen.getByRole('tab', { name: strings.hintsTab });
+    hintsTab.focus();
+    fireEvent.click(hintsTab, { detail: 0 });
+    expect(document.activeElement).toBe(hintsTab);
+    expect(hintsTab.getAttribute('aria-selected')).toBe('true');
+
+    fireEvent.click(screen.getByTestId('hint-button'));
+    expect(onRequestHint).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('tab', { name: strings.notesTab }));
+    fireEvent.click(screen.getByRole('link', { name: strings.openSpellbook }));
+    expect(onFocusTerminal).not.toHaveBeenCalled();
   });
 
   it('shows toasts', () => {

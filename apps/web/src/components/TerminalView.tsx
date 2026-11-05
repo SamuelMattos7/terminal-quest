@@ -3,9 +3,33 @@ import { Terminal } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
 import { useEffect, useRef } from 'react';
 import { useSession, type SessionStatus } from '../session/useSession.js';
+import { useSettings, type SettingsValues } from '../stores/settings.js';
 import { strings } from '../strings.js';
 
 const RESIZE_DEBOUNCE_MS = 150;
+
+const FONT_SIZE = { normal: 15, large: 17, xlarge: 19 };
+const TERMINAL_THEME = {
+  background: '#0b0f14',
+  foreground: '#d7e0ea',
+  cursor: '#3ddc84',
+  selectionBackground: '#243040',
+};
+const HIGH_CONTRAST_THEME = {
+  background: '#000000',
+  foreground: '#ffffff',
+  cursor: '#ffffff',
+  selectionBackground: '#334155',
+};
+
+function terminalOptions({ fontSize, highContrast, reducedMotion }: SettingsValues) {
+  return {
+    fontSize: FONT_SIZE[fontSize],
+    cursorBlink: !reducedMotion,
+    minimumContrastRatio: highContrast ? 7 : 1,
+    theme: highContrast ? HIGH_CONTRAST_THEME : TERMINAL_THEME,
+  };
+}
 
 const STATUS_LABEL: Record<SessionStatus, string> = {
   idle: strings.connectionClosed,
@@ -51,14 +75,8 @@ export function TerminalView({ onLeaveTerminal, ctrlKey, onCtrlConsumed }: Termi
     }
     const term = new Terminal({
       fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-      cursorBlink: true,
       scrollback: 5000,
-      theme: {
-        background: '#0b0f14',
-        foreground: '#d7e0ea',
-        cursor: '#3ddc84',
-        selectionBackground: '#243040',
-      },
+      ...terminalOptions(useSettings.getState()),
     });
     const fit = new FitAddon();
     term.loadAddon(fit);
@@ -100,6 +118,27 @@ export function TerminalView({ onLeaveTerminal, ctrlKey, onCtrlConsumed }: Termi
       return true;
     });
 
+    function refit(): void {
+      try {
+        fit.fit();
+      } catch {
+        return;
+      }
+      useSession.getState().sendResize(term.cols, term.rows);
+    }
+
+    const unsubscribeSettings = useSettings.subscribe((settings, previous) => {
+      if (
+        settings.fontSize === previous.fontSize &&
+        settings.highContrast === previous.highContrast &&
+        settings.reducedMotion === previous.reducedMotion
+      ) {
+        return;
+      }
+      Object.assign(term.options, terminalOptions(settings));
+      refit();
+    });
+
     let timer: ReturnType<typeof setTimeout> | null = null;
     const observer =
       typeof ResizeObserver === 'function'
@@ -109,18 +148,14 @@ export function TerminalView({ onLeaveTerminal, ctrlKey, onCtrlConsumed }: Termi
             }
             timer = setTimeout(() => {
               timer = null;
-              try {
-                fit.fit();
-              } catch {
-                return;
-              }
-              useSession.getState().sendResize(term.cols, term.rows);
+              refit();
             }, RESIZE_DEBOUNCE_MS);
           })
         : null;
     observer?.observe(container);
 
     return () => {
+      unsubscribeSettings();
       if (timer !== null) {
         clearTimeout(timer);
       }

@@ -364,3 +364,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A24 found that the idle nudge depended on another evaluation triggered by player activity.
 - **Decision:** When an evaluation finds pending objectives and at least three failures since progress, arm one timer per attempt for the remaining wait. Use the existing evaluation queue when it fires so the current objective state determines whether to nudge. Cancel the timer on objective progress, when required objectives are done, or at session teardown.
 - **Consequences:** Waiting can trigger the nudge without further input. An attempt still gets at most one nudge per period without objective progress.
+
+### D-041 — Apply accessibility preferences to the existing xterm instance
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A25 found that root CSS preferences did not update xterm. A26 found that activating panel controls could send focus back to the terminal.
+- **Decision:** Map the three font choices to 15, 17, and 19 px, matching the rounded page scale from xterm's 15 px default. Use a black-and-white theme with a contrast ratio target of 7 for terminal text in high-contrast mode. Turn off cursor blinking when reduced motion is enabled. Apply settings directly to xterm and refit. Keep click-to-focus for non-interactive quest-panel content.
+- **Consequences:** Players can change terminal preferences without losing terminal output or reconnecting, and panel controls keep their normal focus behavior.

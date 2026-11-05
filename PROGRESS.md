@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** Audit remediation: A01–A24 and A28 fixed. A25 is the next open audit finding. M8 is the next unfinished milestone (M5 gate green).
+**Current focus:** Audit remediation: A01–A25 and A28 fixed. A26 is the next open audit finding. M8 is the next unfinished milestone (M5 gate green).
 
 ---
 
@@ -210,6 +210,8 @@ Each branch records its own regression and verification evidence. The milestone 
 - [x] A22 — invalidate the Spellbook and Skills caches on level completion. ✅ `pnpm verify`: build/lint + 435 tests passed. Two navigation regressions reproduced the stale Spellbook with a cached or in-flight pre-clear response and now show the learned skill after returning through the map.
 - [x] A23 — report the effective streak on user reads. ✅ `pnpm verify`: build/lint + 435 tests passed. The profile API regression checks the UTC midnight boundary after a missed day and verifies the stored streak is preserved.
 - [x] A24 — schedule a hint nudge during inactivity. ✅ `pnpm verify`: build/lint + 435 tests passed. Fake-clock session tests verify the nudge fires once without more input and is canceled by objective progress or session teardown.
+- [x] A25 — apply font size, high contrast, and reduced motion to the live terminal. ✅ `pnpm verify`: build/lint + 437 tests passed. The terminal regression covers initial preferences, updates to the same xterm instance, refit and resize notification, and subscription cleanup.
+- [~] A26 — quest-panel controls keep focus out of xterm when activated. ✅ `pnpm verify`: panel regression covers mobile tabs, hint activation, and the Spellbook link. Completion-dialog focus and scrolling, keyboard-aware mobile keybar placement, and browser accessibility checks are still open.
 
 ## Known gaps
 
@@ -220,7 +222,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 | 2026-10-06 | skills.yaml prereqs | W1 skill edges authored in M7; W2+ skills still have empty `prereqs` | Author remaining edges during M8 |
 | 2026-10-06 | cron daemon start   | `needs_cron` field present (default true); daemon start not implemented                 | Implement in T10.1 admin polish; no admin levels exist yet |
 | 2026-10-11 | Web bundle size     | `dist` JS is ~576 KB (xterm.js); vite emits a chunk-size warning, no code-splitting yet | Consider `React.lazy` for `/play` during polish            |
-| 2026-11-05 | Repository audit | 31 original prioritized findings. A01–A24 and A28 fixed with regressions (see Audit remediation above). Remaining UI, CI, validation, and documentation gaps are detailed in [PROJECT_AUDIT.md](PROJECT_AUDIT.md). | Resolve remaining findings alongside planned milestones and complete M9 production validation. |
+| 2026-11-05 | Repository audit | 31 original prioritized findings. A01–A25 and A28 fixed with regressions (see Audit remediation above). A26 still needs modal focus and scrolling, mobile keybar placement, and browser accessibility checks. Remaining CI, validation, and documentation gaps are detailed in [PROJECT_AUDIT.md](PROJECT_AUDIT.md). | Resolve remaining findings alongside planned milestones and complete M9 production validation. |
 
 ## Blockers
 
