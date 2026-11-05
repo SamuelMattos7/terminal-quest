@@ -332,3 +332,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A16 found that the session snapshot could say a level was completed without restoring its result, and that hints and shell output were lost between socket attachments. Even brief opens refilled all reconnect attempts.
 - **Decision:** Keep the latest 64 KiB of serialized terminal output, up to 256 frames, per live attempt. Number the frames and resume after the browser's last received sequence. Resend up to three issued hints and one committed completion result after the state snapshot. Apply them idempotently in the browser, and buffer a bounded tail until the terminal mounts. Refill the three-retry budget after 10 seconds of continuous connection.
 - **Consequences:** Reconnects can restore the score and revealed hints without reissuing hints or awarding XP again. A long gap can exceed the terminal tail; the browser then receives the newest retained output. Replay ends when the live attempt closes.
+
+### D-037 — Send finite exec input over attached Docker stdin
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A18 calls for attaching stdin to non-PTY execs. The A04 workaround for Windows named pipes encoded input in command arguments, which worked for small input but failed when it exceeded Linux's argument size limit.
+- **Decision:** Attach stdin only when the caller supplies it, and pass its UTF-8 byte count to the supervisor. The supervisor reads exactly that many bytes into a temporary file and gives the command that file as stdin. An omitted input still uses `/dev/null`.
+- **Consequences:** Commands see EOF for both empty and nonempty input without requiring a half-close on the Docker connection. Stdout and stderr remain available on Windows named pipes, and stdin contents no longer count toward the argument size limit.

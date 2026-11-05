@@ -13,15 +13,20 @@ if libc.prctl(36, 1, 0, 0, 0) != 0:
 
 duration, marker, user = float(sys.argv[1]), sys.argv[2], sys.argv[3]
 account = pwd.getpwuid(int(user)) if user.isdecimal() else pwd.getpwnam(user)
-input_count = int(sys.argv[4])
+input_bytes = int(sys.argv[4])
 input_file = None
-if input_count >= 0:
+if input_bytes >= 0:
+    # Give the command EOF without half-closing the Docker transport.
     input_file = tempfile.TemporaryFile()
-    for chunk in sys.argv[5:5 + input_count]:
-        input_file.write(base64.b64decode(chunk))
+    while input_bytes:
+        chunk = sys.stdin.buffer.read(min(input_bytes, 65536))
+        if not chunk:
+            raise EOFError("exec stdin ended before the announced byte count")
+        input_file.write(chunk)
+        input_bytes -= len(chunk)
     input_file.seek(0)
 deadline = time.monotonic() + duration
-command = json.loads(base64.b64decode(''.join(sys.argv[5 + max(input_count, 0):])))
+command = json.loads(base64.b64decode(''.join(sys.argv[5:])))
 try:
     child = subprocess.Popen(command,
         stdin=input_file if input_file is not None else subprocess.DEVNULL, user=account.pw_uid,

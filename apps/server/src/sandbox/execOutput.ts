@@ -9,7 +9,7 @@ export function collectExecOutput(
   stream: Duplex,
   demux: (stdout: PassThrough, stderr: PassThrough) => void,
   timeoutMs: number,
-  stdin?: string,
+  stdin?: Buffer,
   control?: { timeoutMarker?: string; onTimeout?: () => Promise<void> },
 ): Promise<ExecResult> {
   // Fixed buffers avoid per-chunk array overhead for tiny-chunk floods.
@@ -85,10 +85,9 @@ export function collectExecOutput(
     });
     try {
       demux(stdout, stderr);
-      if (stdin !== undefined) {
-        stream.write(stdin);
-        stream.end();
-      }
+      // The supervisor reads exactly the announced byte count. Keep the
+      // transport open for stdout/stderr, including on Windows named pipes.
+      if (stdin?.length) stream.write(stdin);
     } catch (err) {
       fail(err);
     }

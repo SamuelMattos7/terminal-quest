@@ -17,15 +17,7 @@ export async function dockerExec(
     throw new RangeError('exec timeoutMs must be positive and finite');
   }
   const timeoutMarker = `\nTQ_TIMEOUT_${randomUUID()}\n`;
-  // A Windows named pipe cannot half-close stdin while retaining stdout.
-  // Supply finite input as argv-safe base64 chunks; the supervisor provides
-  // a file descriptor with EOF. Chunking avoids Linux's per-argument limit.
-  const inputChunks =
-    opts?.stdin === undefined
-      ? []
-      : (Buffer.from(opts.stdin)
-          .toString('base64')
-          .match(/.{1,32768}/g) ?? []);
+  const stdin = opts?.stdin === undefined ? undefined : Buffer.from(opts.stdin);
   // Do not leave the command/pattern in the supervisor's process argv:
   // commands such as pkill -f must not accidentally match their supervisor.
   const commandChunks =
@@ -41,8 +33,7 @@ export async function dockerExec(
       String(timeoutMs / 1000),
       timeoutMarker,
       opts?.user ?? 'root',
-      String(opts?.stdin === undefined ? -1 : inputChunks.length),
-      ...inputChunks,
+      String(stdin?.length ?? -1),
       ...commandChunks,
     ],
     // Keep the supervisor protected from player signals; only the command
@@ -51,16 +42,20 @@ export async function dockerExec(
     WorkingDir: opts?.cwd,
     Env:
       opts?.env === undefined ? undefined : Object.entries(opts.env).map(([k, v]) => `${k}=${v}`),
+    AttachStdin: stdin !== undefined,
     AttachStdout: true,
     AttachStderr: true,
   });
-  const stream = (await exec.start({ hijack: true, stdin: false })) as unknown as Duplex;
+  const stream = (await exec.start({
+    hijack: true,
+    stdin: stdin !== undefined,
+  })) as unknown as Duplex;
   return collectExecOutput(
     exec,
     stream,
     (stdout, stderr) => container.modem.demuxStream(stream, stdout, stderr),
     timeoutMs + EXEC_CLEANUP_GRACE_MS,
-    undefined,
+    stdin,
     {
       timeoutMarker,
       onTimeout: async () => {
