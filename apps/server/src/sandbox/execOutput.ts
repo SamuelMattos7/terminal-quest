@@ -10,6 +10,7 @@ export function collectExecOutput(
   demux: (stdout: PassThrough, stderr: PassThrough) => void,
   timeoutMs: number,
   stdin?: string,
+  control?: { timeoutMarker?: string; onTimeout?: () => Promise<void> },
 ): Promise<ExecResult> {
   // Fixed buffers avoid per-chunk array overhead for tiny-chunk floods.
   const out = Buffer.alloc(MAX_EXEC_OUTPUT_BYTES);
@@ -26,19 +27,31 @@ export function collectExecOutput(
       stdout.destroy();
       stderr.destroy();
     };
-    const result = (code: number, timedOut = false): ExecResult => ({
-      code,
-      timedOut,
-      stdout: out.toString('utf8', 0, outSize),
-      stderr: err.toString('utf8', 0, errSize),
-    });
+    const result = (code: number, timedOut = false): ExecResult => {
+      let stderrText = err.toString('utf8', 0, errSize);
+      if (control?.timeoutMarker !== undefined && stderrText.endsWith(control.timeoutMarker)) {
+        timedOut = true;
+        code = -1;
+        stderrText = stderrText.slice(0, -control.timeoutMarker.length);
+      }
+      return { code, timedOut, stdout: out.toString('utf8', 0, outSize), stderr: stderrText };
+    };
     const finish = (code: number, timedOut = false): void => {
       if (done) return;
       done = true;
       cleanup();
       resolve(result(code, timedOut));
     };
-    const timer = setTimeout(() => finish(-1, true), timeoutMs);
+    const timer = setTimeout(() => {
+      if (done) return;
+      done = true;
+      cleanup();
+      // Do not report timeout until termination has actually completed.
+      void (control?.onTimeout?.() ?? Promise.resolve()).then(
+        () => resolve(result(-1, true)),
+        reject,
+      );
+    }, timeoutMs);
     timer.unref?.();
     const collect = (target: Buffer, chunk: Buffer, isOut: boolean): void => {
       if (done) return;
