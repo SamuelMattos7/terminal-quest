@@ -16,11 +16,15 @@ export async function checkPortListening(
     return false;
   }
   const proto = check.proto ?? 'tcp';
-  return res.stdout
-    .split('\n')
-    .some(
-      (line) => line.includes(`:${check.port}`) && (proto === 'udp' || line.includes('LISTEN')),
+  const portSuffix = `:${check.port}`;
+  return res.stdout.split('\n').some((line) => {
+    const [netid, state, , , localEndpoint] = line.trim().split(/\s+/);
+    return (
+      netid === proto &&
+      (proto === 'udp' || state === 'LISTEN') &&
+      localEndpoint?.endsWith(portSuffix) === true
     );
+  });
 }
 
 export async function checkExec(

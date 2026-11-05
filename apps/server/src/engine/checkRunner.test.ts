@@ -25,6 +25,34 @@ const notFileExists = {
   checks: [{ type: 'file_exists', path: '/tmp/probe', kind: 'any' }],
 } satisfies Check;
 
+const tcpListener = 'tcp LISTEN 0 128 0.0.0.0:8080 0.0.0.0:*';
+const udpListener = 'udp UNCONN 0 0 [::]:8080 [::]:*';
+
+it.each([
+  { row: tcpListener, port: 8080, proto: undefined, expected: true },
+  { row: tcpListener, port: 80, proto: 'tcp', expected: false },
+  { row: tcpListener, port: 8079, proto: 'tcp', expected: false },
+  { row: tcpListener, port: 8081, proto: 'tcp', expected: false },
+  { row: tcpListener, port: 8080, proto: 'udp', expected: false },
+  { row: udpListener, port: 8080, proto: 'udp', expected: true },
+  { row: udpListener, port: 8080, proto: 'tcp', expected: false },
+  {
+    row: 'udp UNCONN 0 0 127.0.0.1:8081 127.0.0.1:8080',
+    port: 8080,
+    proto: 'udp',
+    expected: false,
+  },
+] as const)(
+  'returns $expected for $proto port $port with "$row"',
+  async ({ row, port, proto, expected }) => {
+    const stdout = `Netid State Recv-Q Send-Q Local Address:Port Peer Address:Port\n${row}\n`;
+    const provider = { exec: vi.fn().mockResolvedValue({ code: 0, stdout, stderr: '' }) };
+    const ctx = { seed: 1, levelId: 'level', answers: [], commands: [] };
+    const check = CheckSchema.parse({ type: 'port_listening', port, proto });
+    expect(await runCheck(provider, handle, check, ctx)).toBe(expected);
+  },
+);
+
 it.each([
   { check: fileAbsent, leaf: 'file_absent' },
   { check: notFileExists, leaf: 'file_exists' },
