@@ -158,7 +158,12 @@ quest.example.com {
 ```bash
 sudo systemctl reload caddy
 ```
-Caddy proxies WebSockets automatically. The server sets the Content-Security-Policy header itself (see `plan.md §13`).
+Caddy proxies WebSockets automatically. Keep Caddy on the same host and point it
+at `127.0.0.1`. The compiled server listens on that address and uses the
+immediate client IP forwarded by Caddy for rate limits. Set `PUBLIC_ORIGIN` to
+the external HTTPS origin. The compiled server always marks guest cookies
+`Secure`, and its Content-Security-Policy allows same-origin assets and the
+WebSocket at that public origin.
 
 ## 9. Backups
 
@@ -186,7 +191,9 @@ pnpm images:build           # only needed if sandbox images changed
 pnpm db:migrate
 systemctl --user restart terminal-quest
 ```
-Active sessions end on restart (clients see a `closing` message). The orphan sweep at boot removes leftover sandboxes.
+On SIGTERM or SIGINT, the server sends active clients a `closing` message,
+marks unfinished attempts abandoned, and waits for sandbox teardown. The
+orphan sweep at boot removes leftover sandboxes.
 
 ## 11. Operations checklist
 

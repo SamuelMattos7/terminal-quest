@@ -10,7 +10,9 @@ describe('web delivery startup', () => {
     const root = mkdtempSync(join(tmpdir(), 'tq-web-test-'));
     const app = Fastify();
     try {
-      await expect(registerWebDelivery(app, root)).rejects.toThrow('run pnpm build');
+      await expect(registerWebDelivery(app, root, 'https://quest.example.com')).rejects.toThrow(
+        'run pnpm build',
+      );
     } finally {
       await app.close();
       rmSync(root, { recursive: true, force: true });
@@ -24,7 +26,7 @@ describe('web delivery startup', () => {
     writeFileSync(join(root, 'secret.txt'), 'not a public asset');
     const app = Fastify();
     try {
-      await registerWebDelivery(app, root);
+      await registerWebDelivery(app, root, 'https://quest.example.com');
       for (const url of ['/secret.txt', '/assets/../secret.txt', '/assets/%2e%2e/secret.txt']) {
         const response = await app.inject(url);
         expect(response.statusCode).toBe(404);

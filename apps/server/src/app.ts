@@ -64,8 +64,13 @@ function loadCoachRules(contentRoot: string): CoachRule[] {
 }
 
 export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInstance> {
-  const app = Fastify({ logger: false });
   const config = opts.config ?? loadConfig();
+  const production = opts.webRoot !== undefined;
+  const app = Fastify({
+    logger: false,
+    // Caddy connects over IPv4 loopback. Stop at its immediate client.
+    trustProxy: production && ((address, hop) => address === '127.0.0.1' && hop === 0),
+  });
   const db = opts.db ?? getDb();
   const contentRoot = opts.contentRoot ?? discoverContentRoot();
   const levels = loadLevels(contentRoot);
@@ -112,6 +117,14 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
 
   await app.register(cookie);
   await app.register(rateLimit, { max: 60, timeWindow: '1 minute' });
+  const reaper = new Reaper(manager, logger);
+  let earlyCleanup: Promise<void> | undefined;
+  // Run before the WebSocket plugin closes upgraded connections so clients
+  // can receive the shutdown frame. onClose handles any HTTP launches still draining.
+  app.addHook('preClose', async () => {
+    reaper.stop();
+    earlyCleanup = closeActiveSessions();
+  });
   await app.register(websocket, {
     options: { maxPayload: MAX_CLIENT_FRAME_BYTES, perMessageDeflate: false },
   });
@@ -132,7 +145,7 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   });
 
   await registerHealthRoute(app, config);
-  await registerAuthRoutes(app);
+  await registerAuthRoutes(app, production);
   await registerMeRoutes(app);
   await registerWorldsRoutes(app);
   await registerLevelRoutes(app);
@@ -141,10 +154,9 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   await registerSessionSocket(app, { ...flowDeps, config });
 
   if (opts.webRoot !== undefined) {
-    await registerWebDelivery(app, opts.webRoot);
+    await registerWebDelivery(app, opts.webRoot, config.PUBLIC_ORIGIN);
   }
 
-  const reaper = new Reaper(manager, logger);
   if (opts.startReaper ?? true) {
     try {
       await reaper.start();
@@ -157,18 +169,23 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
     }
   }
 
+  async function closeActiveSessions(): Promise<void> {
+    await Promise.all(
+      [...live.values()].map(async (active) => {
+        try {
+          await closeLiveSession(flowDeps, active, 'server_shutdown');
+        } catch (err) {
+          logger.warn(
+            { err, attemptId: active.attemptId, levelId: active.level.id },
+            'shutdown session cleanup failed; retrying sandbox teardown',
+          );
+        }
+      }),
+    );
+  }
+
   app.addHook('onClose', async () => {
-    reaper.stop();
-    for (const active of [...live.values()]) {
-      try {
-        await closeLiveSession(flowDeps, active, 'server_shutdown');
-      } catch (err) {
-        logger.warn(
-          { err, attemptId: active.attemptId, levelId: active.level.id },
-          'shutdown session cleanup failed; retrying sandbox teardown',
-        );
-      }
-    }
+    await Promise.all([earlyCleanup, closeActiveSessions()]);
     // Includes failed launches/manual closes that no longer have a live entry.
     await manager.closeAll();
   });

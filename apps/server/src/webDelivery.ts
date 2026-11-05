@@ -4,7 +4,11 @@ import fastifyStatic from '@fastify/static';
 import type { FastifyInstance } from 'fastify';
 
 /** Opt-in for the production entry point; development continues to use Vite. */
-export async function registerWebDelivery(app: FastifyInstance, webRoot: string): Promise<void> {
+export async function registerWebDelivery(
+  app: FastifyInstance,
+  webRoot: string,
+  publicOrigin: string,
+): Promise<void> {
   try {
     if (!statSync(join(webRoot, 'index.html')).isFile()) throw new Error('index is not a file');
   } catch (cause) {
@@ -12,6 +16,19 @@ export async function registerWebDelivery(app: FastifyInstance, webRoot: string)
       cause,
     });
   }
+
+  const origin = new URL(publicOrigin);
+  const websocketOrigin = `${origin.protocol === 'https:' ? 'wss:' : 'ws:'}//${origin.host}`;
+  const csp = [
+    "default-src 'self'",
+    `connect-src 'self' ${websocketOrigin}`,
+    // xterm generates a style element and the UI sets dynamic styles.
+    "style-src 'self' 'unsafe-inline'",
+    "object-src 'none'",
+    "base-uri 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+  ].join('; ');
 
   // Only Vite's public assets are mounted, never the repository/content tree.
   await app.register(fastifyStatic, {
@@ -31,6 +48,7 @@ export async function registerWebDelivery(app: FastifyInstance, webRoot: string)
     const reserved = /^\/(?:api|ws|healthz|assets)(?:\/|$)/.test(path);
     // Encoded/dotted paths are never client routes (missing files stay 404).
     if (navigation && wantsHtml && !reserved && !/[.%\\]/.test(path)) {
+      reply.header('Content-Security-Policy', csp);
       return reply.sendFile('index.html', webRoot, { maxAge: 0, immutable: false });
     }
     return reply.code(404).send({ error: 'not_found' });
