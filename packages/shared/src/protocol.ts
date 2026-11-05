@@ -3,6 +3,8 @@ import { PublicLevelSchema } from './api.js';
 import { ExplainCardSchema } from './level.js';
 import { boundedText, MAX_CLIENT_FRAME_BYTES } from './limits.js';
 
+export const SESSION_SOCKET_REPLACED = 4409;
+
 // WebSocket protocol for `/ws/sessions/:sessionId` (plan.md §6.1).
 // Text frames containing JSON. Behavioural rules (rate limits, frame size,
 // 4401 ownership close) are enforced by the server socket layer (T3.2);

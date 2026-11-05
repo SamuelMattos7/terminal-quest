@@ -8,6 +8,7 @@ import { attempts, events, users } from '../db/schema.js';
 import { ResourceLimitError } from '../util/resourceLimits.js';
 import { logger } from '../util/logger.js';
 import * as auth from '../auth.js';
+import { SOCKET_MESSAGES_PER_SECOND } from './socketLimits.js';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -49,20 +50,25 @@ async function setup() {
   const address = app.server.address();
   if (address === null || typeof address !== 'object') throw new Error('server did not bind');
   const connect = () => {
-    // Detach the old adapter first so this readiness assertion cannot
-    // accidentally accept a previous attachment during async auth.
-    live.socket = undefined;
     const socket = new WebSocket(`ws://127.0.0.1:${address.port}/ws/sessions/${live.session.id}`, {
       headers: { cookie },
     });
     sockets.push(socket);
     return socket;
   };
-  const attach = async () => {
+  const attach = async (confirmWithPing = true) => {
     const socket = connect();
-    await once(socket, 'open');
-    await vi.waitFor(() => expect(live.socket).toBeDefined());
-    const pong = once(socket, 'message');
+    const [state] = await once(socket, 'message');
+    expect(JSON.parse(String(state))).toMatchObject({ t: 'session_state' });
+    if (!confirmWithPing) return socket;
+    const pong = new Promise<void>((resolve) => {
+      const receive = (frame: WebSocket.RawData) => {
+        if (String(frame) !== '{"t":"pong"}') return;
+        socket.off('message', receive);
+        resolve();
+      };
+      socket.on('message', receive);
+    });
     socket.send(JSON.stringify({ t: 'ping' }));
     await pong;
     return socket;
@@ -128,6 +134,7 @@ describe('session resource boundaries (A03)', () => {
   it('preserves the stdin byte budget after reconnecting', async () => {
     const ctx = await setup();
     try {
+      vi.spyOn(Date, 'now').mockReturnValue(Date.now());
       const first = await ctx.attach();
       for (let i = 0; i < 8; i++) first.send(JSON.stringify({ t: 'stdin', d: 'é'.repeat(4096) }));
       await vi.waitFor(() => expect(ctx.write).toHaveBeenCalledTimes(8));
@@ -174,6 +181,56 @@ describe('session resource boundaries (A03)', () => {
       }
     },
   );
+});
+
+describe('session socket replacement (A15)', () => {
+  it('closes the old socket and rejects its queued input without detaching the replacement', async () => {
+    const ctx = await setup();
+    try {
+      const first = await ctx.attach();
+      const [oldTransport] = ctx.app.websocketServer.clients;
+      if (!oldTransport) throw new Error('server socket missing');
+      const close = oldTransport.close.bind(oldTransport);
+      vi.spyOn(oldTransport, 'close').mockImplementation((code, reason) => {
+        // Simulate queued frames as the replaced transport begins to close.
+        oldTransport.emit('message', Buffer.from('{"t":"stdin","d":"stale"}'));
+        oldTransport.emit('message', Buffer.from('{"t":"resize","cols":90,"rows":30}'));
+        oldTransport.emit('message', Buffer.from('{"t":"hint"}'));
+        close(code, reason);
+      });
+      const closed = once(first, 'close');
+      const second = await ctx.attach();
+      expect((await closed)[0]).toBe(4409);
+      second.send('{"t":"stdin","d":"current"}');
+      await vi.waitFor(() => expect(ctx.write.mock.calls).toEqual([['current']]));
+      expect(ctx.resize).not.toHaveBeenCalled();
+      expect(ctx.live.hints.tiersUsed).toEqual([]);
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+
+  it('preserves the message budget when a new socket takes over', async () => {
+    const ctx = await setup();
+    try {
+      vi.spyOn(Date, 'now').mockReturnValue(Date.now());
+      const first = await ctx.attach(false);
+      const [transport] = ctx.app.websocketServer.clients;
+      if (!transport) throw new Error('server socket missing');
+      for (let i = 0; i < SOCKET_MESSAGES_PER_SECOND; i++) {
+        transport.emit('message', Buffer.from('{"t":"ping"}'));
+      }
+      const firstClosed = once(first, 'close');
+      const second = await ctx.attach(false);
+      const secondClosed = once(second, 'close');
+      second.send('{"t":"stdin","d":"over budget"}');
+      expect((await secondClosed)[0]).toBe(1008);
+      expect((await firstClosed)[0]).toBe(4409);
+      expect(ctx.write).not.toHaveBeenCalled();
+    } finally {
+      await ctx.cleanup();
+    }
+  });
 });
 
 describe('session runtime errors (A14)', () => {

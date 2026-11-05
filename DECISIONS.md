@@ -316,3 +316,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A14 found that transport, resize, setup, and evaluation errors could disappear or look like unmet objectives. Timeout reporting was limited to individual check implementations.
 - **Decision:** Use pino at the session boundary with the attempt, level, and session IDs when available. Send generic client errors; keep the session usable after resize or evaluation errors, and abandon it when the shell or either watcher disconnects unexpectedly. Docker exec transport failures reject instead of returning a synthetic exit status. The check runner reports a timed-out leaf once and leaves the objective pending, including under negation. Ordinary nonzero exits retain their check-specific meaning.
 - **Consequences:** Intentional teardown remains quiet. Setup failures on start and reset share the same client response, while the launch log retains the failure details. Timeouts on every exec-backed check emit the existing telemetry event without exposing probe commands or output to the client.
+
+### D-035 — Give the latest authorized socket exclusive session control
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A15 found that replacing a WebSocket left the previous transport open. The adapter identity guard and session budgets already existed, but the reconnect test detached the first socket manually and bypassed the real handoff.
+- **Decision:** Assign the new adapter before closing the old one with code 4409. Accept frames only from the current open transport, and let close handlers detach only their own adapter. Keep both traffic budgets on the live session. The browser treats 4409 as a final close to prevent tabs from repeatedly replacing each other.
+- **Consequences:** A replacement keeps the same shell and remaining traffic allowance. Ordinary network disconnects still use the existing retry policy.

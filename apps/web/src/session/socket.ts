@@ -1,5 +1,6 @@
 import {
   ServerMessageSchema,
+  SESSION_SOCKET_REPLACED,
   type ClientMessage,
   type ServerMessage,
 } from '@terminal-quest/shared';
@@ -9,8 +10,8 @@ export const MAX_RECONNECT_ATTEMPTS = 3;
 
 const BACKOFF_MS = [1000, 2000, 4000];
 
-/** Close codes that must never trigger a reconnect (auth / origin failure). */
-const FATAL_CLOSE_CODES = new Set([4401, 4403]);
+/** Reconnecting cannot fix authorization or a deliberate socket takeover. */
+const FATAL_CLOSE_CODES = new Set([4401, 4403, SESSION_SOCKET_REPLACED]);
 
 export type SessionEvent =
   | { kind: 'open' }

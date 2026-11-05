@@ -1,5 +1,9 @@
 import type { FastifyInstance } from 'fastify';
-import { ClientMessageSchema, MAX_CLIENT_FRAME_BYTES } from '@terminal-quest/shared';
+import {
+  ClientMessageSchema,
+  MAX_CLIENT_FRAME_BYTES,
+  SESSION_SOCKET_REPLACED,
+} from '@terminal-quest/shared';
 import { userFromToken, requestToken } from '../auth.js';
 import type { LiveSession } from './liveSession.js';
 import { boundedSocket, sessionBudgets } from './socketLimits.js';
@@ -111,7 +115,11 @@ export async function registerSessionSocket(
           return;
         }
         const adapter = boundedSocket(socket);
+        const previous = live.socket;
+        // Revoke ownership before closing: frames and close events from the
+        // old transport can still arrive during its close handshake.
         live.socket = adapter;
+        previous?.close(SESSION_SOCKET_REPLACED);
         const s = sessionStateMessage(live);
         live.socket.send(JSON.stringify({ t: 'session_state', ...s, hintsTotal: 3 }));
         if (!live.dialogue.welcomed) {
@@ -124,7 +132,7 @@ export async function registerSessionSocket(
           );
         }
         socket.on('message', (raw: unknown) => {
-          if (live.socket !== adapter) return;
+          if (live.socket !== adapter || socket.readyState !== socket.OPEN) return;
           void handleMessage(deps, live, raw).catch((err: unknown) => {
             logger.warn({ err, ...attemptScope(live) }, 'socket message failed');
             if (live.socket === adapter) {

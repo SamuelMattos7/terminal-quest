@@ -145,8 +145,8 @@ describe('SessionSocket', () => {
     expect(FakeWebSocket.instances).toHaveLength(4);
   });
 
-  it('never reconnects on 4401/4403 closes', () => {
-    for (const code of [4401, 4403]) {
+  it('never reconnects after authorization failure or socket replacement', () => {
+    for (const code of [4401, 4403, 4409]) {
       FakeWebSocket.instances = [];
       const { events, socket } = setup();
       socket.connect();
