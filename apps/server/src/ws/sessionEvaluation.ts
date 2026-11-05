@@ -1,6 +1,5 @@
 import { eq } from 'drizzle-orm';
 import { levelProgress } from '../db/schema.js';
-import type { Db } from '../db/client.js';
 import { countCommands } from '../engine/cmdlog.js';
 import { checkManualBonus, computeScore } from '../engine/scoring.js';
 import { evaluate, requiredObjectives } from '../engine/objectiveTracker.js';
@@ -13,20 +12,13 @@ import type { LiveSession } from './liveSession.js';
 import { attemptScope, isActive, send, type FlowDeps } from './sessionContext.js';
 import { logger } from '../util/logger.js';
 
-async function completedIds(db: Db, userId: string): Promise<Set<string>> {
-  const rows = await db.select().from(levelProgress).where(eq(levelProgress.userId, userId)).all();
-  return new Set(rows.filter((r) => r.completions > 0).map((r) => r.levelId));
-}
-
-export async function computeUnlocked(
-  deps: FlowDeps,
-  userId: string,
+function computeUnlocked(
+  { levelsByWorld, unlockAll }: FlowDeps,
+  done: Set<string>,
   justCompletedId: string,
-): Promise<string[]> {
-  const done = await completedIds(deps.db, userId);
-  const before = levelStates(deps.levelsByWorld, done, deps.unlockAll);
-  done.add(justCompletedId);
-  const after = levelStates(deps.levelsByWorld, done, deps.unlockAll);
+): string[] {
+  const before = levelStates(levelsByWorld, done, unlockAll);
+  const after = levelStates(levelsByWorld, new Set([...done, justCompletedId]), unlockAll);
   const unlocked: string[] = [];
   for (const [id, state] of after) {
     const was = before.get(id);
@@ -138,6 +130,9 @@ async function runEvaluation(deps: FlowDeps, live: LiveSession): Promise<void> {
       .where(eq(levelProgress.userId, live.userId))
       .all();
     const best = rows.find((r) => r.levelId === live.level.id);
+    const previouslyCompleted = new Set(
+      rows.filter((r) => r.completions > 0).map((r) => r.levelId),
+    );
     const isReviewReplay = await wasReviewDue(deps.db, live.userId, live.level, deps.levelsById);
     const score = computeScore({
       level: live.level,
@@ -171,8 +166,7 @@ async function runEvaluation(deps: FlowDeps, live: LiveSession): Promise<void> {
     if (!recorded) return;
     live.completed = true;
     live.attemptFinished = true;
-    const unlocked = await computeUnlocked(deps, live.userId, live.level.id);
-    if (!isActive(deps, live)) return;
+    const unlocked = computeUnlocked(deps, previouslyCompleted, live.level.id);
     send(live, {
       t: 'level_complete',
       result: {

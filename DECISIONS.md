@@ -276,3 +276,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A08 found missing Secure cookies and CSP, rate limits shared by clients behind Caddy, and signal exits that skipped cleanup.
 - **Decision:** Stack `codex/a08-production-hardening` on A07. The compiled server binds to IPv4 loopback, trusts only the first forwarding hop from `127.0.0.1`, and always sets Secure guest cookies. The HTML policy allows local assets, a WebSocket at the configured public origin, and inline styles for xterm and dynamic UI styles. Both SIGTERM and SIGINT share one Fastify close operation. Begin active session cleanup before the WebSocket plugin closes connections, then await teardown and clean up any sessions created by requests that were still draining.
 - **Consequences:** The documented deployment requires same-host Caddy and the external HTTPS `PUBLIC_ORIGIN`. Vite development keeps plain-HTTP cookies. The compiled-server regressions exercise Caddy-style forwarding headers and use a Docker stub for signal-driven teardown. On Windows they emit Node's signal events over IPC because Windows child-process termination bypasses those handlers.
+
+### D-030 — Calculate completion unlocks from prior progress
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A09 found that the completion event calculated both sets of unlocks after the new completion was already in the database.
+- **Decision:** Stack `codex/a09-completion-unlocks` on A08. Reuse the progress snapshot read for scoring inside the per-user queue and compare it with the same set plus the current level. Send the difference only after completion is recorded successfully.
+- **Consequences:** First clears report newly available levels, and replays report no new unlocks. The existing modal uses the reported IDs to show its Next level button.
