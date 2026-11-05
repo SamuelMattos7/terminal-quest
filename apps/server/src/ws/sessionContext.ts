@@ -16,6 +16,7 @@ export interface FlowDeps {
   levelsByWorld: Map<number, Level[]>;
   levelsById: Map<string, Level>;
   unlockAll: boolean;
+  enabledWorlds: readonly number[];
 }
 
 export function send(live: LiveSession, msg: ServerMessage): void {

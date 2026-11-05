@@ -284,3 +284,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A09 found that the completion event calculated both sets of unlocks after the new completion was already in the database.
 - **Decision:** Stack `codex/a09-completion-unlocks` on A08. Reuse the progress snapshot read for scoring inside the per-user queue and compare it with the same set plus the current level. Send the difference only after completion is recorded successfully.
 - **Consequences:** First clears report newly available levels, and replays report no new unlocks. The existing modal uses the reported IDs to show its Next level button.
+
+### D-031 — Apply the world allow-list before progression unlocks
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A10 found that disabling a world hid its map card while direct API requests could still open or start its levels. The release allow-list in §14.1 also applies when the developer progression override in §6 is active.
+- **Decision:** Stack `codex/a10-world-availability` on A09. Return the existing unknown-level response for disabled detail, start, and owned reset requests. Restrict progression states, completion unlocks, and review candidates to enabled worlds. Review scoring uses the same candidate restriction as the review endpoint.
+- **Consequences:** `UNLOCK_ALL` skips progression prerequisites within enabled worlds. Historical boss completions still qualify as prerequisites for an enabled successor world, and historical progress remains in the database.

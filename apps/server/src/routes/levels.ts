@@ -8,7 +8,7 @@ export async function registerLevelRoutes(app: FastifyInstance): Promise<void> {
     }
     const { id } = request.params as { id: string };
     const level = app.levels.byId.get(id);
-    if (level === undefined) {
+    if (level === undefined || !app.config.ENABLE_WORLDS.includes(level.world)) {
       return reply.code(404).send({ error: 'unknown level' });
     }
     return reply.send(toPublicLevel(level));

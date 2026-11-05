@@ -113,6 +113,7 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
     levelsById: levels.byId,
     levelDirs: levels.levelDirs,
     unlockAll: config.UNLOCK_ALL === 1,
+    enabledWorlds: config.ENABLE_WORLDS,
   };
 
   await app.register(cookie);

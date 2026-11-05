@@ -45,7 +45,12 @@ export async function registerProgressRoutes(app: FastifyInstance): Promise<void
       .where(eq(levelProgress.userId, userId))
       .all();
     const completed = new Set(rows.filter((r) => r.completions > 0).map((r) => r.levelId));
-    const states = levelStates(app.levels.byWorld, completed, app.config.UNLOCK_ALL === 1);
+    const states = levelStates(
+      app.levels.byWorld,
+      completed,
+      app.config.UNLOCK_ALL === 1,
+      app.config.ENABLE_WORLDS,
+    );
     const levels: Record<
       string,
       {
@@ -258,7 +263,7 @@ export async function registerProgressRoutes(app: FastifyInstance): Promise<void
     const completed = new Set(progressRows.filter((r) => r.completions > 0).map((r) => r.levelId));
     const teachesByLevel = new Map<string, string[]>();
     for (const level of app.levels.byId.values()) {
-      if (completed.has(level.id)) {
+      if (completed.has(level.id) && app.config.ENABLE_WORLDS.includes(level.world)) {
         teachesByLevel.set(level.id, level.teaches);
       }
     }
@@ -319,6 +324,7 @@ export async function registerProgressRoutes(app: FastifyInstance): Promise<void
             levelsByWorld: app.levels.byWorld,
             levelsById: app.levels.byId,
             unlockAll: app.config.UNLOCK_ALL === 1,
+            enabledWorlds: app.config.ENABLE_WORLDS,
           },
           live,
           'abandoned',

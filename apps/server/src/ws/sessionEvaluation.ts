@@ -13,12 +13,17 @@ import { attemptScope, isActive, send, type FlowDeps } from './sessionContext.js
 import { logger } from '../util/logger.js';
 
 function computeUnlocked(
-  { levelsByWorld, unlockAll }: FlowDeps,
+  { levelsByWorld, unlockAll, enabledWorlds }: FlowDeps,
   done: Set<string>,
   justCompletedId: string,
 ): string[] {
-  const before = levelStates(levelsByWorld, done, unlockAll);
-  const after = levelStates(levelsByWorld, new Set([...done, justCompletedId]), unlockAll);
+  const before = levelStates(levelsByWorld, done, unlockAll, enabledWorlds);
+  const after = levelStates(
+    levelsByWorld,
+    new Set([...done, justCompletedId]),
+    unlockAll,
+    enabledWorlds,
+  );
   const unlocked: string[] = [];
   for (const [id, state] of after) {
     const was = before.get(id);
@@ -133,7 +138,9 @@ async function runEvaluation(deps: FlowDeps, live: LiveSession): Promise<void> {
     const previouslyCompleted = new Set(
       rows.filter((r) => r.completions > 0).map((r) => r.levelId),
     );
-    const isReviewReplay = await wasReviewDue(deps.db, live.userId, live.level, deps.levelsById);
+    const isReviewReplay = await wasReviewDue(deps.db, live.userId, live.level, deps.levelsById, {
+      enabledWorlds: deps.enabledWorlds,
+    });
     const score = computeScore({
       level: live.level,
       hintTiers: live.hints.tiersUsed,

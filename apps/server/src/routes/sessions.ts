@@ -16,7 +16,7 @@ import {
 // writes here — T3.3 owns persistence; scoring reads level_progress only.
 
 export interface SessionRouteDeps extends FlowDeps {
-  config: { UNLOCK_ALL: number };
+  config: { ENABLE_WORLDS: readonly number[]; UNLOCK_ALL: number };
   levelsByWorld: Map<number, Level[]>;
   levelsById: Map<string, Level>;
   levelDirs: Map<string, string>;
@@ -53,13 +53,14 @@ export async function registerSessionRoutes(
       }
       return deps.live.runForUser(user.id, async () => {
         const level = deps.levelsById.get(request.params.id);
-        if (level === undefined) {
+        if (level === undefined || !deps.config.ENABLE_WORLDS.includes(level.world)) {
           return reply.code(404).send({ error: 'unknown level' });
         }
         const states = levelStates(
           deps.levelsByWorld,
           await completedIds(deps, user.id),
           deps.config.UNLOCK_ALL === 1,
+          deps.config.ENABLE_WORLDS,
         );
         if (states.get(level.id) === 'locked') {
           return reply.code(403).send({ error: 'level locked' });
@@ -109,6 +110,9 @@ export async function registerSessionRoutes(
       }
       if (live.userId !== user.id) {
         return reply.code(403).send({ error: 'forbidden' });
+      }
+      if (!deps.config.ENABLE_WORLDS.includes(live.level.world)) {
+        return reply.code(404).send({ error: 'unknown level' });
       }
       const levelDir = deps.levelDirs.get(live.level.id);
       if (levelDir === undefined) {

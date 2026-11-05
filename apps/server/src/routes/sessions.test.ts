@@ -218,3 +218,24 @@ describe('session lifecycle concurrency (A01)', () => {
     }
   });
 });
+
+it('blocks reset of a session whose world was disabled with UNLOCK_ALL enabled (A10)', async () => {
+  const ctx = await setup();
+  try {
+    ctx.app.config.UNLOCK_ALL = 1;
+    const started = await ctx.start();
+    expect(started.statusCode).toBe(200);
+    const { sessionId } = StartSessionResponseSchema.parse(started.json());
+    ctx.app.config.ENABLE_WORLDS.splice(0, 1);
+    const reset = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/sessions/${sessionId}/reset`,
+      headers: { cookie: ctx.cookie },
+    });
+    expect(reset.statusCode).toBe(404);
+    expect(ctx.create).toHaveBeenCalledTimes(1);
+    expect(ctx.app.live.get(sessionId)).toBeDefined();
+  } finally {
+    await ctx.cleanup();
+  }
+});

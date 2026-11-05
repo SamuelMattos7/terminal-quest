@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** Audit remediation: A01–A09, A13, and A28 fixed. A10 is the next open audit finding. M8 is the next unfinished milestone (M5 gate green).
+**Current focus:** Audit remediation: A01–A10, A13, and A28 fixed. A11 is the next open audit finding. M8 is the next unfinished milestone (M5 gate green).
 
 ---
 
@@ -193,6 +193,7 @@ Each branch records its own regression and verification evidence. The milestone 
 - [x] A08 — production cookies, CSP, loopback proxy handling, and graceful shutdown; branch `codex/a08-production-hardening`, based on A07. ✅ `pnpm verify`: build/lint + 373 tests passed (6 new regressions); `pnpm test:docker`: 74 passed on retry, including full W1 progression; `pnpm e2e`: Chromium smoke passed (9.2 s). The compiled-server suite covers Secure cookie attributes, CSP on navigations, rate limits by the immediate client forwarded by Caddy, rejection of older hops and non-loopback forwarding, and SIGTERM/SIGINT with an active WebSocket and awaited stubbed sandbox teardown. D-029 records the deployment and Windows signal-test choices.
 
 - [x] A09 — report newly unlocked levels on completion; branch `codex/a09-completion-unlocks`, based on A08. ✅ `pnpm verify`: build/lint + 373 tests passed. `pnpm e2e`: Chromium smoke passed (8.3 s). The new WebSocket assertion failed before the fix. The smoke now checks that completing w1-01 reports w1-02 in `result.unlocked`, shows the Next level button, and makes w1-02 available on the map. See D-030.
+- [x] A10 — enforce `ENABLE_WORLDS` across level access, review, and unlocks; branch `codex/a10-world-availability`, based on A09. ✅ `pnpm verify`: build/lint + 381 tests passed (8 new regressions). Four API cases failed before the fix. Coverage includes detail and start with empty and partial allow-lists, reset with `UNLOCK_ALL`, historical review and boss prerequisites, and completion unlock payloads. See D-031.
 
 ## Known gaps
 
@@ -203,7 +204,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 | 2026-10-06 | skills.yaml prereqs | W1 skill edges authored in M7; W2+ skills still have empty `prereqs` | Author remaining edges during M8 |
 | 2026-10-06 | cron daemon start   | `needs_cron` field present (default true); daemon start not implemented                 | Implement in T10.1 admin polish; no admin levels exist yet |
 | 2026-10-11 | Web bundle size     | `dist` JS is ~576 KB (xterm.js); vite emits a chunk-size warning, no code-splitting yet | Consider `React.lazy` for `/play` during polish            |
-| 2026-11-04 | Repository audit | 31 original prioritized findings; A01–A09, A13, and A28 fixed with regressions (see Audit remediation above). Remaining progression/recovery, checks, UI, CI, and documentation gaps are detailed in [PROJECT_AUDIT.md](PROJECT_AUDIT.md). | Resolve remaining findings alongside planned milestones and complete M9 production validation. |
+| 2026-11-04 | Repository audit | 31 original prioritized findings; A01–A10, A13, and A28 fixed with regressions (see Audit remediation above). Remaining progression/recovery, checks, UI, CI, and documentation gaps are detailed in [PROJECT_AUDIT.md](PROJECT_AUDIT.md). | Resolve remaining findings alongside planned milestones and complete M9 production validation. |
 
 ## Blockers
 

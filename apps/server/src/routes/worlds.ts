@@ -18,7 +18,12 @@ export async function registerWorldsRoutes(app: FastifyInstance): Promise<void> 
       .all();
     const completed = new Set(rows.filter((r) => r.completions > 0).map((r) => r.levelId));
     const bestRank = new Map(rows.map((r) => [r.levelId, r.bestRank]));
-    const states = levelStates(app.levels.byWorld, completed, app.config.UNLOCK_ALL === 1);
+    const states = levelStates(
+      app.levels.byWorld,
+      completed,
+      app.config.UNLOCK_ALL === 1,
+      app.config.ENABLE_WORLDS,
+    );
     const worlds = WORLDS.filter((w) => app.config.ENABLE_WORLDS.includes(w.id)).map((w) => ({
       id: w.id,
       title: w.title,

@@ -8,8 +8,8 @@ import * as review from '../progression/review.js';
 
 afterEach(() => vi.restoreAllMocks());
 
-async function setup() {
-  const ctx = await makeTestContext([makeLevel('a', 1, 1)]);
+async function setup(levels = [makeLevel('a', 1, 1)]) {
+  const ctx = await makeTestContext(levels);
   const { app } = ctx;
   vi.spyOn(app.provider, 'create').mockImplementation(async (spec) => ({ id: randomUUID(), spec }));
   vi.spyOn(app.provider, 'putFiles').mockResolvedValue();
@@ -45,6 +45,7 @@ async function setup() {
     levelsByWorld: app.levels.byWorld,
     levelsById: app.levels.byId,
     unlockAll: false,
+    enabledWorlds: app.config.ENABLE_WORLDS,
   };
   const pause = async () => {
     const entered = deferred();
@@ -59,6 +60,23 @@ async function setup() {
   };
   return { ...ctx, live, deps, exec, destroy, cookie, send, pause };
 }
+
+it('omits a disabled next world from the completion payload (A10)', async () => {
+  const ctx = await setup([makeLevel('a', 1, 1, 'boss'), makeLevel('a', 2, 1)]);
+  try {
+    ctx.app.config.ENABLE_WORLDS.splice(1, 1);
+    await evaluateAndReport(ctx.deps, ctx.live);
+    const messages = ctx.send.mock.calls.map(([payload]) => JSON.parse(String(payload)) as unknown);
+    expect(messages).toContainEqual(
+      expect.objectContaining({
+        t: 'level_complete',
+        result: expect.objectContaining({ unlocked: [] }),
+      }),
+    );
+  } finally {
+    await ctx.cleanup();
+  }
+});
 
 describe('completion lifecycle races (A02/A13)', () => {
   it('coalesces a flood into one running evaluation plus one rerun (A03)', async () => {

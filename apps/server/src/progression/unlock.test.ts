@@ -74,4 +74,15 @@ describe('levelStates', () => {
     expect(states.get('w1-02-b')).toBe('available');
     expect(states.get('w2-01-a')).toBe('available');
   });
+
+  it.each([false, true])('omits disabled worlds with UNLOCK_ALL=%s', (unlockAll) => {
+    const states = levelStates(tree, new Set(['w1-03-boss']), unlockAll, [1]);
+    expect(states.get('w1-01-a')).toBe('available');
+    expect(states.has('w2-01-a')).toBe(false);
+  });
+
+  it('uses historical boss completions when the prerequisite world is disabled', () => {
+    const states = levelStates(tree, new Set(['w1-03-boss']), false, [2]);
+    expect([...states]).toEqual([['w2-01-a', 'available']]);
+  });
 });
