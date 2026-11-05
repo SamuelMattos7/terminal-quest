@@ -340,3 +340,27 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A18 calls for attaching stdin to non-PTY execs. The A04 workaround for Windows named pipes encoded input in command arguments, which worked for small input but failed when it exceeded Linux's argument size limit.
 - **Decision:** Attach stdin only when the caller supplies it, and pass its UTF-8 byte count to the supervisor. The supervisor reads exactly that many bytes into a temporary file and gives the command that file as stdin. An omitted input still uses `/dev/null`.
 - **Consequences:** Commands see EOF for both empty and nonempty input without requiring a half-close on the Docker connection. Stdout and stderr remain available on Windows named pipes, and stdin contents no longer count toward the argument size limit.
+
+### D-038 — Invalidate learning data after a level clear
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A22 found that the level's Notes tab could cache the Spellbook before the first clear.
+- **Decision:** Invalidate both learning caches on completion and keep loading them on demand. Discard results from requests issued before invalidation. Stack A22–A24 on the A21 branch in `codex/a22-a24-audit-fixes`.
+- **Consequences:** Navigating to the Spellbook or Skills fetches current data, including when an earlier request is still pending.
+
+### D-039 — Derive the displayed streak from the UTC date
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A23 found that user responses displayed the stored streak after a missed day.
+- **Decision:** Use the stored count in the shared user response only when the last active date is today or yesterday in UTC. Return zero for other dates.
+- **Consequences:** User reads are read-only and the next completion still uses the persisted history for streak arithmetic.
+
+### D-040 — Re-evaluate once at the idle nudge deadline
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A24 found that the idle nudge depended on another evaluation triggered by player activity.
+- **Decision:** When an evaluation finds pending objectives and at least three failures since progress, arm one timer per attempt for the remaining wait. Use the existing evaluation queue when it fires so the current objective state determines whether to nudge. Cancel the timer on objective progress, when required objectives are done, or at session teardown.
+- **Consequences:** Waiting can trigger the nudge without further input. An attempt still gets at most one nudge per period without objective progress.

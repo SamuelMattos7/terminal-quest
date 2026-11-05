@@ -44,10 +44,10 @@ export function LevelPage() {
     };
   }, []);
 
-  // Map progress may have changed (completions, unlocks, badges).
+  // Completion changes progression and can unlock skills in the Spellbook.
   useEffect(() => {
     if (completion !== null) {
-      void useGame.getState().refresh();
+      void useGame.getState().refreshAfterCompletion();
     }
   }, [completion]);
 

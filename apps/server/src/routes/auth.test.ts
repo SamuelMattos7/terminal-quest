@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { GuestResponseSchema, MeResponseSchema } from '@terminal-quest/shared';
+import { users } from '../db/schema.js';
 import { guestCookie, makeTestContext } from '../testUtils.js';
 
 describe('POST /api/guest', () => {
@@ -66,6 +67,33 @@ describe('GET /api/me', () => {
         badges: [],
       });
     } finally {
+      await ctx.cleanup();
+    }
+  });
+
+  it('expires the displayed streak at UTC midnight after a missed day', async () => {
+    const ctx = await makeTestContext();
+    try {
+      const cookie = await guestCookie(ctx.app);
+      ctx.db.update(users).set({ lastActiveDay: '2026-10-31', streakDays: 7 }).run();
+      const now = vi.spyOn(Date, 'now');
+      const readStreak = async () => {
+        const res = await ctx.app.inject({ method: 'GET', url: '/api/me', headers: { cookie } });
+        expect(res.statusCode).toBe(200);
+        return MeResponseSchema.parse(res.json()).user.streakDays;
+      };
+      now.mockReturnValue(Date.parse('2026-10-31T23:59:59Z'));
+      expect(await readStreak()).toBe(7);
+      now.mockReturnValue(Date.parse('2026-11-01T23:59:59Z'));
+      expect(await readStreak()).toBe(7);
+      now.mockReturnValue(Date.parse('2026-11-02T00:00:00Z'));
+      expect(await readStreak()).toBe(0);
+      expect(ctx.db.select().from(users).get()).toMatchObject({
+        lastActiveDay: '2026-10-31',
+        streakDays: 7,
+      });
+    } finally {
+      vi.restoreAllMocks();
       await ctx.cleanup();
     }
   });

@@ -1,13 +1,15 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ServerMessage } from '@terminal-quest/shared';
 import { api } from '../api/client.js';
+import { Header } from '../components/Header.js';
 import type { SessionEventHandler } from '../session/socket.js';
 import { useSession } from '../session/useSession.js';
 import { useGame } from '../stores/game.js';
 import { strings } from '../strings.js';
 import { LevelPage } from './LevelPage.js';
+import { SpellbookPage } from './SpellbookPage.js';
 
 const socketMocks = vi.hoisted(() => ({ instances: [] as Array<MockSessionSocket> }));
 
@@ -144,7 +146,16 @@ function renderPage(): { unmount: () => void } {
     >
       <Routes>
         <Route path="/play/:levelId" element={<LevelPage />} />
-        <Route path="/map" element={<div>map-probe</div>} />
+        <Route
+          path="/map"
+          element={
+            <>
+              <Header me={null} />
+              <div>map-probe</div>
+            </>
+          }
+        />
+        <Route path="/spellbook" element={<SpellbookPage />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -255,6 +266,40 @@ describe('LevelPage', () => {
     expect(await screen.findByText('map-probe')).not.toBeNull();
     expect(api.deleteSession).toHaveBeenCalledWith('s2');
   });
+
+  it.each(['cached', 'in flight'])(
+    'shows the newly learned skill in the Spellbook with a %s pre-clear load',
+    async (loadState) => {
+      let finishPreClearLoad: (() => void) | undefined;
+      if (loadState === 'in flight') {
+        vi.mocked(api.spellbook).mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              finishPreClearLoad = () => resolve({ entries: [] });
+            }),
+        );
+      }
+      renderPage();
+      const socket = await openLiveSession();
+      await screen.findByTestId('terminal-container');
+      expect(api.spellbook).toHaveBeenCalledTimes(1);
+      if (loadState === 'cached') {
+        await waitFor(() => expect(useGame.getState().spellbook).toEqual({ entries: [] }));
+      }
+      vi.mocked(api.spellbook).mockResolvedValue({
+        entries: [{ skillId: 'pwd', title: 'pwd', cheatsheet: [], examples: [], note: null }],
+      });
+      socket.handler({ kind: 'message', message: completionMessage() });
+      await screen.findByTestId('complete-modal');
+      await act(async () => {
+        finishPreClearLoad?.();
+      });
+
+      fireEvent.click(screen.getByTestId('complete-back'));
+      fireEvent.click(await screen.findByRole('link', { name: strings.navSpellbook }));
+      expect(await screen.findByTestId('spellbook-entry-pwd')).not.toBeNull();
+    },
+  );
 
   it('sends keybar keys through stdin', async () => {
     renderPage();

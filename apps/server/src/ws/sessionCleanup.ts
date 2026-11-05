@@ -3,6 +3,7 @@ import { recordEvent } from '../progression/events.js';
 import { logger } from '../util/logger.js';
 import { attemptScope, send, type FlowDeps } from './sessionContext.js';
 import type { LiveSession } from './liveSession.js';
+import { cancelIdleNudge } from './sessionEvaluation.js';
 
 export type CloseReason = 'replaced' | 'abandoned' | 'idle' | 'max_age' | 'server_shutdown';
 
@@ -14,6 +15,7 @@ export function invalidateLiveSession(
 ): void {
   const wasClosed = live.closed;
   live.closed = true;
+  cancelIdleNudge(live);
   deps.live.delete(live.session.id);
   const release = (action: () => void, resource: string): void => {
     try {

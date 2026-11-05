@@ -23,6 +23,8 @@ interface GameState {
   startPlaying: () => Promise<void>;
   /** Reload profile + map + progress data (e.g. after returning from a level). */
   refresh: () => Promise<void>;
+  /** Invalidate learned skills and reload progression after a committed completion. */
+  refreshAfterCompletion: () => Promise<void>;
   /** Update the display name, then reload the profile. */
   rename: (displayName: string) => Promise<void>;
   /** Lazily load the skill graph (Skills page). */
@@ -51,6 +53,9 @@ async function loadProfileAndWorlds(): Promise<{
   const [me, worlds, progress] = await Promise.all([api.me(), api.worlds(), api.progress()]);
   return { me, worlds, progress };
 }
+
+// A pre-completion request can finish after the caches have been cleared.
+let learningCacheGeneration = 0;
 
 /** Global game data store (plan.md §9.4 `useGame`). */
 export const useGame = create<GameState>()((set, get) => ({
@@ -88,6 +93,12 @@ export const useGame = create<GameState>()((set, get) => ({
     }
   },
 
+  refreshAfterCompletion: () => {
+    learningCacheGeneration += 1;
+    set({ skillsData: null, spellbook: null });
+    return get().refresh();
+  },
+
   rename: async (displayName: string) => {
     set({ loading: true, error: null });
     try {
@@ -104,24 +115,28 @@ export const useGame = create<GameState>()((set, get) => ({
   },
 
   loadSkills: async () => {
+    const generation = learningCacheGeneration;
     set({ loading: true, error: null });
     try {
-      set({ skillsData: await api.skills() });
+      const skillsData = await api.skills();
+      if (generation === learningCacheGeneration) set({ skillsData });
     } catch (err: unknown) {
-      set({ error: toMessage(err) });
+      if (generation === learningCacheGeneration) set({ error: toMessage(err) });
     } finally {
-      set({ loading: false });
+      if (generation === learningCacheGeneration) set({ loading: false });
     }
   },
 
   loadSpellbook: async () => {
+    const generation = learningCacheGeneration;
     set({ loading: true, error: null });
     try {
-      set({ spellbook: await api.spellbook() });
+      const spellbook = await api.spellbook();
+      if (generation === learningCacheGeneration) set({ spellbook });
     } catch (err: unknown) {
-      set({ error: toMessage(err) });
+      if (generation === learningCacheGeneration) set({ error: toMessage(err) });
     } finally {
-      set({ loading: false });
+      if (generation === learningCacheGeneration) set({ loading: false });
     }
   },
 
@@ -147,6 +162,7 @@ export const useGame = create<GameState>()((set, get) => ({
     try {
       await api.deleteProgress();
       const { me, worlds, progress } = await loadProfileAndWorlds();
+      learningCacheGeneration += 1;
       set({ me, worlds, progress, skillsData: null, spellbook: null });
     } catch (err: unknown) {
       set({ error: toMessage(err) });

@@ -4,7 +4,12 @@ import { countCommands } from '../engine/cmdlog.js';
 import { checkManualBonus, computeScore } from '../engine/scoring.js';
 import { evaluate, requiredObjectives } from '../engine/objectiveTracker.js';
 import { levelStates } from '../progression/unlock.js';
-import { HINT_NUDGE_TEXT, shouldNudge } from '../progression/dialogue.js';
+import {
+  FAILS_FOR_NUDGE,
+  HINT_NUDGE_TEXT,
+  shouldNudge,
+  STUCK_MS,
+} from '../progression/dialogue.js';
 import { wasReviewDue } from '../progression/review.js';
 import { recordEvent } from '../progression/events.js';
 import { recordLevelCompletion } from '../progression/progress.js';
@@ -42,6 +47,35 @@ function computeUnlocked(
 // promise, so a slow check cannot build an unbounded chain of closures.
 const evaluations = new WeakMap<LiveSession, { dirty: boolean; pending: Promise<void> }>();
 const observed = new WeakSet<Promise<void>>();
+const nudgeTimers = new WeakMap<LiveSession, NodeJS.Timeout>();
+
+export function cancelIdleNudge(live: LiveSession): void {
+  clearTimeout(nudgeTimers.get(live));
+  nudgeTimers.delete(live);
+}
+
+function updateIdleNudge(deps: FlowDeps, live: LiveSession): void {
+  const { dialogue } = live;
+  const now = Date.now();
+  if (shouldNudge(dialogue, now)) {
+    cancelIdleNudge(live);
+    dialogue.nudgedAt = now;
+    send(live, { t: 'tux', text: HINT_NUDGE_TEXT });
+  } else if (
+    dialogue.failsSinceProgress >= FAILS_FOR_NUDGE &&
+    dialogue.nudgedAt === null &&
+    !nudgeTimers.has(live)
+  ) {
+    const timer = setTimeout(
+      () => {
+        nudgeTimers.delete(live);
+        if (isActive(deps, live) && !live.completed) scheduleEvaluation(deps, live);
+      },
+      STUCK_MS - (now - dialogue.lastProgressAt),
+    );
+    nudgeTimers.set(live, timer.unref());
+  }
+}
 
 export function evaluateAndReport(deps: FlowDeps, live: LiveSession): Promise<void> {
   const current = evaluations.get(live);
@@ -111,6 +145,7 @@ async function runEvaluation(deps: FlowDeps, live: LiveSession): Promise<void> {
   }
   if (newlyDone.length > 0) {
     // Any progress ends the stuck episode (§10.6 idle nudge).
+    cancelIdleNudge(live);
     live.dialogue.lastProgressAt = Date.now();
     live.dialogue.failsSinceProgress = 0;
     live.dialogue.nudgedAt = null;
@@ -121,12 +156,10 @@ async function runEvaluation(deps: FlowDeps, live: LiveSession): Promise<void> {
   const required = requiredObjectives(live.level);
   const done = required.every((id) => live.tracker.done.get(id) === true);
   if (!done) {
-    if (shouldNudge(live.dialogue)) {
-      live.dialogue.nudgedAt = Date.now();
-      send(live, { t: 'tux', text: HINT_NUDGE_TEXT });
-    }
+    updateIdleNudge(deps, live);
     return;
   }
+  cancelIdleNudge(live);
   await deps.live.runForUser(live.userId, async () => {
     if (!isActive(deps, live)) return;
     const commands = live.tracker.commands.map((c) => c.command);

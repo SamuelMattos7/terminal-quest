@@ -9,6 +9,15 @@ function yesterdayOf(todayDay: string): string {
   return new Date(ms).toISOString().slice(0, 10);
 }
 
+/** A streak is still active through the UTC day after the last completion. */
+export function effectiveStreakDays(
+  current: number,
+  lastActiveDay: string | null,
+  todayDay: string,
+): number {
+  return lastActiveDay === todayDay || lastActiveDay === yesterdayOf(todayDay) ? current : 0;
+}
+
 /** Next streak value given the stored day/count and today (all UTC). */
 export function nextStreakDays(
   current: number,
