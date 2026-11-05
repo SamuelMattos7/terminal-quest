@@ -119,6 +119,28 @@ curl -s http://127.0.0.1:3001/healthz     # expect {"ok":true,"docker":true}
 ```
 (Adjust the `node` path if you installed it elsewhere: `command -v node`.)
 
+The compiled entry point (`node apps/server/dist/index.js`) serves `apps/web/dist/index.html`
+and the built `/assets/*` files on the same port as the API and WebSocket. Build both
+packages with `pnpm build` before starting or restarting the service, and keep the
+repository layout when deploying. Asset paths resolve relative to the installed
+server module, independently of the working directory. Startup fails with a
+`run pnpm build` message if the web index is missing. Development (`pnpm dev`)
+continues to use Vite on port 5173.
+
+Check delivery before configuring Caddy:
+```bash
+curl -I http://127.0.0.1:3001/          # 200, text/html
+curl -I http://127.0.0.1:3001/map       # 200, SPA refresh
+curl -I http://127.0.0.1:3001/assets/missing.js  # 404, never index.html
+```
+The HTML uses `max-age=0` so navigations revalidate after upgrades. Unknown
+`/api`, `/ws`, and `/healthz` paths keep their normal JSON/auth errors;
+non-GET/HEAD requests and missing file paths never use the SPA fallback.
+`pnpm verify` includes Docker-free regressions that start the actual compiled
+server from another working directory and fetch the emitted HTML, JS, CSS, and
+self-hosted font bytes, plus API and WebSocket authorization checks. This local
+delivery check does not complete the clean-VM deployment verification (T9.3).
+
 ## 8. Caddy (TLS + reverse proxy)
 
 Install Caddy from its official apt repo, then `/etc/caddy/Caddyfile`:

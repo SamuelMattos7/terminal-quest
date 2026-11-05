@@ -30,6 +30,7 @@ import { registerWorldsRoutes } from './routes/worlds.js';
 import { registerLevelRoutes } from './routes/levels.js';
 import { registerProgressRoutes } from './routes/progress.js';
 import { registerSessionRoutes } from './routes/sessions.js';
+import { registerWebDelivery } from './webDelivery.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -53,6 +54,7 @@ export interface BuildAppOptions {
   config?: AppConfig;
   socketPath?: string;
   startReaper?: boolean;
+  webRoot?: string;
 }
 
 function loadCoachRules(contentRoot: string): CoachRule[] {
@@ -137,6 +139,10 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   await registerProgressRoutes(app);
   await registerSessionRoutes(app, { ...flowDeps, config });
   await registerSessionSocket(app, { ...flowDeps, config });
+
+  if (opts.webRoot !== undefined) {
+    await registerWebDelivery(app, opts.webRoot);
+  }
 
   const reaper = new Reaper(manager, logger);
   if (opts.startReaper ?? true) {
