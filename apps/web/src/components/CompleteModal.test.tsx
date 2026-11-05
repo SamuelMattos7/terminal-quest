@@ -51,6 +51,23 @@ describe('CompleteModal', () => {
     expect(onBackToMap).toHaveBeenCalledTimes(1);
   });
 
+  it('renders XP deductions with only a minus sign', () => {
+    render(
+      <CompleteModal
+        result={{
+          ...result,
+          xp: 53,
+          breakdown: [...result.breakdown, { label: 'hints (-5%)', xp: -2 }],
+        }}
+        onNext={null}
+        onReplay={() => {}}
+        onBackToMap={() => {}}
+      />,
+    );
+    expect(screen.getByText('+50')).not.toBeNull();
+    expect(screen.getByText('-2')).not.toBeNull();
+  });
+
   it('hides the next button when there is no next level', () => {
     render(
       <CompleteModal

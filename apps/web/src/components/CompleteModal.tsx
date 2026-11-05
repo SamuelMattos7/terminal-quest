@@ -36,7 +36,7 @@ export function CompleteModal({ result, onNext, onReplay, onBackToMap }: Complet
           {result.breakdown.map((line) => (
             <li key={line.label} className="flex justify-between font-mono text-sm text-muted">
               <span>{line.label}</span>
-              <span>+{line.xp}</span>
+              <span>{line.xp > 0 ? `+${line.xp}` : line.xp}</span>
             </li>
           ))}
         </ul>

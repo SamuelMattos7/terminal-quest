@@ -71,9 +71,12 @@ export function computeRank(
 
 export function computeScore(input: ScoreInput): ScoreResult {
   const { level } = input;
+  const bonusIds = new Set(input.bonusDoneIds);
+  const allBonusDone = level.objectives.filter((o) => o.bonus).every((o) => bonusIds.has(o.id));
+  const rank = computeRank(level, input.hintTiers.length, input.commandCount, allBonusDone);
+
   if (input.isReviewReplay === true) {
     const xp = Math.round(level.xp * 0.25);
-    const rank = computeRank(level, input.hintTiers.length, input.commandCount, false);
     return {
       xp,
       fullXp: xp,
@@ -90,7 +93,7 @@ export function computeScore(input: ScoreInput): ScoreResult {
   const manual = input.manualBonus ? MANUAL_BONUS : 0;
   const bonusXp = input.bonusDoneIds.length * BONUS_OBJECTIVE_XP;
 
-  const breakdown: ScoreBreakdownEntry[] = [{ label: 'base', xp: discounted }];
+  const breakdown: ScoreBreakdownEntry[] = [{ label: 'base', xp: level.xp }];
   if (penalty > 0) {
     breakdown.push({ label: `hints (-${penalty}%)`, xp: discounted - level.xp });
   }
@@ -110,10 +113,7 @@ export function computeScore(input: ScoreInput): ScoreResult {
     breakdown.push({ label: 'repeat adjustment', xp: awarded - fullXp });
   }
 
-  const bonusIds = new Set(input.bonusDoneIds);
-  const allBonusDone = level.objectives.filter((o) => o.bonus).every((o) => bonusIds.has(o.id));
-  const rank = computeRank(level, input.hintTiers.length, input.commandCount, allBonusDone);
-  return { xp: awarded, fullXp: fullXp, rank, breakdown };
+  return { xp: awarded, fullXp, rank, breakdown };
 }
 
 /** Derives manualBonus + commandCount from a cmdlog command list. */
