@@ -83,7 +83,36 @@ describe('script and login-shell checks', () => {
     ).toBe(false);
   });
 
-  it('fails shellcheck-unclean scripts when enabled, and checks file outputs', async () => {
+  it('checks files created relative to the case scratch directory', async () => {
+    await setupAsRoot(
+      fx,
+      "cat > /home/player/write-output.sh <<'FIXTURE_EOF'\n" +
+        '#!/bin/bash\n' +
+        'echo "backup complete" > result.txt\n' +
+        'FIXTURE_EOF\n' +
+        'chmod 755 /home/player/write-output.sh',
+    );
+    const check: Check = {
+      type: 'script_tests',
+      path: '/home/player/write-output.sh',
+      shellcheck: false,
+      cases: [
+        {
+          name: 'writes a report',
+          args: [],
+          setup: [],
+          hidden: false,
+          expect: {
+            exit_code: 0,
+            files: [{ path: 'result*.txt', exists: true, contains: 'backup complete' }],
+          },
+        },
+      ],
+    };
+    expect(await runCheck(fx.provider, fx.handle, check, baseCtx())).toBe(true);
+  });
+
+  it('fails shellcheck-unclean scripts when enabled', async () => {
     const ctx = baseCtx();
     expect(
       await runCheck(
