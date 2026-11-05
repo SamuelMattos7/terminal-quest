@@ -45,8 +45,9 @@ Remediation is tracked separately from this dated audit snapshot:
 | A13 | Fixed | Same branch as A02: synchronous active-attempt transaction for attempt/progress/XP/streak/skills/badges, idempotent credit, rollback and retry. Final evidence for A02/A13: `pnpm verify` 287 tests (19 new on this branch); Docker 58 tests including W1 progression; Chromium smoke 1 passed (10.3 s). |
 | A03 | Fixed | `codex/a03-resource-bounds` (stacked on A02/A13); byte/line/rate/history/output caps, shared inbox/cmdlog schemas, transport maxPayload, socket/PTY buffer limits, session-scoped budgets, and one coalesced evaluation rerun. `pnpm verify`: 318 tests (31 new); Docker: 60 tests (2 new), including W1 progression; Chromium smoke: 1 passed (9.6 s). D-024 records limits and overflow behavior. |
 | A28 | Fixed within A03 | Fixed raw-byte line buffering preserves UTF-8 across watched-stream chunks; regression splits accented text and emoji into individual bytes. |
+| A04 | Fixed | `codex/a04-exec-termination` (stacked on A03); root-protected in-container subreaper kills/reaps timed-out commands and detached descendants before reporting timeout, with a sandbox-stop watchdog fallback. `pnpm verify`: 327 tests (9 new); Docker: 70 tests (10 new), including W1 progression; Chromium smoke: 1 passed (9.4 s). Four termination regressions reproduced surviving processes before the fix. D-025 records semantics and compatibility. |
 
-A04 is the next unresolved P1 finding. A04–A08 and the other remaining P2/P3 findings are still open; the original reproduction notes below are retained as the audit snapshot. No World 2 content or production-hardening milestone was marked complete by these fixes.
+A05 is the next unresolved P1 finding. A05–A08 and the other remaining P2/P3 findings are still open; the original reproduction notes below are retained as the audit snapshot. No World 2 content or production-hardening milestone was marked complete by these fixes.
 
 ### A01. Concurrent starts bypass both capacity and single-session limits — reproduced
 

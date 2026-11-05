@@ -8,7 +8,7 @@ type ProcessAbsent = Extract<Check, { type: 'process_absent' }>;
 type ProcessState = Extract<Check, { type: 'process_state' }>;
 
 function pgrepNameArgs(check: { name: string; user?: string }): string {
-  const parts = ['pgrep'];
+  const parts = ['pgrep', '-A'];
   if (check.user !== undefined) {
     parts.push('-u', shQuote(check.user));
   }
@@ -23,8 +23,7 @@ async function anyProcess(
   ctx: CheckContext,
 ): Promise<boolean> {
   if (check.name !== undefined) {
-    // Exact process-name match: the probe itself is named pgrep/bash, so no
-    // self-match is possible here.
+    // Ignore the probe's ancestors, including its Python exec supervisor.
     const res = await rootShell(
       provider,
       handle,
@@ -33,10 +32,10 @@ async function anyProcess(
     );
     return res.code === 0;
   }
-  // Full-command-line match: the pattern travels in $TQ_PGREP so the probe's
-  // own command line can never match and vacate the check.
+  // Keep the pattern out of the probe's argv and ignore ancestors such as
+  // its Python supervisor when matching interpreter names/command lines.
   const userFlag = check.user !== undefined ? `-u ${shQuote(check.user)} ` : '';
-  const res = await rootShell(provider, handle, `pgrep ${userFlag}-f "$TQ_PGREP"`, ctx, {
+  const res = await rootShell(provider, handle, `pgrep -A ${userFlag}-f "$TQ_PGREP"`, ctx, {
     TQ_PGREP: check.cmdline_regex ?? '',
   });
   return res.code === 0;
@@ -66,7 +65,7 @@ export async function checkProcessState(
   check: ProcessState,
   ctx: CheckContext,
 ): Promise<boolean> {
-  const pids = await rootShell(provider, handle, 'pgrep -f "$TQ_PGREP"', ctx, {
+  const pids = await rootShell(provider, handle, 'pgrep -A -f "$TQ_PGREP"', ctx, {
     TQ_PGREP: check.cmdline_regex,
   });
   if (pids.code !== 0) {

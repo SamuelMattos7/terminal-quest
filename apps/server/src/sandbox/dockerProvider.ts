@@ -4,7 +4,7 @@ import { posix } from 'node:path';
 import Docker from 'dockerode';
 import { pack } from 'tar-stream';
 import { buildHostConfig, buildLabels } from './profiles.js';
-import { collectExecOutput } from './execOutput.js';
+import { dockerExec } from './dockerExec.js';
 import { createLineReader, MAX_SHELL_INPUT_BUFFER_BYTES } from './streamLimits.js';
 import { ResourceLimitError } from '../util/resourceLimits.js';
 import { logger } from '../util/logger.js';
@@ -19,8 +19,6 @@ import type {
   SandboxSpec,
   ShellStream,
 } from './provider.js';
-
-const DEFAULT_EXEC_TIMEOUT_MS = 5000;
 
 function statusCodeOf(err: unknown): number | undefined {
   if (typeof err === 'object' && err !== null && 'statusCode' in err) {
@@ -131,30 +129,7 @@ export class DockerProvider implements SandboxProvider {
   }
 
   exec(h: SandboxHandle, cmd: string[], opts?: ExecOptions): Promise<ExecResult> {
-    const container = this.docker.getContainer(h.id);
-    const timeoutMs = opts?.timeoutMs ?? DEFAULT_EXEC_TIMEOUT_MS;
-    return (async () => {
-      const exec = await container.exec({
-        Cmd: cmd,
-        User: opts?.user ?? 'root',
-        WorkingDir: opts?.cwd,
-        Env: opts?.env === undefined ? undefined : toEnvList(opts.env),
-        AttachStdout: true,
-        AttachStderr: true,
-      });
-      const stream = (await exec.start({
-        hijack: true,
-        stdin: opts?.stdin !== undefined,
-      })) as unknown as Duplex;
-
-      return collectExecOutput(
-        exec,
-        stream,
-        (stdout, stderr) => container.modem.demuxStream(stream, stdout, stderr),
-        timeoutMs,
-        opts?.stdin,
-      );
-    })();
+    return dockerExec(this.docker.getContainer(h.id), h, cmd, opts);
   }
 
   async openShell(h: SandboxHandle, size: { cols: number; rows: number }): Promise<ShellStream> {

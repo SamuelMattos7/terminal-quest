@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** Audit remediation: A01/A02/A03/A13 fixed; next P1 is A04 (exec process termination). M8 is the next unfinished milestone (M5 gate green).
+**Current focus:** Audit remediation: A01/A02/A03/A04/A13 fixed; next P1 is A05 (teardown recovery and launch cleanup). M8 is the next unfinished milestone (M5 gate green).
 
 ---
 
@@ -186,7 +186,8 @@ Each branch records its own regression and verification evidence. The milestone 
 - [x] A01 — concurrent starts/reset and global capacity; branch `codex/a01-session-concurrency`, commit `6871e9e`. ✅ `pnpm verify`: build/lint + 268 tests passed (9 new regressions); `pnpm test:docker`: 58 passed, including the full W1 socket progression chain. Gated tests reproduced same-user overlap, cross-user over-capacity, and reset/start overlap before the fix; verify release after failure, stale resets, and independent users.
 - [x] A02 + A13 — invalidate closed/expiring sessions, serialize progress reset with launches/completion, and atomically credit an active attempt once; branch `codex/a02-completion-lifecycle` stacked on A01. ✅ `pnpm verify`: build/lint + 287 tests passed (19 new regressions on this branch, 28 across both branches); `pnpm test:docker`: 58 passed including the full W1 progression chain; `pnpm e2e`: Chromium smoke passed (10.3 s). Thirteen initial regressions failed before the fix. Covers abandon/reset/progress reset/shutdown, idle/max-age expiry during slow destruction, queued checks, late timeout after DB close, duplicate/retired/mismatched attempts, full rollback on late badge failure, and retry after persistence failure.
 - [x] A03 — bound player streams, retained histories, exec output, socket traffic, and pending evaluations; branch `codex/a03-resource-bounds`, stacked on A02/A13. ✅ `pnpm verify`: build/lint + 318 tests passed (31 new unit regressions); `pnpm test:docker`: 60 passed (2 new regressions), including the full W1 socket progression chain; `pnpm e2e`: Chromium smoke passed (9.6 s). Seven initial history/queue regressions failed before the fix. Covers UTF-8 byte caps, newline-free/tiny-chunk streams, watcher byte/line rates, bounded command/answer evidence, combined stdout/stderr overflow, blocked PTY writes, slow socket buffers, fragmented/multibyte transport messages, message floods, reconnect budgets, single-rerun coalescing, and abandonment without XP on stream overflow. Split-byte watcher decoding also resolves A28 (D-024).
-- [ ] A04–A08 — remaining deployment-blocking audit findings; see `PROJECT_AUDIT.md`.
+- [x] A04 — terminate and reap timed-out exec commands and descendants; branch `codex/a04-exec-termination`, stacked on A03. ✅ `pnpm verify`: build/lint + 327 tests passed (9 new unit regressions); `pnpm test:docker`: 70 passed (10 new regressions), including the full W1 socket progression chain; `pnpm e2e`: Chromium smoke passed (9.4 s). Four initial process-termination regressions and a finite-stdin compatibility regression failed before the fix. Covers repeated root/player timeouts, nested/double-forked/detached/TERM-ignoring and cross-UID descendants, absence from `/proc` including zombies, no delayed mutations, protected supervision, cleanup completion/failure, watchdog fallback, and preservation of intended services/argv/cwd/env/stdin/ordinary exit codes. Process checks exclude supervisor ancestors (D-025). Final Docker and browser suites ran sequentially because browser startup sweeps managed containers.
+- [ ] A05–A08 — remaining deployment-blocking audit findings; see `PROJECT_AUDIT.md`.
 
 ## Known gaps
 
@@ -197,7 +198,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 | 2026-10-06 | skills.yaml prereqs | W1 skill edges authored in M7; W2+ skills still have empty `prereqs` | Author remaining edges during M8 |
 | 2026-10-06 | cron daemon start   | `needs_cron` field present (default true); daemon start not implemented                 | Implement in T10.1 admin polish; no admin levels exist yet |
 | 2026-10-11 | Web bundle size     | `dist` JS is ~576 KB (xterm.js); vite emits a chunk-size warning, no code-splitting yet | Consider `React.lazy` for `/play` during polish            |
-| 2026-11-04 | Repository audit | 31 original prioritized findings; A01, A02, A03, A13, and A28 now fixed with regressions (see Audit remediation above). Remaining process termination, cleanup, production, progression/recovery, checks, UI, CI, and documentation gaps are detailed in [PROJECT_AUDIT.md](PROJECT_AUDIT.md). | Address A04–A08 before public deployment; resolve the other remaining findings alongside planned milestones. |
+| 2026-11-04 | Repository audit | 31 original prioritized findings; A01, A02, A03, A04, A13, and A28 now fixed with regressions (see Audit remediation above). Remaining cleanup, production, progression/recovery, checks, UI, CI, and documentation gaps are detailed in [PROJECT_AUDIT.md](PROJECT_AUDIT.md). | Address A05–A08 before public deployment; resolve the other remaining findings alongside planned milestones. |
 
 ## Blockers
 
