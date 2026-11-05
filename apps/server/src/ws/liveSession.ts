@@ -5,6 +5,7 @@ import type { TrackerState } from '../engine/objectiveTracker.js';
 import type { NudgeState } from '../progression/dialogue.js';
 import type { Session } from '../sandbox/sessionManager.js';
 import type { ShellStream } from '../sandbox/provider.js';
+import { createBudget } from '../util/resourceLimits.js';
 
 // Live per-connection session state for plan.md §4.1/§6.1 (T3.2). The
 // SessionManager owns TTLs and sandboxes; this registry owns everything
@@ -94,17 +95,5 @@ export interface StdinLimiter {
 }
 
 export function createStdinLimiter(now: () => number = Date.now): StdinLimiter {
-  let windowStart = now();
-  let used = 0;
-  return {
-    take(bytes: number): boolean {
-      const at = now();
-      if (at - windowStart >= 1000) {
-        windowStart = at;
-        used = 0;
-      }
-      used += bytes;
-      return used <= STDIN_BUDGET_BYTES_PER_SECOND;
-    },
-  };
+  return createBudget(STDIN_BUDGET_BYTES_PER_SECOND, now);
 }

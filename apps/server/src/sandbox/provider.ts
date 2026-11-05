@@ -68,6 +68,7 @@ export interface SandboxProvider {
     h: SandboxHandle,
     path: string,
     onLine: (line: string) => void,
+    onError?: (error: Error) => void,
   ): Promise<{ stop(): void }>;
   destroy(h: SandboxHandle): Promise<void>;
   listManaged(): Promise<ManagedSandbox[]>;

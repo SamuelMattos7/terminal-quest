@@ -1,4 +1,15 @@
-import type { Level } from '@terminal-quest/shared';
+import {
+  InboxMessageSchema,
+  MAX_WATCH_LINE_BYTES,
+  MAX_COMMANDS,
+  MAX_ANSWERS,
+  MAX_COMMAND_HISTORY_BYTES,
+  MAX_ANSWER_HISTORY_BYTES,
+  MAX_TEXT_BYTES,
+  utf8Bytes,
+  type Level,
+} from '@terminal-quest/shared';
+import { ResourceLimitError } from '../util/resourceLimits.js';
 import { runCheck } from './checkRunner.js';
 import type { CheckContext, LoggedCommand } from './checks/context.js';
 import type { CmdlogEntry } from './cmdlog.js';
@@ -13,6 +24,8 @@ export interface TrackerState {
   done: Map<string, boolean>;
   answers: string[];
   commands: LoggedCommand[];
+  commandBytes: number;
+  answerBytes: number;
 }
 
 export type InboxCommand = 'hint' | 'status' | 'unknown' | InboxSubmit | InboxExplain;
@@ -32,48 +45,63 @@ export function createTracker(level: Level): TrackerState {
     done: new Map(level.objectives.map((o) => [o.id, false])),
     answers: [],
     commands: [],
+    commandBytes: 0,
+    answerBytes: 0,
   };
 }
 
 export function noteCommand(state: TrackerState, entry: CmdlogEntry): void {
+  const bytes = utf8Bytes(entry.command);
+  if (
+    bytes > MAX_TEXT_BYTES ||
+    state.commands.length >= MAX_COMMANDS ||
+    state.commandBytes + bytes > MAX_COMMAND_HISTORY_BYTES
+  ) {
+    throw new ResourceLimitError('command history');
+  }
+  state.commandBytes += bytes;
   state.commands.push({ command: entry.command, exitCode: entry.exitCode });
 }
 
 export function submitAnswer(state: TrackerState, text: string): void {
+  const bytes = utf8Bytes(text);
+  if (
+    bytes > MAX_TEXT_BYTES ||
+    state.answers.length >= MAX_ANSWERS ||
+    state.answerBytes + bytes > MAX_ANSWER_HISTORY_BYTES
+  ) {
+    throw new ResourceLimitError('answer history');
+  }
+  state.answerBytes += bytes;
   state.answers.push(text);
 }
 
 /**
  * Handle one JSON line from `/run/tq/inbox` (D-007). Player junk never
  * throws; unknown shapes report 'unknown' for the server to ignore
- * (rate-limiting that junk belongs to the socket layer, T3.2).
+ * (stream byte/line/rate budgets are enforced before this parser).
  */
 export function handleInboxLine(state: TrackerState, line: string): InboxCommand | InboxSubmit {
   let parsed: unknown;
+  if (utf8Bytes(line) > MAX_WATCH_LINE_BYTES) return 'unknown';
   try {
     parsed = JSON.parse(line) as unknown;
   } catch {
     return 'unknown';
   }
-  if (typeof parsed !== 'object' || parsed === null) {
-    return 'unknown';
-  }
-  const cmd = (parsed as { cmd?: unknown }).cmd;
-  switch (cmd) {
+  const message = InboxMessageSchema.safeParse(parsed);
+  if (!message.success) return 'unknown';
+  const msg = message.data;
+  switch (msg.cmd) {
     case 'hint':
     case 'status':
-      return cmd;
+      return msg.cmd;
     case 'explain': {
-      const text = (parsed as { text?: unknown }).text;
-      return typeof text === 'string' ? { kind: 'explain', text } : 'unknown';
+      return { kind: 'explain', text: msg.text };
     }
     case 'submit': {
-      const text = (parsed as { text?: unknown }).text;
-      if (typeof text !== 'string') {
-        return 'unknown';
-      }
-      submitAnswer(state, text);
-      return { kind: 'submit', text };
+      submitAnswer(state, msg.text);
+      return { kind: 'submit', text: msg.text };
     }
     default:
       return 'unknown';

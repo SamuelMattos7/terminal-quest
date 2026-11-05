@@ -4,6 +4,10 @@ import { posix } from 'node:path';
 import Docker from 'dockerode';
 import { pack } from 'tar-stream';
 import { buildHostConfig, buildLabels } from './profiles.js';
+import { collectExecOutput } from './execOutput.js';
+import { createLineReader, MAX_SHELL_INPUT_BUFFER_BYTES } from './streamLimits.js';
+import { ResourceLimitError } from '../util/resourceLimits.js';
+import { logger } from '../util/logger.js';
 import type {
   DockerClient,
   ExecOptions,
@@ -143,71 +147,13 @@ export class DockerProvider implements SandboxProvider {
         stdin: opts?.stdin !== undefined,
       })) as unknown as Duplex;
 
-      const stdoutChunks: Buffer[] = [];
-      const stderrChunks: Buffer[] = [];
-      return await new Promise<ExecResult>((resolve) => {
-        let done = false;
-        const finish = (result: ExecResult): void => {
-          if (!done) {
-            done = true;
-            clearTimeout(timer);
-            resolve(result);
-          }
-        };
-        const timer = setTimeout(() => {
-          // Docker exec has no kill API: resolve the timeout and let the
-          // process die with the container (bounded by the T1.3 reaper).
-          stream.destroy();
-          finish({
-            code: -1,
-            stdout: Buffer.concat(stdoutChunks).toString('utf8'),
-            stderr: Buffer.concat(stderrChunks).toString('utf8'),
-            timedOut: true,
-          });
-        }, timeoutMs);
-        timer.unref?.();
-        const stdoutWrite = new PassThrough();
-        const stderrWrite = new PassThrough();
-        stdoutWrite.on('data', (c: Buffer) => {
-          stdoutChunks.push(c);
-        });
-        stderrWrite.on('data', (c: Buffer) => {
-          stderrChunks.push(c);
-        });
-        container.modem.demuxStream(stream, stdoutWrite, stderrWrite);
-        if (opts?.stdin !== undefined) {
-          stream.write(opts.stdin);
-          stream.end();
-        }
-        stream.on('end', () => {
-          void exec.inspect().then(
-            (info) => {
-              finish({
-                code: info.ExitCode ?? -1,
-                stdout: Buffer.concat(stdoutChunks).toString('utf8'),
-                stderr: Buffer.concat(stderrChunks).toString('utf8'),
-                timedOut: false,
-              });
-            },
-            () => {
-              finish({
-                code: -1,
-                stdout: Buffer.concat(stdoutChunks).toString('utf8'),
-                stderr: Buffer.concat(stderrChunks).toString('utf8'),
-                timedOut: false,
-              });
-            },
-          );
-        });
-        stream.on('error', () => {
-          finish({
-            code: -1,
-            stdout: Buffer.concat(stdoutChunks).toString('utf8'),
-            stderr: Buffer.concat(stderrChunks).toString('utf8'),
-            timedOut: false,
-          });
-        });
-      });
+      return collectExecOutput(
+        exec,
+        stream,
+        (stdout, stderr) => container.modem.demuxStream(stream, stdout, stderr),
+        timeoutMs,
+        opts?.stdin,
+      );
     })();
   }
 
@@ -257,6 +203,9 @@ export class DockerProvider implements SandboxProvider {
 
     return {
       write(data: string): void {
+        if (stream.writableLength + Buffer.byteLength(data) > MAX_SHELL_INPUT_BUFFER_BYTES) {
+          throw new ResourceLimitError('shell input buffer');
+        }
         stream.write(data);
       },
       resize(cols: number, rows: number): void {
@@ -279,6 +228,7 @@ export class DockerProvider implements SandboxProvider {
     h: SandboxHandle,
     path: string,
     onLine: (line: string) => void,
+    onError?: (error: Error) => void,
   ): Promise<{ stop(): void }> {
     if (!path.startsWith('/')) {
       throw new Error(`watchFile path must be absolute: ${path}`);
@@ -296,22 +246,34 @@ export class DockerProvider implements SandboxProvider {
     const stdout = new PassThrough();
     const stderr = new PassThrough();
     stderr.resume();
-    container.modem.demuxStream(stream, stdout, stderr);
-    let pending = '';
+    let stopped = false;
+    const stop = (): void => {
+      stopped = true;
+      stream.destroy();
+      stdout.destroy();
+      stderr.destroy();
+    };
+    const fail = (error: Error): void => {
+      if (stopped) return;
+      stop();
+      logger.warn(
+        { err: error, attemptId: h.spec.attemptId, levelId: h.spec.levelId, path },
+        'file watcher stopped',
+      );
+      onError?.(error);
+    };
+    const read = createLineReader(onLine);
     stdout.on('data', (chunk: Buffer) => {
-      pending += chunk.toString('utf8');
-      let idx = pending.indexOf('\n');
-      while (idx >= 0) {
-        onLine(pending.slice(0, idx).replace(/\r$/, ''));
-        pending = pending.slice(idx + 1);
-        idx = pending.indexOf('\n');
+      if (stopped) return;
+      try {
+        read(chunk);
+      } catch (error) {
+        fail(error instanceof Error ? error : new Error(String(error)));
       }
     });
-    return {
-      stop(): void {
-        stream.destroy();
-      },
-    };
+    stream.on('error', fail);
+    container.modem.demuxStream(stream, stdout, stderr);
+    return { stop };
   }
 
   async destroy(h: SandboxHandle): Promise<void> {

@@ -11,7 +11,10 @@ import { CapacityError, type Session } from '../sandbox/sessionManager.js';
 import type { ShellStream } from '../sandbox/provider.js';
 import type { LiveSession } from './liveSession.js';
 import { attemptScope, isActive, send, type FlowDeps } from './sessionContext.js';
-import { evaluateAndReport } from './sessionEvaluation.js';
+import { scheduleEvaluation } from './sessionEvaluation.js';
+import { createBudget } from '../util/resourceLimits.js';
+import { logger } from '../util/logger.js';
+import { TERMINAL_BYTES_PER_SECOND } from './socketLimits.js';
 
 export type { FlowDeps } from './sessionContext.js';
 export { evaluateAndReport, computeUnlocked } from './sessionEvaluation.js';
@@ -141,44 +144,68 @@ export async function launchLevelSession(
     throw err;
   }
   live.shell = shell;
+  const outputBudget = createBudget(TERMINAL_BYTES_PER_SECOND);
+  const stopForLimit = (err: Error): void => {
+    if (live.closed) return;
+    logger.warn({ err, ...attemptScope(live) }, 'session resource limit');
+    send(live, { t: 'error', message: 'session resource limit exceeded; start a new attempt' });
+    void closeLiveSession(deps, live, 'abandoned').catch((error: unknown) => {
+      logger.error({ err: error, ...attemptScope(live) }, 'resource limit cleanup failed');
+    });
+  };
   // Provider chunks are already UTF-8 boundary-safe (T1.2); forward them.
   // send() no-ops while no socket is attached, so this is wired once here.
   shell.onData((chunk) => {
+    if (live.closed) return;
+    if (!outputBudget.take(chunk.length)) {
+      stopForLimit(new Error('terminal output rate exceeded'));
+      return;
+    }
     const text = chunk.toString('utf8');
     if (text !== '') {
       send(live, { t: 'stdout', d: text });
     }
   });
-  const inbox = await deps.provider.watchFile(session.handle, '/run/tq/inbox', (line) => {
-    if (!isActive(deps, live)) return;
-    const cmd = handleInboxLine(tracker, line);
-    if (cmd === 'hint') {
-      requestHint(deps, live);
-    } else if (cmd === 'status') {
-      send(live, { t: 'tux', text: tuxStatus(live) });
-    } else if (typeof cmd === 'object' && cmd.kind === 'explain') {
-      send(live, { t: 'tux', text: tuxExplain(live, cmd.text) });
-    } else if (typeof cmd === 'object') {
-      void evaluateAndReport(deps, live).catch(() => undefined);
-    }
-  });
+  const inbox = await deps.provider.watchFile(
+    session.handle,
+    '/run/tq/inbox',
+    (line) => {
+      if (!isActive(deps, live)) return;
+      const cmd = handleInboxLine(tracker, line);
+      if (cmd === 'hint') {
+        requestHint(deps, live);
+      } else if (cmd === 'status') {
+        send(live, { t: 'tux', text: tuxStatus(live) });
+      } else if (typeof cmd === 'object' && cmd.kind === 'explain') {
+        send(live, { t: 'tux', text: tuxExplain(live, cmd.text) });
+      } else if (typeof cmd === 'object') {
+        scheduleEvaluation(deps, live);
+      }
+    },
+    stopForLimit,
+  );
   void inbox;
-  const cmdlog = await deps.provider.watchFile(session.handle, '/run/tq/cmdlog', (line) => {
-    if (!isActive(deps, live)) return;
-    const entry = parseCmdlogLine(line);
-    if (entry === undefined) {
-      return;
-    }
-    noteCommand(tracker, entry);
-    if (entry.exitCode !== 0) {
-      live.dialogue.failsSinceProgress += 1;
-    }
-    const tip = live.coach.advise(entry.command, entry.exitCode);
-    if (tip !== undefined) {
-      send(live, { t: 'coach', text: tip });
-    }
-    void evaluateAndReport(deps, live).catch(() => undefined);
-  });
+  const cmdlog = await deps.provider.watchFile(
+    session.handle,
+    '/run/tq/cmdlog',
+    (line) => {
+      if (!isActive(deps, live)) return;
+      const entry = parseCmdlogLine(line);
+      if (entry === undefined) {
+        return;
+      }
+      noteCommand(tracker, entry);
+      if (entry.exitCode !== 0) {
+        live.dialogue.failsSinceProgress += 1;
+      }
+      const tip = live.coach.advise(entry.command, entry.exitCode);
+      if (tip !== undefined) {
+        send(live, { t: 'coach', text: tip });
+      }
+      scheduleEvaluation(deps, live);
+    },
+    stopForLimit,
+  );
   void cmdlog;
 
   const replaced = deps.live.set(session.id, live);
