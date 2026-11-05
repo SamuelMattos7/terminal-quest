@@ -300,3 +300,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A11 found that the daily endpoint could offer a locked level and treat a lifetime completion as completion of today's challenge.
 - **Decision:** Apply the same enabled-world and unlock rules as level access before choosing a daily. An explicit `daily_eligible` value overrides the default; a lesson qualifies by default at difficulty 3 or lower after the player completes every boss in its world. Count successful attempts by this player on the selected level with an end time from the selected UTC midnight up to, but excluding, the next midnight.
 - **Consequences:** Players without eligible levels get the existing empty-pool response. Attempts started on an earlier day can count if they finish on the selected date.
+
+### D-033 — Count hints from every attempt toward Clean Sweep
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A12 found that attempts ending without completion lost their hint and command metrics. This undercounted profile hints and could award Clean Sweep after a hinted retry.
+- **Decision:** Save hint tiers as they are issued, and write hint tiers, command count, and manual use when an attempt ends. Completed and unfinished attempts use the same command counting rules. Keep the existing Clean Sweep rule: once every level in a world is cleared, any hint taken in that world before the award disqualifies the player, even on an abandoned or expired attempt. An unsuccessful attempt with no hints does not disqualify the player.
+- **Consequences:** Reset still starts a fresh attempt for scoring. Already awarded badges remain earned. The change does not backfill past attempts; command metrics reflect the command entries received before teardown.

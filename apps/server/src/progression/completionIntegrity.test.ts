@@ -52,7 +52,7 @@ describe('completion integrity (A02/A13)', () => {
       const { db, input, cleanup } = setup();
       try {
         if (status === 'deleted') db.delete(attempts).run();
-        else endAttempt(db, input.attemptId, status);
+        else endAttempt(db, input.attemptId, status, input);
         await recordLevelCompletion(db, input);
         expect(db.select().from(users).get()?.xp).toBe(0);
         expect(db.select().from(levelProgress).all()).toEqual([]);
@@ -71,7 +71,7 @@ describe('completion integrity (A02/A13)', () => {
     const { db, input, cleanup } = setup();
     try {
       await recordLevelCompletion(db, input);
-      endAttempt(db, input.attemptId, 'expired');
+      endAttempt(db, input.attemptId, 'expired', input);
       expect(db.select().from(attempts).get()?.status).toBe('completed');
     } finally {
       cleanup();

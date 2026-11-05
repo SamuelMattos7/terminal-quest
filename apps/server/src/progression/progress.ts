@@ -3,8 +3,6 @@ import type { Level, Skill } from '@terminal-quest/shared';
 import { attempts, levelProgress, users } from '../db/schema.js';
 import type { Db } from '../db/client.js';
 import type { LoggedCommand } from '../engine/checks/context.js';
-import { countCommands } from '../engine/cmdlog.js';
-import { checkManualBonus } from '../engine/scoring.js';
 import { dayString, nextStreakDays } from './streaks.js';
 import { finishAttempt } from './attempts.js';
 import { creditSkills } from './skills.js';
@@ -74,10 +72,8 @@ function persistCompletion(db: Db, input: CompletionInput): CompletionResult {
 
   finishAttempt(db, input.attemptId, {
     endedAt: now,
-    hintsUsed: input.hintTiers.length,
     hintTiers: input.hintTiers,
-    commandsCount: countCommands(commandTexts),
-    usedManual: checkManualBonus(commandTexts),
+    commands: input.commands,
     xpAwarded: input.xpAwarded,
     rank: input.rank,
   });

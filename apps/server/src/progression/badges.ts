@@ -74,6 +74,7 @@ function ruleHolds(
       if (!ids.every((id) => completedIds.has(id))) {
         return false;
       }
+      // Any hint used in this world counts, even on an attempt that did not clear a level.
       const rows = db.select().from(attempts).where(eq(attempts.userId, userId)).all();
       return rows.filter((r) => ids.includes(r.levelId)).every((r) => r.hintsUsed === 0);
     }

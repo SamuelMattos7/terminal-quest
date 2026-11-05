@@ -5,7 +5,7 @@ import { createHintState, nextHint } from '../engine/hints.js';
 import { createTracker, handleInboxLine, noteCommand } from '../engine/objectiveTracker.js';
 import { compileSetup } from '../engine/setupCompiler.js';
 import { runSetup } from '../engine/setupRunner.js';
-import { openAttempt } from '../progression/attempts.js';
+import { openAttempt, saveAttemptHints } from '../progression/attempts.js';
 import { recordEvent } from '../progression/events.js';
 import { CapacityError, type Session } from '../sandbox/sessionManager.js';
 import type { LiveSession } from './liveSession.js';
@@ -30,10 +30,18 @@ export function randomSeed(): number {
 }
 
 export function requestHint(deps: FlowDeps, live: LiveSession): void {
-  if (!isActive(deps, live)) return;
+  if (!isActive(deps, live) || live.attemptFinished) return;
   const hint = nextHint(live.level, live.hints);
   if (hint === undefined) {
     send(live, { t: 'error', message: 'no hints left' });
+    return;
+  }
+  try {
+    saveAttemptHints(deps.db, live.attemptId, live.hints.tiersUsed);
+  } catch (err) {
+    live.hints.tiersUsed.pop();
+    logger.error({ err, ...attemptScope(live) }, 'failed to save hint');
+    send(live, { t: 'error', message: 'could not save hint' });
     return;
   }
   send(live, { t: 'hint', tier: hint.tier, text: hint.text, penaltyPct: hint.penaltyPct });

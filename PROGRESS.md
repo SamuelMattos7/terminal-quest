@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** Audit remediation: A01–A11, A13, and A28 fixed. A12 is the next open audit finding. M8 is the next unfinished milestone (M5 gate green).
+**Current focus:** Audit remediation: A01–A13 and A28 fixed. A14 is the next open audit finding. M8 is the next unfinished milestone (M5 gate green).
 
 ---
 
@@ -196,6 +196,7 @@ Each branch records its own regression and verification evidence. The milestone 
 - [x] A10 — enforce `ENABLE_WORLDS` across level access, review, and unlocks; branch `codex/a10-world-availability`, based on A09. ✅ `pnpm verify`: build/lint + 381 tests passed (8 new regressions). Four API cases failed before the fix. Coverage includes detail and start with empty and partial allow-lists, reset with `UNLOCK_ALL`, historical review and boss prerequisites, and completion unlock payloads. See D-031.
 
 - [x] A11 — restrict daily challenges to eligible, unlocked levels and count successful attempts on the selected UTC date. ✅ `pnpm verify`: build/lint + 384 tests passed. Four API regressions cover unlocks, default eligibility after world completion, disabled worlds, and matching player/level/status and UTC midnight boundaries. Three cases failed before the fix. See D-032.
+- [x] A12 — save hint and command metrics on unfinished attempts. ✅ `pnpm verify`: build/lint + 386 tests passed. Regressions cover abandonment, reset, shutdown, both expiry paths, and Clean Sweep after hinted and hintless failed attempts. Six cases failed before the fix. See D-033.
 
 ## Known gaps
 
@@ -206,7 +207,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 | 2026-10-06 | skills.yaml prereqs | W1 skill edges authored in M7; W2+ skills still have empty `prereqs` | Author remaining edges during M8 |
 | 2026-10-06 | cron daemon start   | `needs_cron` field present (default true); daemon start not implemented                 | Implement in T10.1 admin polish; no admin levels exist yet |
 | 2026-10-11 | Web bundle size     | `dist` JS is ~576 KB (xterm.js); vite emits a chunk-size warning, no code-splitting yet | Consider `React.lazy` for `/play` during polish            |
-| 2026-11-04 | Repository audit | 31 original prioritized findings; A01–A11, A13, and A28 fixed with regressions (see Audit remediation above). Remaining progression/recovery, checks, UI, CI, and documentation gaps are detailed in [PROJECT_AUDIT.md](PROJECT_AUDIT.md). | Resolve remaining findings alongside planned milestones and complete M9 production validation. |
+| 2026-11-04 | Repository audit | 31 original prioritized findings; A01–A13 and A28 fixed with regressions (see Audit remediation above). Remaining progression/recovery, checks, UI, CI, and documentation gaps are detailed in [PROJECT_AUDIT.md](PROJECT_AUDIT.md). | Resolve remaining findings alongside planned milestones and complete M9 production validation. |
 
 ## Blockers
 
