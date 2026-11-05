@@ -144,7 +144,10 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
       await reaper.start();
     } catch (err) {
       // Boot without Docker must still work (/healthz reports docker:false).
-      logger.warn({ err }, 'reaper boot sweep failed; continuing without it');
+      logger.warn(
+        { err },
+        'reaper boot sweep failed; periodic cleanup and orphan retries remain active',
+      );
     }
   }
 

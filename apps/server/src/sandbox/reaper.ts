@@ -7,6 +7,8 @@ export const REAPER_INTERVAL_MS = 30_000;
 
 export class Reaper {
   private timer: NodeJS.Timeout | undefined;
+  private bootSweepPending = true;
+  private bootSweepRunning = false;
 
   constructor(
     private readonly manager: SessionManager,
@@ -14,10 +16,10 @@ export class Reaper {
   ) {}
 
   async start(): Promise<void> {
-    const orphans = await this.manager.sweepOrphans();
-    if (orphans > 0) {
-      this.logger.info({ orphans }, 'reaper removed orphan sandboxes at boot');
-    }
+    if (this.timer !== undefined) return;
+    this.bootSweepPending = true;
+    // Install before awaiting Docker: failure or slow discovery must not
+    // disable session expiry and retries of retained teardown ownership.
     this.timer = setInterval(() => {
       void this.manager.sweepOnce().then(
         (swept) => {
@@ -30,8 +32,27 @@ export class Reaper {
           this.logger.error({ err }, 'reaper sweep failed');
         },
       );
+      if (this.bootSweepPending && !this.bootSweepRunning) {
+        void this.sweepBootOrphans().catch((err: unknown) => {
+          this.logger.error({ err }, 'reaper orphan sweep failed; will retry');
+        });
+      }
     }, REAPER_INTERVAL_MS);
     this.timer.unref?.();
+    await this.sweepBootOrphans();
+  }
+
+  private async sweepBootOrphans(): Promise<void> {
+    this.bootSweepRunning = true;
+    try {
+      const orphans = await this.manager.sweepOrphans();
+      this.bootSweepPending = false;
+      if (orphans > 0) {
+        this.logger.info({ orphans }, 'reaper removed orphan sandboxes at boot');
+      }
+    } finally {
+      this.bootSweepRunning = false;
+    }
   }
 
   stop(): void {
