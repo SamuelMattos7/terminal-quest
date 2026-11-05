@@ -198,6 +198,9 @@ export class DockerProvider implements SandboxProvider {
       }
     });
     stream.on('error', fail);
+    const ended = (): void => fail(new Error('file watcher closed unexpectedly'));
+    stream.on('end', ended);
+    stream.on('close', ended);
     try {
       container.modem.demuxStream(stream, stdout, stderr);
     } catch (err) {

@@ -308,3 +308,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A12 found that attempts ending without completion lost their hint and command metrics. This undercounted profile hints and could award Clean Sweep after a hinted retry.
 - **Decision:** Save hint tiers as they are issued, and write hint tiers, command count, and manual use when an attempt ends. Completed and unfinished attempts use the same command counting rules. Keep the existing Clean Sweep rule: once every level in a world is cleared, any hint taken in that world before the award disqualifies the player, even on an abandoned or expired attempt. An unsuccessful attempt with no hints does not disqualify the player.
 - **Consequences:** Reset still starts a fresh attempt for scoring. Already awarded badges remain earned. The change does not backfill past attempts; command metrics reflect the command entries received before teardown.
+
+### D-034 — Distinguish runtime failures from ordinary check results
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A14 found that transport, resize, setup, and evaluation errors could disappear or look like unmet objectives. Timeout reporting was limited to individual check implementations.
+- **Decision:** Use pino at the session boundary with the attempt, level, and session IDs when available. Send generic client errors; keep the session usable after resize or evaluation errors, and abandon it when the shell or either watcher disconnects unexpectedly. Docker exec transport failures reject instead of returning a synthetic exit status. The check runner reports a timed-out leaf once and leaves the objective pending, including under negation. Ordinary nonzero exits retain their check-specific meaning.
+- **Consequences:** Intentional teardown remains quiet. Setup failures on start and reset share the same client response, while the launch log retains the failure details. Timeouts on every exec-backed check emit the existing telemetry event without exposing probe commands or output to the client.

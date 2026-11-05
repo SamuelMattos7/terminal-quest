@@ -1,7 +1,7 @@
 import type { Check } from '@terminal-quest/shared';
 import { shQuote } from '../setupCompiler.js';
-import type { SandboxHandle, SandboxProvider } from '../../sandbox/provider.js';
-import { rootShell, type CheckContext } from './context.js';
+import type { SandboxHandle } from '../../sandbox/provider.js';
+import { rootShell, type CheckContext, type CheckProbe } from './context.js';
 
 type CrontabEntry = Extract<Check, { type: 'crontab_entry' }>;
 type CronDryRun = Extract<Check, { type: 'cron_dry_run' }>;
@@ -36,7 +36,7 @@ export function parseCrontab(text: string): CronEntry[] {
 }
 
 async function readCrontab(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   user: string,
   ctx: CheckContext,
@@ -49,25 +49,20 @@ async function readCrontab(
 }
 
 async function schedulesMatch(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   expected: string,
   actual: string,
-  ctx: CheckContext,
 ): Promise<boolean> {
   const res = await provider.exec(handle, ['/opt/tq/bin/cronmatch.py', expected, actual], {
     user: 'root',
     timeoutMs: 5000,
   });
-  if (res.timedOut) {
-    ctx.onTimeout?.('crontab_entry');
-    return false;
-  }
-  return !res.timedOut && res.code === 0;
+  return res.code === 0;
 }
 
 export async function checkCrontabEntry(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: CrontabEntry,
   ctx: CheckContext,
@@ -78,7 +73,7 @@ export async function checkCrontabEntry(
   }
   const commandPattern = new RegExp(check.command_regex);
   for (const entry of entries) {
-    if (!(await schedulesMatch(provider, handle, check.schedule, entry.schedule, ctx))) {
+    if (!(await schedulesMatch(provider, handle, check.schedule, entry.schedule))) {
       continue;
     }
     if (commandPattern.test(entry.command)) {
@@ -89,7 +84,7 @@ export async function checkCrontabEntry(
 }
 
 export async function findDryRunCommand(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: CronDryRun,
   ctx: CheckContext,
@@ -112,7 +107,7 @@ export async function findDryRunCommand(
 }
 
 async function homeDir(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   user: string,
   ctx: CheckContext,
@@ -175,7 +170,7 @@ export function evaluateOutputExpect(
 }
 
 export async function checkCronDryRun(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: CronDryRun,
   ctx: CheckContext,
@@ -203,9 +198,5 @@ export async function checkCronDryRun(
     ],
     { user: target.user, cwd: home, timeoutMs: (check.timeout_s ?? 10) * 1000 },
   );
-  if (res.timedOut) {
-    ctx.onTimeout?.(check.type);
-    return false;
-  }
   return evaluateOutputExpect(res, check.expect);
 }

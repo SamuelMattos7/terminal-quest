@@ -86,6 +86,7 @@ async function runEvaluation(deps: FlowDeps, live: LiveSession): Promise<void> {
       seed: live.seed,
       onCheckTimeout: (objectiveId, checkType) => {
         if (!isActive(deps, live)) return;
+        logger.warn({ ...attemptScope(live), objectiveId, checkType }, 'check timed out');
         recordEvent(deps.db, {
           ...attemptScope(live),
           type: 'check_timeout',

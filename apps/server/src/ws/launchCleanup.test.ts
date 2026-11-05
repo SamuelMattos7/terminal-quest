@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { attempts, events } from '../db/schema.js';
 import { deferred, guestCookie, makeTestContext } from '../testUtils.js';
+import { logger } from '../util/logger.js';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -262,3 +263,45 @@ describe('launch and teardown cleanup (A05)', () => {
     }
   });
 });
+
+it.each(['start', 'reset'] as const)(
+  'logs setup failure during %s and returns a safe error (A14)',
+  async (action) => {
+    const ctx = await setup();
+    const log = vi.spyOn(logger, 'error').mockImplementation(() => {});
+    try {
+      const old =
+        action === 'reset' ? (await ctx.start()).json<{ sessionId: string }>() : undefined;
+      vi.mocked(ctx.app.provider.exec).mockResolvedValueOnce({
+        code: 1,
+        stdout: '',
+        stderr: 'private setup details',
+        timedOut: false,
+      });
+      const response =
+        old === undefined
+          ? await ctx.start()
+          : await ctx.app.inject({
+              method: 'POST',
+              url: `/api/sessions/${old.sessionId}/reset`,
+              headers: { cookie: ctx.cookie },
+            });
+      expect(response.statusCode).toBe(500);
+      expect(response.json()).toEqual({ error: 'level setup failed' });
+      expect(log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stage: 'setup',
+          levelId: 'w1-01-first',
+          sessionId: expect.any(String),
+          attemptId: expect.any(String),
+          err: expect.objectContaining({
+            message: expect.stringContaining('private setup details'),
+          }),
+        }),
+        'session launch failed',
+      );
+    } finally {
+      await ctx.cleanup();
+    }
+  },
+);

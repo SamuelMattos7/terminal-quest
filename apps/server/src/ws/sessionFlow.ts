@@ -11,7 +11,7 @@ import { CapacityError, type Session } from '../sandbox/sessionManager.js';
 import type { LiveSession } from './liveSession.js';
 import { attemptScope, isActive, send, type FlowDeps } from './sessionContext.js';
 import { scheduleEvaluation } from './sessionEvaluation.js';
-import { createBudget } from '../util/resourceLimits.js';
+import { createBudget, ResourceLimitError } from '../util/resourceLimits.js';
 import { logger } from '../util/logger.js';
 import { TERMINAL_BYTES_PER_SECOND } from './socketLimits.js';
 import { closeLiveSession } from './sessionCleanup.js';
@@ -59,10 +59,11 @@ export async function launchLevelSession(
   levelDir: string,
   seed: number,
 ): Promise<LiveSession> {
+  const sandboxAttemptId = `tq-${userId.slice(0, 8)}-${level.id}-s${seed}-${Date.now() % 100000}`;
   let session: Session;
   try {
     session = await deps.manager.create({
-      attemptId: `tq-${userId.slice(0, 8)}-${level.id}-s${seed}-${Date.now() % 100000}`,
+      attemptId: sandboxAttemptId,
       userId,
       levelId: level.id,
       image: level.sandbox.image,
@@ -80,6 +81,10 @@ export async function launchLevelSession(
   } catch (err) {
     // Capacity rejections have their own 429 path; anything else is infra.
     if (!(err instanceof CapacityError)) {
+      logger.error(
+        { err, userId, levelId: level.id, attemptId: sandboxAttemptId },
+        'sandbox creation failed',
+      );
       recordEvent(deps.db, {
         userId,
         levelId: level.id,
@@ -129,27 +134,35 @@ export async function launchLevelSession(
     };
     assertLaunching();
     const outputBudget = createBudget(TERMINAL_BYTES_PER_SECOND);
-    const stopForLimit = (err: Error): void => {
+    const stopForFailure = (err: Error, source: string): void => {
       if (launching.closed) return;
       if (!launched) {
-        startupError = err;
+        startupError ??= err;
         return;
       }
-      logger.warn({ err, ...attemptScope(launching) }, 'session resource limit');
+      const limited = err instanceof ResourceLimitError;
+      logger.warn({ err, source, ...attemptScope(launching) }, 'session runtime failed');
       send(launching, {
         t: 'error',
-        message: 'session resource limit exceeded; start a new attempt',
+        message: limited
+          ? 'session resource limit exceeded; start a new attempt'
+          : 'terminal disconnected; start a new attempt',
       });
       void closeLiveSession(deps, launching, 'abandoned').catch((error: unknown) => {
-        logger.error({ err: error, ...attemptScope(launching) }, 'resource limit cleanup failed');
+        logger.error(
+          { err: error, source, ...attemptScope(launching) },
+          'runtime failure cleanup failed',
+        );
       });
     };
+    shell.onClose((err) => stopForFailure(err ?? new Error('shell closed unexpectedly'), 'shell'));
+    assertLaunching();
     // Provider chunks are already UTF-8 boundary-safe (T1.2); forward them.
     // send() no-ops while no socket is attached, so this is wired once here.
     shell.onData((chunk) => {
       if (launching.closed) return;
       if (!outputBudget.take(chunk.length)) {
-        stopForLimit(new Error('terminal output rate exceeded'));
+        stopForFailure(new ResourceLimitError('terminal output rate'), 'shell');
         return;
       }
       const text = chunk.toString('utf8');
@@ -174,7 +187,7 @@ export async function launchLevelSession(
           scheduleEvaluation(deps, launching);
         }
       },
-      stopForLimit,
+      (err) => stopForFailure(err, 'inbox'),
     );
     launching.watchers.push(inbox);
     assertLaunching();
@@ -198,7 +211,7 @@ export async function launchLevelSession(
         }
         scheduleEvaluation(deps, launching);
       },
-      stopForLimit,
+      (err) => stopForFailure(err, 'cmdlog'),
     );
     launching.watchers.push(cmdlog);
     assertLaunching();
@@ -214,7 +227,14 @@ export async function launchLevelSession(
     return launching;
   } catch (err) {
     logger.error(
-      { err, userId, levelId: level.id, attemptId: live?.attemptId, stage },
+      {
+        err,
+        userId,
+        levelId: level.id,
+        attemptId: live?.attemptId ?? sandboxAttemptId,
+        sessionId: session.id,
+        stage,
+      },
       'session launch failed',
     );
     try {

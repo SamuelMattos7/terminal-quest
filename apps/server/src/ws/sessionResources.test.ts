@@ -4,8 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import WebSocket from 'ws';
 import { MAX_CLIENT_FRAME_BYTES } from '@terminal-quest/shared';
 import { guestCookie, makeTestContext } from '../testUtils.js';
-import { attempts, users } from '../db/schema.js';
+import { attempts, events, users } from '../db/schema.js';
 import { ResourceLimitError } from '../util/resourceLimits.js';
+import { logger } from '../util/logger.js';
+import * as auth from '../auth.js';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -18,12 +20,16 @@ async function setup() {
     .spyOn(app.provider, 'exec')
     .mockResolvedValue({ code: 0, stdout: '', stderr: '', timedOut: false });
   const write = vi.fn();
+  const resize = vi.fn(async () => undefined);
   let output!: (chunk: Buffer) => void;
+  let shellClosed!: (error?: Error) => void;
   vi.spyOn(app.provider, 'openShell').mockImplementation(async () => ({
     write,
-    resize: vi.fn(),
+    resize,
     close: vi.fn(),
-    onClose: vi.fn(),
+    onClose: (callback) => {
+      shellClosed = callback;
+    },
     onData: (callback) => {
       output = callback;
     },
@@ -42,7 +48,7 @@ async function setup() {
   await app.listen({ port: 0, host: '127.0.0.1' });
   const address = app.server.address();
   if (address === null || typeof address !== 'object') throw new Error('server did not bind');
-  const attach = async () => {
+  const connect = () => {
     // Detach the old adapter first so this readiness assertion cannot
     // accidentally accept a previous attachment during async auth.
     live.socket = undefined;
@@ -50,6 +56,10 @@ async function setup() {
       headers: { cookie },
     });
     sockets.push(socket);
+    return socket;
+  };
+  const attach = async () => {
+    const socket = connect();
     await once(socket, 'open');
     await vi.waitFor(() => expect(live.socket).toBeDefined());
     const pong = once(socket, 'message');
@@ -62,9 +72,12 @@ async function setup() {
     live,
     exec,
     write,
+    resize,
     errors,
     destroy,
     output: (chunk: Buffer) => output(chunk),
+    shellClosed: (error?: Error) => shellClosed(error),
+    connect,
     attach,
     cleanup: async () => {
       for (const socket of sockets) socket.terminate();
@@ -161,4 +174,145 @@ describe('session resource boundaries (A03)', () => {
       }
     },
   );
+});
+
+describe('session runtime errors (A14)', () => {
+  it('logs a resize rejection, sends a safe error, and keeps the socket usable', async () => {
+    const ctx = await setup();
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+    const err = new Error('private Docker details');
+    try {
+      const socket = await ctx.attach();
+      ctx.resize.mockRejectedValueOnce(err);
+      const response = once(socket, 'message');
+      socket.send(JSON.stringify({ t: 'resize', cols: 90, rows: 30 }));
+      expect(JSON.parse(String((await response)[0]))).toEqual({
+        t: 'error',
+        message: 'terminal resize failed',
+      });
+      expect(warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          err,
+          attemptId: ctx.live.attemptId,
+          levelId: ctx.live.level.id,
+          sessionId: ctx.live.session.id,
+        }),
+        'terminal resize failed',
+      );
+      const pong = once(socket, 'message');
+      socket.send(JSON.stringify({ t: 'ping' }));
+      expect(JSON.parse(String((await pong)[0]))).toEqual({ t: 'pong' });
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+
+  it('logs attachment failures and closes the socket with a safe reason', async () => {
+    const ctx = await setup();
+    const log = vi.spyOn(logger, 'error').mockImplementation(() => {});
+    const err = new Error('private database details');
+    vi.spyOn(auth, 'userFromToken').mockRejectedValueOnce(err);
+    try {
+      const [code, reason] = await once(ctx.connect(), 'close');
+      expect([code, String(reason)]).toEqual([1011, 'session connection failed']);
+      expect(ctx.live.socket).toBeUndefined();
+      expect(log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          err,
+          attemptId: ctx.live.attemptId,
+          levelId: ctx.live.level.id,
+          sessionId: ctx.live.session.id,
+        }),
+        'session socket attachment failed',
+      );
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+
+  it.each(['shell', 'cmdlog'])(
+    'reports a broken %s stream and abandons the attempt',
+    async (source) => {
+      const ctx = await setup();
+      const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+      const err = new Error('private transport details');
+      try {
+        const socket = await ctx.attach();
+        const response = once(socket, 'message');
+        const closed = once(socket, 'close');
+        if (source === 'shell') ctx.shellClosed(err);
+        else ctx.errors[1]?.(err);
+        expect(JSON.parse(String((await response)[0]))).toEqual({
+          t: 'error',
+          message: 'terminal disconnected; start a new attempt',
+        });
+        await closed;
+        expect(ctx.destroy).toHaveBeenCalledTimes(1);
+        expect(ctx.db.select().from(attempts).get()?.status).toBe('abandoned');
+        expect(warn).toHaveBeenCalledWith(
+          expect.objectContaining({
+            err,
+            source,
+            attemptId: ctx.live.attemptId,
+            levelId: ctx.live.level.id,
+            sessionId: ctx.live.session.id,
+          }),
+          'session runtime failed',
+        );
+      } finally {
+        await ctx.cleanup();
+      }
+    },
+  );
+
+  it('reports a failed evaluation, records file-check timeouts, and permits retry', async () => {
+    const ctx = await setup();
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+    const err = new Error('Docker exec inspection failed');
+    try {
+      const socket = await ctx.attach();
+      ctx.exec
+        .mockRejectedValueOnce(err)
+        .mockResolvedValueOnce({ code: -1, stdout: '', stderr: '', timedOut: true });
+      const response = once(socket, 'message');
+      socket.send(JSON.stringify({ t: 'check' }));
+      expect(JSON.parse(String((await response)[0]))).toEqual({
+        t: 'error',
+        message: 'evaluation failed',
+      });
+      const scope = {
+        attemptId: ctx.live.attemptId,
+        levelId: ctx.live.level.id,
+        sessionId: ctx.live.session.id,
+      };
+      expect(warn).toHaveBeenCalledWith(
+        expect.objectContaining({ err, ...scope }),
+        'session evaluation failed',
+      );
+      socket.send(JSON.stringify({ t: 'check' }));
+      await vi.waitFor(() => {
+        const timeouts = ctx.db
+          .select()
+          .from(events)
+          .all()
+          .filter((event) => event.type === 'check_timeout');
+        expect(timeouts).toEqual([
+          expect.objectContaining({
+            attemptId: scope.attemptId,
+            levelId: scope.levelId,
+            payloadJson: JSON.stringify({ objectiveId: 'did-it', checkType: 'file_exists' }),
+          }),
+        ]);
+      });
+      expect(warn).toHaveBeenCalledWith(
+        expect.objectContaining({ ...scope, checkType: 'file_exists' }),
+        'check timed out',
+      );
+      expect(ctx.live.completed).toBe(false);
+      socket.send(JSON.stringify({ t: 'check' }));
+      await vi.waitFor(() => expect(ctx.live.completed).toBe(true));
+    } finally {
+      await ctx.cleanup();
+    }
+  });
 });
