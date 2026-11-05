@@ -1,12 +1,24 @@
 import { randomUUID } from 'node:crypto';
+import { existsSync, mkdtempSync, rmdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ServerMessageSchema } from '@terminal-quest/shared';
 import { attempts, badges, events, levelProgress, skillProgress, users } from '../db/schema.js';
 import { deferred, guestCookie, makeLevel, makeTestContext } from '../testUtils.js';
 import type { ExecResult } from '../sandbox/provider.js';
-import { evaluateAndReport, requestHint, type FlowDeps } from './sessionFlow.js';
+import { noteCommand } from '../engine/objectiveTracker.js';
+import { closeLiveSession, evaluateAndReport, requestHint, type FlowDeps } from './sessionFlow.js';
 import * as review from '../progression/review.js';
 
 afterEach(() => vi.restoreAllMocks());
+
+function useHintAndCommands(ctx: Awaited<ReturnType<typeof setup>>) {
+  requestHint(ctx.deps, ctx.live);
+  for (const command of ['ls --help', 'tux hint', 'pwd']) {
+    noteCommand(ctx.live.tracker, { command, exitCode: 0, cwd: '/home/player', epoch: 1 });
+  }
+}
 
 async function setup(levels = [makeLevel('a', 1, 1)]) {
   const ctx = await makeTestContext(levels);
@@ -61,6 +73,60 @@ async function setup(levels = [makeLevel('a', 1, 1)]) {
   return { ...ctx, live, deps, exec, destroy, cookie, send, pause };
 }
 
+it('reports a required hold file as pending after deletion and done after recreation (A17)', async () => {
+  const fixture = makeLevel('a', 1, 1);
+  fixture.level.objectives = [
+    {
+      id: 'keep-file',
+      text: 'Keep important.txt.',
+      hold: true,
+      check: { type: 'file_exists', path: '/home/player/important.txt', kind: 'file' },
+    },
+    { id: 'ran-pwd', text: 'Run pwd.', check: { type: 'command_used', regex: '^pwd$' } },
+  ];
+  const ctx = await setup([fixture]);
+  const dir = mkdtempSync(join(tmpdir(), 'tq-hold-'));
+  const file = join(dir, 'important.txt');
+  const check = () => evaluateAndReport(ctx.deps, ctx.live);
+  const holdUpdates = () =>
+    ctx.send.mock.calls
+      .map(([payload]) => ServerMessageSchema.parse(JSON.parse(String(payload))))
+      .flatMap((frame) =>
+        frame.t === 'objective' && frame.id === 'keep-file' ? [frame.status] : [],
+      );
+  try {
+    // The sandbox's file probe reads the fixture file without starting Docker.
+    ctx.exec.mockImplementation(async () => ({
+      code: existsSync(file) ? 0 : 1,
+      stdout: '',
+      stderr: '',
+      timedOut: false,
+    }));
+    writeFileSync(file, 'keep me');
+    await check();
+    expect(holdUpdates()).toEqual(['done']);
+
+    rmSync(file);
+    await check();
+    await check();
+    expect(holdUpdates()).toEqual(['done', 'pending']);
+    expect(ctx.live.completed).toBe(false);
+
+    writeFileSync(file, 'restored');
+    await check();
+    expect(holdUpdates()).toEqual(['done', 'pending', 'done']);
+    expect(ctx.live.completed).toBe(false);
+
+    noteCommand(ctx.live.tracker, { command: 'pwd', exitCode: 0, cwd: '/home/player', epoch: 1 });
+    await check();
+    expect(ctx.live.completed).toBe(true);
+  } finally {
+    rmSync(file, { force: true });
+    rmdirSync(dir);
+    await ctx.cleanup();
+  }
+});
+
 it('omits a disabled next world from the completion payload (A10)', async () => {
   const ctx = await setup([makeLevel('a', 1, 1, 'boss'), makeLevel('a', 2, 1)]);
   try {
@@ -103,6 +169,7 @@ describe('completion lifecycle races (A02/A13)', () => {
       const paused = await ctx.pause();
       const queued = evaluateAndReport(ctx.deps, ctx.live);
       try {
+        useHintAndCommands(ctx);
         if (action === 'shutdown') await ctx.app.close();
         else {
           const url =
@@ -131,8 +198,18 @@ describe('completion lifecycle races (A02/A13)', () => {
             .select()
             .from(attempts)
             .all()
-            .find((a) => a.id === ctx.live.attemptId)?.status,
-        ).toBe(action === 'progress' ? undefined : 'abandoned');
+            .find((a) => a.id === ctx.live.attemptId),
+        ).toEqual(
+          action === 'progress'
+            ? undefined
+            : expect.objectContaining({
+                status: 'abandoned',
+                hintsUsed: 1,
+                hintTiersJson: '[1]',
+                commandsCount: 2,
+                usedManual: 1,
+              }),
+        );
         expect(
           ctx.db
             .select()
@@ -142,7 +219,7 @@ describe('completion lifecycle races (A02/A13)', () => {
         ).toEqual([]);
         expect(ctx.exec).toHaveBeenCalledTimes(action === 'reset' ? 3 : 2);
         requestHint(ctx.deps, ctx.live);
-        expect(ctx.live.hints.tiersUsed).toEqual([]);
+        expect(ctx.live.hints.tiersUsed).toEqual([1]);
       } finally {
         paused.gate.resolve({ code: 0, stdout: '', stderr: '', timedOut: false });
         await Promise.allSettled([paused.pending, queued]);
@@ -156,6 +233,7 @@ describe('completion lifecycle races (A02/A13)', () => {
     async (reason) => {
       const ctx = await setup();
       const paused = await ctx.pause();
+      useHintAndCommands(ctx);
       const entered = deferred();
       const destroyGate = deferred();
       ctx.destroy.mockImplementationOnce(async () => {
@@ -173,7 +251,13 @@ describe('completion lifecycle races (A02/A13)', () => {
         await paused.pending;
         destroyGate.resolve();
         await sweep;
-        expect(ctx.db.select().from(attempts).get()?.status).toBe('expired');
+        expect(ctx.db.select().from(attempts).get()).toMatchObject({
+          status: 'expired',
+          hintsUsed: 1,
+          hintTiersJson: '[1]',
+          commandsCount: 2,
+          usedManual: 1,
+        });
         expect(ctx.db.select().from(users).get()?.xp).toBe(0);
         expect(ctx.db.select().from(levelProgress).all()).toEqual([]);
         expect(ctx.live.completed).toBe(false);
@@ -258,3 +342,51 @@ describe('completion lifecycle races (A02/A13)', () => {
     }
   });
 });
+
+it.each([true, false])(
+  'evaluates Clean Sweep after an abandoned attempt (hint used: %s)',
+  async (hinted) => {
+    const ctx = await setup();
+    try {
+      ctx.deps.badgeList.push({
+        id: 'no-hints-world',
+        title: 'Clean Sweep',
+        description: 'Finish a world with 0 hints used.',
+        rule: 'no-hints-world',
+      });
+      if (hinted) {
+        requestHint(ctx.deps, ctx.live);
+        expect(ctx.db.select().from(attempts).get()).toMatchObject({
+          status: 'active',
+          hintsUsed: 1,
+        });
+      }
+      await closeLiveSession(ctx.deps, ctx.live, 'abandoned');
+      const response = await ctx.app.inject({
+        method: 'POST',
+        url: '/api/levels/w1-01-a/start',
+        headers: { cookie: ctx.cookie },
+      });
+      expect(response.statusCode).toBe(200);
+      const retry = [...ctx.app.live.values()][0];
+      if (retry === undefined) throw new Error('retry session missing');
+      await evaluateAndReport(ctx.deps, retry);
+      expect(
+        ctx.db
+          .select()
+          .from(attempts)
+          .all()
+          .map((a) => a.status),
+      ).toEqual(['abandoned', 'completed']);
+      expect(
+        ctx.db
+          .select()
+          .from(badges)
+          .all()
+          .map((b) => b.badgeId),
+      ).toEqual(hinted ? [] : ['no-hints-world']);
+    } finally {
+      await ctx.cleanup();
+    }
+  },
+);

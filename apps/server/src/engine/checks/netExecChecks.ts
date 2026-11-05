@@ -1,12 +1,12 @@
 import type { Check } from '@terminal-quest/shared';
-import type { SandboxHandle, SandboxProvider } from '../../sandbox/provider.js';
-import { rootShell, type CheckContext } from './context.js';
+import type { SandboxHandle } from '../../sandbox/provider.js';
+import { rootShell, type CheckContext, type CheckProbe } from './context.js';
 
 type PortListening = Extract<Check, { type: 'port_listening' }>;
 type Exec = Extract<Check, { type: 'exec' }>;
 
 export async function checkPortListening(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: PortListening,
   ctx: CheckContext,
@@ -24,7 +24,7 @@ export async function checkPortListening(
 }
 
 export async function checkExec(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: Exec,
   ctx: CheckContext,
@@ -50,10 +50,7 @@ export async function checkExec(
     ['env', '-i', 'PATH=/usr/bin:/bin:/opt/tq/bin', 'HOME=/root', `TQ_SEED=${ctx.seed}`, ...cmd],
     { user: 'root', timeoutMs: 5000 },
   );
-  if (res.timedOut) {
-    ctx.onTimeout?.(check.type);
-  }
-  if (res.timedOut || res.code !== (check.expect_exit ?? 0)) {
+  if (res.code !== (check.expect_exit ?? 0)) {
     return false;
   }
   if (check.stdout_matches !== undefined && !new RegExp(check.stdout_matches).test(res.stdout)) {

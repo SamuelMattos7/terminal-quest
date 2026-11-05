@@ -1,3 +1,4 @@
+import { once } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { describe, expect, it, vi } from 'vitest';
 import { DockerProvider } from './dockerProvider.js';
@@ -79,5 +80,85 @@ describe('Docker resource acquisition cleanup (A05)', () => {
       ctx.provider.watchFile({ id: 'container', spec }, '/run/tq/inbox', vi.fn()),
     ).rejects.toThrow('demux failed');
     expect(ctx.stream.destroyed).toBe(true);
+  });
+});
+
+describe('Docker shell and watcher failures (A14)', () => {
+  it('keeps shell output that arrives during initial resize (A16)', async () => {
+    const ctx = setup();
+    const greeting = Buffer.from('Welcome 🐧');
+    ctx.exec.resize.mockImplementationOnce(async () => {
+      ctx.stream.write(greeting);
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    });
+    const shell = await ctx.provider.openShell({ id: 'container', spec }, { cols: 80, rows: 24 });
+    try {
+      const onData = vi.fn();
+      shell.onData(onData);
+      await vi.waitFor(() => expect(onData).toHaveBeenCalledWith(greeting));
+    } finally {
+      shell.close();
+    }
+  });
+
+  it('returns a rejected resize to the caller and leaves the shell available', async () => {
+    const ctx = setup();
+    const shell = await ctx.provider.openShell({ id: 'container', spec }, { cols: 80, rows: 24 });
+    const failure = new Error('resize failed');
+    ctx.exec.resize.mockRejectedValueOnce(failure);
+    try {
+      await expect(shell.resize(90, 30)).rejects.toBe(failure);
+      await expect(shell.resize(100, 40)).resolves.toBeUndefined();
+      expect(ctx.exec.resize).toHaveBeenLastCalledWith({ h: 40, w: 100 });
+    } finally {
+      shell.close();
+    }
+  });
+
+  it('observes shell errors before startup completes', async () => {
+    const ctx = setup();
+    const failure = new Error('shell transport failed during startup');
+    ctx.exec.resize.mockImplementationOnce(async () => {
+      ctx.stream.emit('error', failure);
+    });
+    await expect(
+      ctx.provider.openShell({ id: 'container', spec }, { cols: 80, rows: 24 }),
+    ).rejects.toBe(failure);
+    expect(ctx.stream.destroyed).toBe(true);
+  });
+
+  it('reports a shell stream error once and replays it to a late close subscriber', async () => {
+    const ctx = setup();
+    const shell = await ctx.provider.openShell({ id: 'container', spec }, { cols: 80, rows: 24 });
+    const onClose = vi.fn();
+    shell.onClose(onClose);
+    const failure = new Error('shell transport failed');
+    const closed = new Promise<void>((resolve) => ctx.stream.once('close', resolve));
+    ctx.stream.destroy(failure);
+    await closed;
+    expect(onClose.mock.calls).toEqual([[failure]]);
+    const late = vi.fn();
+    shell.onClose(late);
+    expect(late.mock.calls).toEqual([[failure]]);
+  });
+
+  it.each(['unexpected', 'requested'])('reports only %s watcher closure', async (kind) => {
+    const ctx = setup();
+    const onError = vi.fn();
+    const watcher = await ctx.provider.watchFile(
+      { id: 'container', spec },
+      '/run/tq/inbox',
+      vi.fn(),
+      onError,
+    );
+    const closed = once(ctx.stream, 'close');
+    if (kind === 'unexpected') ctx.stream.destroy();
+    else watcher.stop();
+    await closed;
+    if (kind === 'unexpected') {
+      expect(onError.mock.calls).toEqual([
+        [expect.objectContaining({ message: 'file watcher closed unexpectedly' })],
+      ]);
+    } else expect(onError).not.toHaveBeenCalled();
   });
 });

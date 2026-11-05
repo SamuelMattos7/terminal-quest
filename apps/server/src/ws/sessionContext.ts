@@ -21,7 +21,9 @@ export interface FlowDeps {
 
 export function send(live: LiveSession, msg: ServerMessage): void {
   if (live.closed && msg.t !== 'closing') return;
-  live.socket?.send(JSON.stringify(msg));
+  const payload = JSON.stringify(msg);
+  if (msg.t === 'hint' || msg.t === 'level_complete') live.replay.remember(msg, payload);
+  live.socket?.send(payload);
 }
 
 export function isActive(deps: FlowDeps, live: LiveSession): boolean {
@@ -33,10 +35,11 @@ export function isActive(deps: FlowDeps, live: LiveSession): boolean {
 }
 
 /** Attempt-scoped ids shared by every telemetry event (T6.3). */
-export function attemptScope(live: LiveSession): {
-  userId: string;
-  levelId: string;
-  attemptId: string;
-} {
-  return { userId: live.userId, levelId: live.level.id, attemptId: live.attemptId };
+export function attemptScope(live: LiveSession) {
+  return {
+    userId: live.userId,
+    levelId: live.level.id,
+    attemptId: live.attemptId,
+    sessionId: live.session.id,
+  };
 }

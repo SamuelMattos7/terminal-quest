@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import type { Check } from '@terminal-quest/shared';
 import { shQuote } from '../setupCompiler.js';
-import type { SandboxHandle, SandboxProvider } from '../../sandbox/provider.js';
-import { resolveSecrets, rootShell, type CheckContext } from './context.js';
+import type { SandboxHandle } from '../../sandbox/provider.js';
+import { resolveSecrets, rootShell, type CheckContext, type CheckProbe } from './context.js';
 
 type FileExists = Extract<Check, { type: 'file_exists' }>;
 type FileAbsent = Extract<Check, { type: 'file_absent' }>;
@@ -13,7 +13,7 @@ type SymlinkTarget = Extract<Check, { type: 'symlink_target' }>;
 type DirListing = Extract<Check, { type: 'dir_listing' }>;
 
 async function readFile(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   path: string,
   ctx: CheckContext,
@@ -23,7 +23,7 @@ async function readFile(
 }
 
 export async function checkFileExists(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: FileExists,
   ctx: CheckContext,
@@ -42,7 +42,7 @@ export async function checkFileExists(
 }
 
 export async function checkFileAbsent(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: FileAbsent,
   ctx: CheckContext,
@@ -57,7 +57,7 @@ export async function checkFileAbsent(
 }
 
 export async function checkFileContent(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: FileContent,
   ctx: CheckContext,
@@ -96,7 +96,7 @@ export async function checkFileContent(
 }
 
 export async function checkFileMode(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: FileMode,
   ctx: CheckContext,
@@ -109,7 +109,7 @@ export async function checkFileMode(
 }
 
 export async function checkFileOwner(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: FileOwner,
   ctx: CheckContext,
@@ -126,7 +126,7 @@ export async function checkFileOwner(
 }
 
 export async function checkSymlinkTarget(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: SymlinkTarget,
   ctx: CheckContext,
@@ -136,7 +136,7 @@ export async function checkSymlinkTarget(
 }
 
 export async function checkDirListing(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: DirListing,
   ctx: CheckContext,

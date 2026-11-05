@@ -18,7 +18,7 @@ import type { SandboxHandle, SandboxProvider } from '../sandbox/provider.js';
 // Objective tracking for plan.md §4.1: sticky objectives (once done they
 // stay done, D-005) unless `hold: true`, which re-checks at completion.
 // The socket layer (T3.2) calls evaluate() on cmdlog events and `check`
-// messages, and turns newlyDone into `objective` WS frames.
+// messages, and turns transitions into `objective` WS frames.
 
 export interface TrackerState {
   done: Map<string, boolean>;
@@ -120,6 +120,7 @@ export interface EvaluateOptions {
 
 export interface EvaluateResult {
   newlyDone: string[];
+  newlyPending: string[];
   completed: boolean;
 }
 
@@ -131,6 +132,7 @@ export async function evaluate(
   opts: EvaluateOptions,
 ): Promise<EvaluateResult> {
   const newlyDone: string[] = [];
+  const newlyPending: string[] = [];
   for (const objective of level.objectives) {
     const wasDone = state.done.get(objective.id) ?? false;
     if (wasDone && !objective.hold) {
@@ -148,10 +150,10 @@ export async function evaluate(
     };
     const passed = await runCheck(provider, handle, objective.check, ctx);
     state.done.set(objective.id, passed);
-    if (passed && !wasDone) {
-      newlyDone.push(objective.id);
+    if (passed !== wasDone) {
+      (passed ? newlyDone : newlyPending).push(objective.id);
     }
   }
   const completed = requiredObjectives(level).every((id) => state.done.get(id) === true);
-  return { newlyDone, completed };
+  return { newlyDone, newlyPending, completed };
 }

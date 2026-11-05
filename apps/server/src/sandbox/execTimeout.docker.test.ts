@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { DockerProvider } from './dockerProvider.js';
 import type { SandboxHandle, SandboxSpec } from './provider.js';
@@ -104,6 +105,18 @@ else:
       timedOut: false,
     });
   });
+
+  it.each(['nonempty', 'empty', 'larger than argv limits'] as const)(
+    'delivers %s stdin and EOF to a non-PTY command',
+    async (kind) => {
+      const sample = 'audit-input\n🐧 without a final newline';
+      const stdin = kind === 'empty' ? '' : kind === 'nonempty' ? sample : sample.repeat(65_536);
+      // sha256sum emits its result only after reading all bytes through EOF.
+      const hash = createHash('sha256').update(stdin).digest('hex');
+      const result = await provider.exec(h, ['sha256sum'], { user: 'player', stdin });
+      expect(result).toEqual({ code: 0, stdout: `${hash}  -\n`, stderr: '', timedOut: false });
+    },
+  );
 
   it('prevents descendants from mutating state after timeout returns', async () => {
     const result = await provider.exec(

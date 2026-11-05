@@ -2,6 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import { attempts } from '../db/schema.js';
 import type { Db } from '../db/client.js';
+import type { LoggedCommand } from '../engine/checks/context.js';
+import { countCommands } from '../engine/cmdlog.js';
+import { checkManualBonus } from '../engine/scoring.js';
 
 // Attempt rows for plan.md §5. Opened at session start, finished on
 // completion, abandoned on reset/delete/replace, expired by the reaper.
@@ -22,12 +25,33 @@ export function openAttempt(
   return id;
 }
 
-export interface FinishAttemptInput {
+interface AttemptMetrics {
+  hintTiers: readonly number[];
+  commands: readonly LoggedCommand[];
+}
+
+function hintMetrics(hintTiers: readonly number[]) {
+  return { hintsUsed: hintTiers.length, hintTiersJson: JSON.stringify(hintTiers) };
+}
+
+function attemptMetrics(input: AttemptMetrics) {
+  const commands = input.commands.map((entry) => entry.command);
+  return {
+    ...hintMetrics(input.hintTiers),
+    commandsCount: countCommands(commands),
+    usedManual: checkManualBonus(commands) ? 1 : 0,
+  };
+}
+
+export function saveAttemptHints(db: Db, id: string, hintTiers: readonly number[]): void {
+  db.update(attempts)
+    .set(hintMetrics(hintTiers))
+    .where(and(eq(attempts.id, id), eq(attempts.status, 'active')))
+    .run();
+}
+
+export interface FinishAttemptInput extends AttemptMetrics {
   endedAt?: number;
-  hintsUsed: number;
-  hintTiers: number[];
-  commandsCount: number;
-  usedManual: boolean;
   xpAwarded: number;
   rank: string;
 }
@@ -42,10 +66,7 @@ export function finishAttempt(
     .set({
       endedAt: Math.floor((input.endedAt ?? now) / 1000),
       status: 'completed',
-      hintsUsed: input.hintsUsed,
-      hintTiersJson: JSON.stringify(input.hintTiers),
-      commandsCount: input.commandsCount,
-      usedManual: input.usedManual ? 1 : 0,
+      ...attemptMetrics(input),
       xpAwarded: input.xpAwarded,
       rank: input.rank,
     })
@@ -53,9 +74,15 @@ export function finishAttempt(
     .run();
 }
 
-export function endAttempt(db: Db, id: string, status: AttemptEndStatus, now = Date.now()): void {
+export function endAttempt(
+  db: Db,
+  id: string,
+  status: AttemptEndStatus,
+  metrics: AttemptMetrics,
+  now = Date.now(),
+): void {
   db.update(attempts)
-    .set({ endedAt: Math.floor(now / 1000), status })
+    .set({ endedAt: Math.floor(now / 1000), status, ...attemptMetrics(metrics) })
     .where(and(eq(attempts.id, id), eq(attempts.status, 'active')))
     .run();
 }

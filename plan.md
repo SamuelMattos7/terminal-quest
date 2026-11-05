@@ -292,6 +292,14 @@ All JSON. Base path `/api`. Authentication: httpOnly, SameSite=Lax cookie `tq_se
 - Max 1 active session per user (starting a new one ends the old one).
 
 ### 6.1 WebSocket protocol (`/ws/sessions/:sessionId`)
+
+**2026-11-05 (A16, D-036):** Attach with optional `?after=<last stdout seq>` to
+resume output. After `session_state`, the server resends issued hints, the
+committed result if present, and the retained stdout frames newer than the cursor.
+The stdout tail is capped at 64 KiB of serialized frames and 256 frames per live
+attempt; older output may be missing after a long disconnect. The browser
+deduplicates hints by tier and stdout by sequence. A socket must stay open for
+10 seconds before its three-retry budget is restored.
 Text frames containing JSON; shared zod schemas in `packages/shared/src/protocol.ts`.
 
 **Client → Server**
@@ -305,7 +313,7 @@ Text frames containing JSON; shared zod schemas in `packages/shared/src/protocol
 **Server → Client**
 ```ts
 { t: 'session_state', level: PublicLevel, objectives: [{id, status:'pending'|'done'}], hintsUsed: number, hintsTotal: 3, completed: boolean }
-{ t: 'stdout', d: string }                 // terminal output (decoded UTF-8, boundary-safe)
+{ t: 'stdout', d: string, seq: number }    // terminal output (decoded UTF-8, boundary-safe)
 { t: 'objective', id: string, status: 'done'|'pending' }
 { t: 'hint', tier: 1|2|3, text: string, penaltyPct: number }
 { t: 'tux', text: string }                 // in-world message (from `tux` CLI or events)

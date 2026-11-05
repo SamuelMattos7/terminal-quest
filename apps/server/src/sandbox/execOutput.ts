@@ -9,7 +9,7 @@ export function collectExecOutput(
   stream: Duplex,
   demux: (stdout: PassThrough, stderr: PassThrough) => void,
   timeoutMs: number,
-  stdin?: string,
+  stdin?: Buffer,
   control?: { timeoutMarker?: string; onTimeout?: () => Promise<void> },
 ): Promise<ExecResult> {
   // Fixed buffers avoid per-chunk array overhead for tiny-chunk floods.
@@ -36,29 +36,32 @@ export function collectExecOutput(
       }
       return { code, timedOut, stdout: out.toString('utf8', 0, outSize), stderr: stderrText };
     };
-    const finish = (code: number, timedOut = false): void => {
+    const finish = (code: number): void => {
       if (done) return;
       done = true;
       cleanup();
-      resolve(result(code, timedOut));
+      resolve(result(code));
+    };
+    const fail = (error: unknown): void => {
+      if (done) return;
+      done = true;
+      cleanup();
+      reject(error);
     };
     const timer = setTimeout(() => {
       if (done) return;
       done = true;
       cleanup();
       // Do not report timeout until termination has actually completed.
-      void (control?.onTimeout?.() ?? Promise.resolve()).then(
-        () => resolve(result(-1, true)),
-        reject,
-      );
+      void Promise.resolve()
+        .then(control?.onTimeout)
+        .then(() => resolve(result(-1, true)), reject);
     }, timeoutMs);
     timer.unref?.();
     const collect = (target: Buffer, chunk: Buffer, isOut: boolean): void => {
       if (done) return;
       if (outSize + errSize + chunk.length > MAX_EXEC_OUTPUT_BYTES) {
-        done = true;
-        cleanup();
-        reject(new ResourceLimitError('exec output bytes'));
+        fail(new ResourceLimitError('exec output bytes'));
         return;
       }
       chunk.copy(target, isOut ? outSize : errSize);
@@ -69,19 +72,24 @@ export function collectExecOutput(
     stderr.on('data', (chunk: Buffer) => collect(err, chunk, false));
     stream.on('end', () => {
       if (!done)
-        void exec.inspect().then(
-          (info) => finish(info.ExitCode ?? -1),
-          () => finish(-1),
-        );
+        void Promise.resolve()
+          .then(() => exec.inspect())
+          .then((info) => {
+            if (info.ExitCode == null) fail(new Error('exec ended without an exit code'));
+            else finish(info.ExitCode);
+          }, fail);
     });
-    stream.on('error', () => finish(-1));
+    stream.on('error', fail);
     stream.on('close', () => {
-      if (!stream.readableEnded) finish(-1);
+      if (!stream.readableEnded) fail(new Error('exec stream closed before EOF'));
     });
-    demux(stdout, stderr);
-    if (stdin !== undefined) {
-      stream.write(stdin);
-      stream.end();
+    try {
+      demux(stdout, stderr);
+      // The supervisor reads exactly the announced byte count. Keep the
+      // transport open for stdout/stderr, including on Windows named pipes.
+      if (stdin?.length) stream.write(stdin);
+    } catch (err) {
+      fail(err);
     }
   });
 }

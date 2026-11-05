@@ -49,10 +49,10 @@ describe('daily picker', () => {
   });
 
   it('gates eligibility on lessons of difficulty 3 or less', () => {
-    expect(isDailyEligible(level('a'))).toBe(true);
-    expect(isDailyEligible(level('b', 'lesson', 5))).toBe(false);
-    expect(isDailyEligible(level('c', 'boss', 1))).toBe(false);
-    expect(isDailyEligible({ ...level('d'), daily_eligible: false })).toBe(false);
-    expect(isDailyEligible({ ...level('e', 'boss'), daily_eligible: true })).toBe(true);
+    expect(isDailyEligible(level('a'), true)).toBe(true);
+    expect(isDailyEligible(level('b', 'lesson', 5), true)).toBe(false);
+    expect(isDailyEligible(level('c', 'boss', 1), true)).toBe(false);
+    expect(isDailyEligible({ ...level('d'), daily_eligible: false }, true)).toBe(false);
+    expect(isDailyEligible({ ...level('e', 'boss'), daily_eligible: true }, false)).toBe(true);
   });
 });

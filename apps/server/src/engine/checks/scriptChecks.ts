@@ -1,20 +1,18 @@
 import type { Check } from '@terminal-quest/shared';
 import { shQuote } from '../setupCompiler.js';
-import type { SandboxHandle, SandboxProvider } from '../../sandbox/provider.js';
+import type { SandboxHandle } from '../../sandbox/provider.js';
 import { chomp, evaluateOutputExpect } from './cronChecks.js';
 import { rootShell } from './context.js';
-import type { CheckContext } from './context.js';
+import type { CheckContext, CheckProbe } from './context.js';
 
 type LoginShellEval = Extract<Check, { type: 'login_shell_eval' }>;
 type ScriptTests = Extract<Check, { type: 'script_tests' }>;
 type ScriptCase = ScriptTests['cases'][number];
 
 export async function checkLoginShellEval(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: LoginShellEval,
-  // Login env comes from the shell itself, not the fixed check env.
-  ctx: CheckContext,
 ): Promise<boolean> {
   // Login shell on purpose: env, aliases, and PATH customizations from the
   // player's profile files must be visible here (unlike cron_dry_run).
@@ -22,10 +20,6 @@ export async function checkLoginShellEval(
     user: 'root',
     timeoutMs: 10_000,
   });
-  if (res.timedOut) {
-    ctx.onTimeout?.(check.type);
-    return false;
-  }
   if (check.stdout_equals !== undefined) {
     return chomp(res.stdout) === chomp(check.stdout_equals);
   }
@@ -36,13 +30,12 @@ export async function checkLoginShellEval(
 }
 
 async function runCase(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   scriptPath: string,
   index: number,
   testCase: ScriptCase,
   ctx: CheckContext,
-  checkType: string,
 ): Promise<boolean> {
   const scratch = `/tmp/tq-case-${index}`;
   const prep = await rootShell(
@@ -73,10 +66,6 @@ async function runCase(
     stdin: testCase.stdin,
     timeoutMs: 10_000,
   });
-  if (res.timedOut) {
-    ctx.onTimeout?.(checkType);
-    return false;
-  }
   if (
     !evaluateOutputExpect(res, {
       exit_code: testCase.expect.exit_code,
@@ -122,7 +111,7 @@ async function runCase(
 }
 
 export async function checkScriptTests(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: ScriptTests,
   ctx: CheckContext,
@@ -140,7 +129,7 @@ export async function checkScriptTests(
   }
   let index = 0;
   for (const testCase of check.cases) {
-    if (!(await runCase(provider, handle, check.path, index, testCase, ctx, check.type))) {
+    if (!(await runCase(provider, handle, check.path, index, testCase, ctx))) {
       return false;
     }
     index += 1;

@@ -35,6 +35,7 @@ export function invalidateLiveSession(
       deps.db,
       live.attemptId,
       reason === 'idle' || reason === 'max_age' ? 'expired' : 'abandoned',
+      { hintTiers: live.hints.tiersUsed, commands: live.tracker.commands },
     );
     live.attemptFinished = true;
   }

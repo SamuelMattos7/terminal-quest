@@ -2,7 +2,6 @@ import { and, eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import {
   BadgesResponseSchema,
-  DailyResponseSchema,
   NoteRequestSchema,
   OkResponseSchema,
   ProgressResponseSchema,
@@ -20,13 +19,11 @@ import {
   users,
 } from '../db/schema.js';
 import { levelStates } from '../progression/unlock.js';
-import { dailyLevel, isDailyEligible } from '../progression/daily.js';
 import { reviewDue } from '../progression/review.js';
-import { dayString } from '../progression/streaks.js';
 import { closeLiveSession } from '../ws/sessionFlow.js';
 
 // Progression endpoints for plan.md §6 (T3.3): progress, skills, spellbook,
-// daily, review. Auth is enforced by the global /api hook; handlers still
+// review. Auth is enforced by the global /api hook; handlers still
 // guard defensively like the other route modules.
 
 function requireUserId(request: { user?: { id: string } }): string | undefined {
@@ -222,33 +219,6 @@ export async function registerProgressRoutes(app: FastifyInstance): Promise<void
       }
     }
     return reply.type('text/markdown').send(lines.join('\n'));
-  });
-
-  app.get('/api/daily', async (request, reply) => {
-    const userId = requireUserId(request);
-    if (userId === undefined) {
-      return reply.code(401).send({ error: 'unauthorized' });
-    }
-    const date = dayString(Date.now());
-    const pool = [...app.levels.byId.values()]
-      .filter((l) => app.config.ENABLE_WORLDS.includes(l.world) && isDailyEligible(l))
-      .sort((a, b) => a.id.localeCompare(b.id));
-    const picked = dailyLevel(pool, date);
-    if (picked === undefined) {
-      return reply.code(404).send({ error: 'no daily level' });
-    }
-    const [row] = await app.db
-      .select()
-      .from(levelProgress)
-      .where(and(eq(levelProgress.userId, userId), eq(levelProgress.levelId, picked.id)))
-      .all();
-    return reply.send(
-      DailyResponseSchema.parse({
-        levelId: picked.id,
-        date,
-        completed: (row?.completions ?? 0) > 0,
-      }),
-    );
   });
 
   app.get('/api/review', async (request, reply) => {

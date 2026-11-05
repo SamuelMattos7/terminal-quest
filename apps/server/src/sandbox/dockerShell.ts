@@ -29,16 +29,11 @@ export async function openDockerShell(
     stdin: true,
     Tty: true,
   })) as unknown as Duplex;
-  try {
-    await exec.resize({ h: size.rows, w: size.cols });
-  } catch (err) {
-    stream.destroy();
-    throw err;
-  }
-
+  // Keep the greeting in the stream's read buffer until the session subscribes.
+  stream.pause();
   const dataCbs: ((chunk: Buffer) => void)[] = [];
-  const closeCbs: (() => void)[] = [];
-  let closed = false;
+  const closeCbs: ((error?: Error) => void)[] = [];
+  let termination: { error?: Error } | undefined;
   const decoder = new StringDecoder('utf8');
   stream.on('data', (chunk: Buffer) => {
     const text = decoder.write(chunk);
@@ -50,16 +45,27 @@ export async function openDockerShell(
       cb(buf);
     }
   });
-  const fireClose = (): void => {
-    if (!closed) {
-      closed = true;
+  const fireClose = (error?: Error): void => {
+    if (termination === undefined) {
+      termination = { error };
+      stream.destroy();
       for (const cb of closeCbs) {
-        cb();
+        cb(error);
       }
     }
   };
   stream.on('end', fireClose);
   stream.on('close', fireClose);
+  stream.on('error', fireClose);
+  try {
+    await exec.resize({ h: size.rows, w: size.cols });
+    if (termination !== undefined) {
+      throw termination.error ?? new Error('shell closed during startup');
+    }
+  } catch (err) {
+    stream.destroy();
+    throw err;
+  }
 
   return {
     write(data: string): void {
@@ -68,14 +74,16 @@ export async function openDockerShell(
       }
       stream.write(data);
     },
-    resize(cols: number, rows: number): void {
-      void exec.resize({ h: rows, w: cols });
+    async resize(cols: number, rows: number): Promise<void> {
+      await exec.resize({ h: rows, w: cols });
     },
     onData(cb: (chunk: Buffer) => void): void {
       dataCbs.push(cb);
+      stream.resume();
     },
-    onClose(cb: () => void): void {
-      closeCbs.push(cb);
+    onClose(cb: (error?: Error) => void): void {
+      if (termination === undefined) closeCbs.push(cb);
+      else cb(termination.error);
     },
     close(): void {
       stream.end();

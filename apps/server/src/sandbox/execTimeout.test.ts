@@ -124,3 +124,32 @@ describe('exec timeout reporting (A04)', () => {
     },
   );
 });
+
+describe('exec transport failures (A14)', () => {
+  it.each(['stream error', 'premature close', 'inspect failure', 'demux failure'] as const)(
+    'rejects and releases the stream on %s',
+    async (kind) => {
+      const stream = new PassThrough();
+      const failure = new Error(kind);
+      const inspect = vi.fn(async () => {
+        throw failure;
+      });
+      const pending = collectExecOutput(
+        { inspect },
+        stream,
+        () => {
+          if (kind === 'demux failure') throw failure;
+        },
+        5000,
+      );
+      const rejection = expect(pending).rejects.toThrow(
+        kind === 'premature close' ? 'exec stream closed before EOF' : kind,
+      );
+      if (kind === 'stream error') stream.destroy(failure);
+      if (kind === 'premature close') stream.destroy();
+      if (kind === 'inspect failure') stream.emit('end');
+      await rejection;
+      expect(stream.destroyed).toBe(true);
+    },
+  );
+});

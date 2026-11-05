@@ -9,6 +9,8 @@ export interface LoggedCommand {
   exitCode: number;
 }
 
+export type CheckProbe = Pick<SandboxProvider, 'exec'>;
+
 export interface CheckContext {
   seed: number;
   levelId: string;
@@ -16,8 +18,7 @@ export interface CheckContext {
   commands: LoggedCommand[];
   /**
    * Fired with the leaf check type when a sandbox probe times out (T6.3
-   * telemetry). Only exec-family leaves observe timeouts today; instant
-   * file/stat probes report false without attribution (see D-018).
+   * telemetry).
    */
   onTimeout?: (checkType: string) => void;
 }
@@ -32,7 +33,7 @@ const CHECK_PATH = '/usr/bin:/bin:/opt/tq/bin';
  * probe's own command line never contains the searched text.
  */
 export async function rootShell(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   script: string,
   ctx: CheckContext,
@@ -58,7 +59,7 @@ export async function rootShell(
 
 /** Substitute every `{{secret:name}}` with `/opt/tq/secret/name` contents. */
 export async function resolveSecrets(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   value: string,
   ctx: CheckContext,

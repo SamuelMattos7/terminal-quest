@@ -1,7 +1,7 @@
 import type { Check } from '@terminal-quest/shared';
 import { shQuote } from '../setupCompiler.js';
-import type { SandboxHandle, SandboxProvider } from '../../sandbox/provider.js';
-import { rootShell, type CheckContext } from './context.js';
+import type { SandboxHandle } from '../../sandbox/provider.js';
+import { rootShell, type CheckContext, type CheckProbe } from './context.js';
 
 type ProcessRunning = Extract<Check, { type: 'process_running' }>;
 type ProcessAbsent = Extract<Check, { type: 'process_absent' }>;
@@ -17,7 +17,7 @@ function pgrepNameArgs(check: { name: string; user?: string }): string {
 }
 
 async function anyProcess(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: { name?: string; cmdline_regex?: string; user?: string },
   ctx: CheckContext,
@@ -42,7 +42,7 @@ async function anyProcess(
 }
 
 export async function checkProcessRunning(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: ProcessRunning,
   ctx: CheckContext,
@@ -51,7 +51,7 @@ export async function checkProcessRunning(
 }
 
 export async function checkProcessAbsent(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: ProcessAbsent,
   ctx: CheckContext,
@@ -60,7 +60,7 @@ export async function checkProcessAbsent(
 }
 
 export async function checkProcessState(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: ProcessState,
   ctx: CheckContext,

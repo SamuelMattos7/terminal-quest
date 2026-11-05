@@ -1,14 +1,14 @@
 import type { Check } from '@terminal-quest/shared';
 import { shQuote } from '../setupCompiler.js';
-import type { SandboxHandle, SandboxProvider } from '../../sandbox/provider.js';
-import { rootShell, type CheckContext } from './context.js';
+import type { SandboxHandle } from '../../sandbox/provider.js';
+import { rootShell, type CheckContext, type CheckProbe } from './context.js';
 
 type ShellCwd = Extract<Check, { type: 'shell_cwd' }>;
 type CommandUsed = Extract<Check, { type: 'command_used' }>;
 type AnswerEquals = Extract<Check, { type: 'answer_equals' }>;
 
 export async function checkShellCwd(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: ShellCwd,
   ctx: CheckContext,
@@ -36,7 +36,7 @@ export function checkCommandUsed(check: CommandUsed, ctx: CheckContext): boolean
 }
 
 export async function checkAnswerEquals(
-  provider: SandboxProvider,
+  provider: CheckProbe,
   handle: SandboxHandle,
   check: AnswerEquals,
   ctx: CheckContext,

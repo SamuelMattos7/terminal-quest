@@ -89,7 +89,6 @@ export async function registerSessionRoutes(
               .send({ error: 'sandbox capacity reached' });
           }
           if (err instanceof SetupFailedError) {
-            request.log.error({ err }, 'level setup failed');
             return reply.code(500).send({ error: 'level setup failed' });
           }
           throw err;
@@ -133,6 +132,9 @@ export async function registerSessionRoutes(
             .header('Retry-After', '30')
             .code(429)
             .send({ error: 'sandbox capacity reached' });
+        }
+        if (err instanceof SetupFailedError) {
+          return reply.code(500).send({ error: 'level setup failed' });
         }
         throw err;
       }

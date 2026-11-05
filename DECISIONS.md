@@ -292,3 +292,51 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A10 found that disabling a world hid its map card while direct API requests could still open or start its levels. The release allow-list in §14.1 also applies when the developer progression override in §6 is active.
 - **Decision:** Stack `codex/a10-world-availability` on A09. Return the existing unknown-level response for disabled detail, start, and owned reset requests. Restrict progression states, completion unlocks, and review candidates to enabled worlds. Review scoring uses the same candidate restriction as the review endpoint.
 - **Consequences:** `UNLOCK_ALL` skips progression prerequisites within enabled worlds. Historical boss completions still qualify as prerequisites for an enabled successor world, and historical progress remains in the database.
+
+### D-032 — Select playable daily challenges and credit UTC finishes
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A11 found that the daily endpoint could offer a locked level and treat a lifetime completion as completion of today's challenge.
+- **Decision:** Apply the same enabled-world and unlock rules as level access before choosing a daily. An explicit `daily_eligible` value overrides the default; a lesson qualifies by default at difficulty 3 or lower after the player completes every boss in its world. Count successful attempts by this player on the selected level with an end time from the selected UTC midnight up to, but excluding, the next midnight.
+- **Consequences:** Players without eligible levels get the existing empty-pool response. Attempts started on an earlier day can count if they finish on the selected date.
+
+### D-033 — Count hints from every attempt toward Clean Sweep
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A12 found that attempts ending without completion lost their hint and command metrics. This undercounted profile hints and could award Clean Sweep after a hinted retry.
+- **Decision:** Save hint tiers as they are issued, and write hint tiers, command count, and manual use when an attempt ends. Completed and unfinished attempts use the same command counting rules. Keep the existing Clean Sweep rule: once every level in a world is cleared, any hint taken in that world before the award disqualifies the player, even on an abandoned or expired attempt. An unsuccessful attempt with no hints does not disqualify the player.
+- **Consequences:** Reset still starts a fresh attempt for scoring. Already awarded badges remain earned. The change does not backfill past attempts; command metrics reflect the command entries received before teardown.
+
+### D-034 — Distinguish runtime failures from ordinary check results
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A14 found that transport, resize, setup, and evaluation errors could disappear or look like unmet objectives. Timeout reporting was limited to individual check implementations.
+- **Decision:** Use pino at the session boundary with the attempt, level, and session IDs when available. Send generic client errors; keep the session usable after resize or evaluation errors, and abandon it when the shell or either watcher disconnects unexpectedly. Docker exec transport failures reject instead of returning a synthetic exit status. The check runner reports a timed-out leaf once and leaves the objective pending, including under negation. Ordinary nonzero exits retain their check-specific meaning.
+- **Consequences:** Intentional teardown remains quiet. Setup failures on start and reset share the same client response, while the launch log retains the failure details. Timeouts on every exec-backed check emit the existing telemetry event without exposing probe commands or output to the client.
+
+### D-035 — Give the latest authorized socket exclusive session control
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A15 found that replacing a WebSocket left the previous transport open. The adapter identity guard and session budgets already existed, but the reconnect test detached the first socket manually and bypassed the real handoff.
+- **Decision:** Assign the new adapter before closing the old one with code 4409. Accept frames only from the current open transport, and let close handlers detach only their own adapter. Keep both traffic budgets on the live session. The browser treats 4409 as a final close to prevent tabs from repeatedly replacing each other.
+- **Consequences:** A replacement keeps the same shell and remaining traffic allowance. Ordinary network disconnects still use the existing retry policy.
+
+### D-036 — Resume the terminal tail and recover issued outcomes
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A16 found that the session snapshot could say a level was completed without restoring its result, and that hints and shell output were lost between socket attachments. Even brief opens refilled all reconnect attempts.
+- **Decision:** Keep the latest 64 KiB of serialized terminal output, up to 256 frames, per live attempt. Number the frames and resume after the browser's last received sequence. Resend up to three issued hints and one committed completion result after the state snapshot. Apply them idempotently in the browser, and buffer a bounded tail until the terminal mounts. Refill the three-retry budget after 10 seconds of continuous connection.
+- **Consequences:** Reconnects can restore the score and revealed hints without reissuing hints or awarding XP again. A long gap can exceed the terminal tail; the browser then receives the newest retained output. Replay ends when the live attempt closes.
+
+### D-037 — Send finite exec input over attached Docker stdin
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A18 calls for attaching stdin to non-PTY execs. The A04 workaround for Windows named pipes encoded input in command arguments, which worked for small input but failed when it exceeded Linux's argument size limit.
+- **Decision:** Attach stdin only when the caller supplies it, and pass its UTF-8 byte count to the supervisor. The supervisor reads exactly that many bytes into a temporary file and gives the command that file as stdin. An omitted input still uses `/dev/null`.
+- **Consequences:** Commands see EOF for both empty and nonempty input without requiring a half-close on the Docker connection. Stdout and stderr remain available on Windows named pipes, and stdin contents no longer count toward the argument size limit.

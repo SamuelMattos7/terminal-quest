@@ -26,9 +26,9 @@ export interface ExecResult {
 
 export interface ShellStream {
   write(data: string): void;
-  resize(cols: number, rows: number): void;
+  resize(cols: number, rows: number): Promise<void>;
   onData(cb: (chunk: Buffer) => void): void;
-  onClose(cb: () => void): void;
+  onClose(cb: (error?: Error) => void): void;
   close(): void;
 }
 

@@ -77,7 +77,7 @@ export function scheduleEvaluation(deps: FlowDeps, live: LiveSession): void {
 
 async function runEvaluation(deps: FlowDeps, live: LiveSession): Promise<void> {
   if (!isActive(deps, live)) return;
-  const { newlyDone } = await evaluate(
+  const { newlyDone, newlyPending } = await evaluate(
     deps.provider,
     live.session.handle,
     live.level,
@@ -86,6 +86,7 @@ async function runEvaluation(deps: FlowDeps, live: LiveSession): Promise<void> {
       seed: live.seed,
       onCheckTimeout: (objectiveId, checkType) => {
         if (!isActive(deps, live)) return;
+        logger.warn({ ...attemptScope(live), objectiveId, checkType }, 'check timed out');
         recordEvent(deps.db, {
           ...attemptScope(live),
           type: 'check_timeout',
@@ -97,6 +98,9 @@ async function runEvaluation(deps: FlowDeps, live: LiveSession): Promise<void> {
   // A check may resolve after abandonment, replacement, expiry, or reset.
   // The manager removes an expiring session before awaiting Docker teardown.
   if (!isActive(deps, live)) return;
+  for (const id of newlyPending) {
+    send(live, { t: 'objective', id, status: 'pending' });
+  }
   for (const id of newlyDone) {
     send(live, { t: 'objective', id, status: 'done' });
     recordEvent(deps.db, {

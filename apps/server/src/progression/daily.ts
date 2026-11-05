@@ -10,12 +10,12 @@ export function hashDate(date: string): number {
   return sum;
 }
 
-/** Eligible by default: lessons with difficulty ≤ 3 unless opted out. */
-export function isDailyEligible(level: Level): boolean {
+/** Eligible by default: lessons with difficulty ≤ 3 in a completed world. */
+export function isDailyEligible(level: Level, worldCompleted: boolean): boolean {
   if (level.daily_eligible !== undefined) {
     return level.daily_eligible;
   }
-  return level.kind === 'lesson' && level.difficulty <= 3;
+  return worldCompleted && level.kind === 'lesson' && level.difficulty <= 3;
 }
 
 export function dailyLevel(levels: Level[], date: string): Level | undefined {

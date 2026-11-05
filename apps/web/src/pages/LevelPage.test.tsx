@@ -91,7 +91,7 @@ vi.mock('@xterm/addon-fit', () => {
   return { FitAddon: MockFit };
 });
 
-function sessionStateMessage(): ServerMessage {
+function sessionStateMessage(): Extract<ServerMessage, { t: 'session_state' }> {
   return {
     t: 'session_state',
     level: {
@@ -220,10 +220,13 @@ describe('LevelPage', () => {
     expect(await screen.findByTestId('terminal-container')).not.toBeNull();
   });
 
-  it('shows the completion modal and advances to the next level', async () => {
+  it('shows the completion modal after recovering a missed result and advances to the next level', async () => {
     renderPage();
     const socket = await openLiveSession();
     await screen.findByTestId('terminal-container');
+    socket.handler({ kind: 'reconnecting', attempt: 1 });
+    socket.handler({ kind: 'open' });
+    socket.handler({ kind: 'message', message: { ...sessionStateMessage(), completed: true } });
     socket.handler({ kind: 'message', message: completionMessage() });
     expect(await screen.findByTestId('complete-modal')).not.toBeNull();
     fireEvent.click(screen.getByTestId('complete-next'));

@@ -61,8 +61,10 @@ interface SessionState {
 let generation = 0;
 let liveSocket: SessionSocket | null = null;
 let toastSeq = 0;
+let pendingOutput = '';
 
 const MAX_TOASTS = 4;
+const MAX_PENDING_OUTPUT = 64 * 1024;
 
 function wsUrl(wsPath: string): string {
   const secure = window.location.protocol === 'https:';
@@ -88,6 +90,7 @@ function initialProgress(): Pick<
   | 'reconnectAttempt'
   | 'error'
 > {
+  pendingOutput = '';
   return {
     level: null,
     objectives: [],
@@ -162,7 +165,13 @@ function handleServerMessage(message: ServerMessage): void {
       });
       return;
     case 'stdout':
-      state.stdoutWriter?.(message.d);
+      if (state.stdoutWriter !== null) {
+        state.stdoutWriter(message.d);
+      } else {
+        // The initial snapshot mounts the terminal asynchronously.
+        pendingOutput = (pendingOutput + message.d).slice(-MAX_PENDING_OUTPUT);
+        if (/^[\udc00-\udfff]/.test(pendingOutput)) pendingOutput = pendingOutput.slice(1);
+      }
       return;
     case 'objective':
       useSession.setState({
@@ -172,12 +181,13 @@ function handleServerMessage(message: ServerMessage): void {
       });
       return;
     case 'hint':
+      if (state.hints.some((hint) => hint.tier === message.tier)) return;
       useSession.setState({
         hints: [
           ...state.hints,
           { tier: message.tier, text: message.text, penaltyPct: message.penaltyPct },
         ],
-        hintsUsed: state.hintsUsed + 1,
+        hintsUsed: Math.max(state.hintsUsed, message.tier),
       });
       return;
     case 'tux':
@@ -187,7 +197,7 @@ function handleServerMessage(message: ServerMessage): void {
       useSession.setState({ toasts: pushToast(state.toasts, 'coach', message.text) });
       return;
     case 'level_complete':
-      useSession.setState({ completion: message.result, status: 'completed' });
+      useSession.setState({ completion: state.completion ?? message.result, status: 'completed' });
       return;
     case 'closing':
       // Server is tearing the session down: stop reconnecting.
@@ -302,6 +312,11 @@ export const useSession = create<SessionState>()((set, get) => ({
 
   setStdoutWriter: (writer: ((data: string) => void) | null) => {
     set({ stdoutWriter: writer });
+    if (writer !== null && pendingOutput !== '') {
+      const output = pendingOutput;
+      pendingOutput = '';
+      writer(output);
+    }
   },
 
   setTerminalFocus: (focus: (() => void) | null) => {
