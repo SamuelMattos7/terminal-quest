@@ -110,7 +110,7 @@
   title: 'brace expansion'
   group: searching
   world: 2
-  prereqs: []
+  prereqs: [mkdir, touch]
 - id: find
   title: 'find'
   group: searching

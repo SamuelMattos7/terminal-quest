@@ -420,3 +420,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** World 2 opens with a file-sorting exercise that introduces `*`, `?`, and character classes.
 - **Decision:** Use fixed example filenames and exact listings for the two destinations and the inbox. Include zero- and two-character report suffixes to distinguish `?` from `*`. Use a digit class in the preview and allow any commands that produce the required layout.
 - **Consequences:** The examples are consistent across attempts, and there is no seed-dependent answer to submit. The inbox check catches copying and protects the unmatched filenames.
+
+### D-048 — Check names and entry types in the brace-expansion lesson
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** The curriculum calls for twelve month directories and three draft files. The exercise needs a clear workspace and fixed names to teach zero padding and comma-separated choices.
+- **Decision:** Start with an empty `drafts/` and put both groups directly inside it. Check the exact listing and each entry's type. Teach the two Bash forms and accept any commands that create the requested layout.
+- **Consequences:** Unpadded names, swapped entry types, and extra entries keep the level incomplete. The three-seed matrix exercises the same published calendar and form names in fresh sandboxes.
