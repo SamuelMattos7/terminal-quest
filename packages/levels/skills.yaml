@@ -135,52 +135,52 @@
   title: 'pipes'
   group: text
   world: 2
-  prereqs: []
+  prereqs: [grep, head-tail]
 - id: redirection
   title: 'redirection'
   group: text
   world: 2
-  prereqs: []
+  prereqs: [pipes]
 - id: sort-uniq
   title: 'sort and uniq'
   group: text
   world: 2
-  prereqs: []
+  prereqs: [pipes]
 - id: cut-tr
   title: 'cut and tr'
   group: text
   world: 2
-  prereqs: []
+  prereqs: [pipes]
 - id: file-types
   title: 'file types'
   group: files
   world: 2
-  prereqs: []
+  prereqs: [paths]
 - id: links
   title: 'links'
   group: files
   world: 2
-  prereqs: []
+  prereqs: [paths, ls]
 - id: chmod
   title: 'chmod'
   group: permissions
   world: 2
-  prereqs: []
+  prereqs: [ls, paths]
 - id: umask
   title: 'umask'
   group: permissions
   world: 2
-  prereqs: []
+  prereqs: [chmod]
 - id: nano
   title: 'nano'
   group: editing
   world: 2
-  prereqs: []
+  prereqs: [paths, cat]
 - id: vim
   title: 'vim'
   group: editing
   world: 2
-  prereqs: []
+  prereqs: [paths, cat]
 - id: sudo
   title: 'sudo'
   group: admin

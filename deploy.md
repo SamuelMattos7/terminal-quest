@@ -86,13 +86,12 @@ SANDBOX_IMAGE=tq-base
 MAX_CONTAINERS=20
 IDLE_TTL_SECONDS=900
 MAX_AGE_SECONDS=3600
-ENABLE_WORLDS=1
+ENABLE_WORLDS=1,2
 UNLOCK_ALL=0
 LOG_LEVEL=info
 ```
-Replace `<tq-uid>` with the output of `id -u tq`. World 1 is the authored
-release content today. Set `ENABLE_WORLDS=1,2` once M8 is complete. Keep
-`UNLOCK_ALL=0` in production.
+Replace `<tq-uid>` with the output of `id -u tq`. The MVP enables Worlds 1
+and 2. Keep `UNLOCK_ALL=0` in production.
 
 From the checkout as `tq`, run the migration before starting the service:
 

@@ -2,7 +2,7 @@
  
 **Learn the Linux command line by playing.** Type real commands in a real (sandboxed) shell, right in your browser, and complete story missions that take you from `ls` to cron jobs, shell scripts, and putting out a production fire.
  
-> **Status: pre-alpha, in active development.** The specification is complete (see [`plan.md`](plan.md)); implementation progress is tracked in [`PROGRESS.md`](PROGRESS.md). World 1 is playable. World 2 is the next milestone.
+> **Status: pre-alpha, in active development.** Worlds 1 and 2 are playable. Deployment validation is the next milestone. See [`plan.md`](plan.md) for the specification and [`PROGRESS.md`](PROGRESS.md) for implementation progress.
  
 ---
  
@@ -38,7 +38,7 @@ Fastify server ── Session manager ── Docker (one sandbox per attempt)
    └─ SQLite (progress, XP, skills, badges)
 ```
  
-Levels are plain YAML files plus a reference solution, so adding content doesn't require touching engine code. CI tests all 12 World 1 levels across multiple seeds. For each seed, the baseline and known-wrong attempts must fail and the reference solution must pass.
+Levels are plain YAML files plus a reference solution, so adding content doesn't require touching engine code. CI tests all 27 levels in Worlds 1 and 2 across three seeds. For each seed, the baseline and known-wrong attempts must stay incomplete and the reference solution must pass.
  
 ## Quick start (development)
  

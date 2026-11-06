@@ -1,0 +1,48 @@
+id: w2-14-vim-survival
+world: 2
+order: 14
+title: Vim Survival
+kind: lesson
+difficulty: 2
+estimated_minutes: 5
+story: |
+  Tux-9000: "The handoff note still mentions the old relay. Find that line
+  in Vim and delete it. Then add a line confirming the filing room is
+  ready. Save and get back to the shell. Yes, there is an exit."
+teaches: [vim]
+par_commands: 1
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  files:
+    - {
+        path: /home/player/handoff.txt,
+        content: "Shift handoff\nRetired relay: online\nKeep the archive indexed.\n",
+      }
+objectives:
+  - id: save-handoff
+    text: 'Use Vim to find and delete the Retired relay line in handoff.txt. Keep the other lines and append `Filing room: ready.` as the final line. Save and quit.'
+    check:
+      type: file_content
+      path: /home/player/handoff.txt
+      trim: false
+      equals: "Shift handoff\nKeep the archive indexed.\nFiling room: ready.\n"
+hints:
+  - 'Vim starts in Normal mode. Keys there are commands. Esc takes you back to Normal mode from Insert mode.'
+  - 'In Normal mode, / searches, dd deletes the current line, and o opens a line below the cursor in Insert mode.'
+  - 'Run vim handoff.txt. Type /Retired relay and press Enter, then type dd. Press G to reach the last line, then o and type Filing room: ready. Press Esc, type :wq, and press Enter.'
+explain:
+  - command: 'vim handoff.txt'
+    parts:
+      - { token: '/Retired relay', meaning: 'search for the line to remove; press Enter to jump' }
+      - { token: 'dd', meaning: 'delete the current line in Normal mode' }
+      - { token: 'G then o', meaning: 'jump to the last line and open a new line below it' }
+      - { token: 'Esc then :wq', meaning: 'leave Insert mode, then write and quit with Enter' }
+cheatsheet:
+  - {
+      skill: vim,
+      syntax: 'vim FILE',
+      note: 'Search with /, delete a line with dd, insert below with o, and save and quit with Esc then :wq.',
+    }
+success_message: 'The handoff is fixed, and you escaped Vim.'
+solutions: { reference: solution.sh, wrong: [wrong/keep-retired.sh, wrong/insert-too-early.sh] }

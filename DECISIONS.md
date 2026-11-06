@@ -460,3 +460,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** World 2 lessons 10–12 introduce file identification, symbolic links, permission changes, and creation masks.
 - **Decision:** Rotate three MIME types under one misleading filename and store the expected type in a mode-600 secret. Require mode 744 on the deploy script so the exercise preserves the original group and other permissions. Teach umask through the observable mode of the newly created regular file. Include a hidden file and nested directories in the archive, and check that the original paths exist and every entry has the required mode for its type.
 - **Consequences:** The Docker matrix covers all three MIME fixtures. The new-file check accepts the requested mode regardless of the commands used. A uniform recursive mode and a repair that skips hidden files both leave the archive incomplete.
+
+### D-053 — Verify editor saves and cross-check the investigation report
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** The editor lessons need to teach interactive keys without blocking the scripted content runner. The boss report needs to reflect the investigation, even if the four submitted answers are already correct.
+- **Decision:** Check the editor lessons against the exact saved text. Use noninteractive edits in the content runner and exercise actual Nano and Vim keystrokes through the live WebSocket test. Seed the boss with out-of-order failures, a successful login from the attacker, and a neighboring IP with the same prefix. Check both the report format and each value against protected seed data.
+- **Consequences:** Any editor or command that produces the required file can complete the lesson. The boss stays incomplete when a well-formed report disagrees with the evidence.

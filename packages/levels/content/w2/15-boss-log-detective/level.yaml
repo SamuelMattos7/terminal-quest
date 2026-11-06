@@ -1,0 +1,84 @@
+id: w2-15-boss-log-detective
+world: 2
+order: 15
+title: The Log Detective
+kind: boss
+difficulty: 3
+estimated_minutes: 12
+story: |
+  Tux-9000: "The gateway flagged an SSH brute-force alert. Find its source,
+  then cross-check the authentication log. The rows arrived out of order,
+  and there's innocent traffic mixed in. Tell me who knocked, when they
+  first failed, which account they targeted, and how many times they
+  failed. Leave a report for the next shift."
+teaches: [grep, pipes, sort-uniq]
+par_commands: 11
+xp: 100
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  generators:
+    - { script: setup/gen.sh }
+objectives:
+  - id: attacker
+    text: 'Use tux submit to send the source IP from the ssh-bruteforce alert in gateway.log.'
+    check: { type: answer_equals, from_file: /opt/tq/secret/ip }
+  - id: first-failure
+    text: 'Submit the earliest timestamp (HH:MM:SS) among FAIL rows for that exact IP in auth.log.'
+    check: { type: answer_equals, from_file: /opt/tq/secret/time }
+  - id: target
+    text: 'Submit the username in that earliest failure row.'
+    check: { type: answer_equals, from_file: /opt/tq/secret/user }
+  - id: count
+    text: 'Submit the total number of FAIL rows for that exact IP.'
+    check: { type: answer_equals, from_file: /opt/tq/secret/count }
+  - id: report
+    text: 'Save report.txt in your home directory with four lines in this order, substituting your findings: `Attacker IP: <ip>`, `First failure: <time>`, `Target user: <user>`, `Failed attempts: <count>`.'
+    check:
+      type: all
+      checks:
+        - type: file_content
+          path: /home/player/report.txt
+          trim: false
+          matches: '^Attacker IP: [0-9.]+\nFirst failure: [0-9:]+\nTarget user: [a-z]+\nFailed attempts: [0-9]+\n?$'
+        - { type: exec, script: checks/verify-report.sh, expect_exit: 0 }
+hints:
+  - 'Start with the gateway alert. In auth.log each row is time, result, IP, user. Other IPs and successful logins do not count.'
+  - 'Use grep -F with spaces around the FAIL and IP fields to match exactly. Sort the filtered rows before using head -n 1; count those same filtered rows with wc -l.'
+  - 'Set ip=$(grep "^alert ssh-bruteforce " gateway.log | cut -d " " -f 3). Then grep -F " FAIL $ip " auth.log | sort gives the relevant rows in order. The first row contains the time and user; wc -l counts the rows. Submit each value separately and use printf with > report.txt to save the labeled lines.'
+explain:
+  - command: 'grep -F " FAIL $ip " auth.log | sort'
+    parts:
+      - { token: '-F', meaning: 'match literal text so dots in the IP stay literal' }
+      - { token: ' FAIL $ip ', meaning: 'match the failure status and the whole IP field' }
+      - { token: 'sort', meaning: 'put fixed-width timestamps in chronological order' }
+  - command: 'head -n 1 | cut -d " " -f 4'
+    parts:
+      - { token: 'head -n 1', meaning: 'keep the earliest row after sorting' }
+      - { token: '-f 4', meaning: 'take the username from the fourth field' }
+  - command: 'grep -F " FAIL $ip " auth.log | wc -l'
+    parts:
+      - { token: 'wc -l', meaning: 'count the matching rows' }
+cheatsheet:
+  - {
+      skill: grep,
+      syntax: 'grep -F " FAIL $ip " auth.log',
+      note: 'Match literal status and IP fields.',
+    }
+  - {
+      skill: sort-uniq,
+      syntax: 'sort | head -n 1',
+      note: 'Pick the earliest fixed-width timestamp.',
+    }
+  - { skill: cut-tr, syntax: 'cut -d " " -f 4', note: 'Extract the fourth space-separated field.' }
+  - { skill: pipes, syntax: 'COMMAND | wc -l', note: 'Count the lines a command prints.' }
+  - {
+      skill: redirection,
+      syntax: 'printf FORMAT VALUES > report.txt',
+      note: 'Write a formatted report to a file.',
+    }
+success_message: 'Four findings confirmed. The next shift has a report it can act on.'
+solutions:
+  {
+    reference: solution.sh,
+    wrong: [wrong/file-order.sh, wrong/include-success.sh, wrong/bad-report.sh],
+  }

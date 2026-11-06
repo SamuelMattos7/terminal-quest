@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** M8 is the next unfinished milestone (M5 gate green). A01–A31 repository remediation is complete. M9 target-environment validation remains open.
+**Current focus:** Worlds 1 and 2 are complete. M9 hardening and target-environment validation are next.
 
 ---
 
@@ -61,7 +61,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 ### M8 — Content: World 2 (15 levels) — **MVP release config** (`ENABLE_WORLDS=1,2`)
 
-- [ ] All W2 levels authored, linted, tested (3 seeds)
+- [x] All W2 levels authored, linted, tested (3 seeds) ✅ `pnpm levels:lint`: 27 levels, zero problems; `pnpm levels:test --world 1,2 --expect-levels 27 --seeds 3`: zero failures; live WebSocket playthrough unlocked and cleared all 27 levels in order; `pnpm test:docker`: 82 tests passed; `pnpm verify`: 476 tests passed. W2 totals 90 estimated minutes.
 
 ### M9 — Hardening & deploy
 
@@ -117,9 +117,9 @@ Columns: **A** = authored (level.yaml, setup, solution, wrong, hints, explain) �
 | w2-10-links-and-types      | [x] | [x] | [x] |
 | w2-11-permissions          | [x] | [x] | [x] |
 | w2-12-umask-recursive      | [x] | [x] | [x] |
-| w2-13-nano                 | [ ] | [ ] | [ ] |
-| w2-14-vim-survival         | [ ] | [ ] | [ ] |
-| w2-15-boss-log-detective   | [ ] | [ ] | [ ] |
+| w2-13-nano                 | [x] | [x] | [x] |
+| w2-14-vim-survival         | [x] | [x] | [x] |
+| w2-15-boss-log-detective   | [x] | [x] | [x] |
 
 - **w2-01-wildcards** ✅ `pnpm levels:lint` reported 13 levels and zero problems. `pnpm levels:test --level w2-01-wildcards --seeds 3` passed all 12 cases. For seeds 1–3, the baseline, overbroad report move, and copy-only solution stayed incomplete, and the reference solution completed. `pnpm verify` passed build, lint, and all 476 tests.
 - **w2-02-brace-expansion** ✅ `pnpm levels:lint` reported 14 levels and zero problems. `pnpm levels:test --level w2-02-brace-expansion --seeds 3` passed all 12 cases. For seeds 1–3, the baseline and the unpadded-month and swapped-type solutions stayed incomplete, and the reference solution completed. `pnpm verify` passed build, lint, and all 476 tests.
@@ -141,6 +141,10 @@ Batch verification for w2-07 through w2-09 passed `pnpm levels:lint` (21 levels,
 - **w2-12-umask-recursive** ✅ `pnpm levels:test --level w2-12-umask-recursive --seeds 3` passed all 15 Docker cases. The reference completed on every seed. The baseline, late umask, uniform recursive mode, and skipped hidden file stayed incomplete.
 
 Batch verification for w2-10 through w2-12 passed `pnpm levels:lint` (24 levels, zero problems) and `pnpm verify` (476 tests).
+
+- **w2-13-nano** ✅ `pnpm levels:test --level w2-13-nano --seeds 3` passed all 12 Docker cases. Changing only the port or appending a duplicate port stayed incomplete. The live WebSocket test saved the correct file using Nano keystrokes.
+- **w2-14-vim-survival** ✅ `pnpm levels:test --level w2-14-vim-survival --seeds 3` passed all 12 Docker cases. Keeping the retired line or inserting the new line in the wrong place stayed incomplete. The live WebSocket test edited the file in Vim and earned the Vim Escape badge.
+- **w2-15-boss-log-detective** ✅ `pnpm levels:test --level w2-15-boss-log-detective --seeds 3` passed all 15 Docker cases. Taking the first row in file order, including successful logins, and reporting an incorrect count all stayed incomplete.
 
 ### World 3 — The Engine Room
 
@@ -244,7 +248,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 
 | Date       | Area                | Gap                                                                                     | Planned resolution                                         |
 | ---------- | ------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| 2026-10-06 | skills.yaml prereqs | W1 skill edges were authored in M7. World 2 skill edges are authored through the recursive grep lesson. The remaining W2+ skills still have empty `prereqs`. | Author remaining edges as their levels land |
+| 2026-10-06 | skills.yaml prereqs | Worlds 1 and 2 have skill edges. Skills for Worlds 3–5 still have empty `prereqs`. | Author remaining edges as their levels land |
 | 2026-10-06 | cron daemon start   | `needs_cron` field present (default true); daemon start not implemented                 | Implement in T10.1 admin polish; no admin levels exist yet |
 | 2026-11-06 | Production validation | T9.1 security review and waivers, T9.2 capacity/latency/cleanup measurements, and T9.3 clean-VM install, rootless limits, Caddy/TLS, backup/restore, and upgrade still need evidence. | Record security decisions and complete the checklists in [loadtest.md](loadtest.md) and [deploy.md](deploy.md). |
 

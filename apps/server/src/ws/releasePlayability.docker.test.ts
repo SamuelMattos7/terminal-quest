@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -15,10 +15,7 @@ function realContentRoot(): string {
   return join(resolve(here, '..', '..', '..', '..'), 'packages', 'levels', 'content');
 }
 
-// M7 playability: solve every authored World 1 level in order over a real
-// WebSocket, proving each is completable through the same path the browser
-// uses — including the sequential unlock chain (no UNLOCK_ALL). Extend this
-// table as later batches land (w1-07 … w1-12).
+// Play through both release worlds over the browser's WebSocket path.
 const PLAYABLE: { id: string; dir: string }[] = [
   { id: 'w1-01-first-words', dir: '01-first-words' },
   { id: 'w1-02-where-am-i', dir: '02-where-am-i' },
@@ -33,6 +30,11 @@ const PLAYABLE: { id: string; dir: string }[] = [
   { id: 'w1-11-time-travel', dir: '11-time-travel' },
   { id: 'w1-12-boss-organize-chaos', dir: '12-boss-organize-chaos' },
 ];
+
+const WORLD_TWO = readdirSync(join(realContentRoot(), 'w2'), { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map(({ name: dir }) => ({ id: `w2-${dir}`, dir }))
+  .sort((a, b) => a.dir.localeCompare(b.dir));
 
 async function waitFor(
   messages: () => ServerMessage[],
@@ -53,8 +55,46 @@ async function waitFor(
   }
 }
 
-describe('World 1 playability over the socket', () => {
-  it.each(PLAYABLE)(
+async function solve(
+  socket: WebSocket,
+  messages: ServerMessage[],
+  id: string,
+  dir: string,
+): Promise<void> {
+  const send = (d: string) => socket.send(JSON.stringify({ t: 'stdin', d }));
+  const waitForScreen = async (label: string) => {
+    const start = messages.length;
+    await waitFor(
+      () => messages.slice(start),
+      (m) => m.t === 'stdout' && m.d.includes(label),
+      15_000,
+      label,
+    );
+  };
+  if (id === 'w2-13-nano') {
+    const opened = waitForScreen('GNU nano');
+    send('nano server.conf\r');
+    await opened;
+    const savePrompt = waitForScreen('File Name to Write');
+    send('\x0e\x01\x0bport=9090\rdebug=true\x0f');
+    await savePrompt;
+    send('\r\x18');
+  } else if (id === 'w2-14-vim-survival') {
+    const opened = waitForScreen('Retired relay');
+    send('vim handoff.txt\r');
+    await opened;
+    send('/Retired relay\rddGoFiling room: ready.\x1b:wq\r');
+  } else {
+    const solution = readFileSync(
+      join(realContentRoot(), id.slice(0, 2), dir, 'solution.sh'),
+      'utf8',
+    );
+    send(solution.endsWith('\n') ? solution : `${solution}\n`);
+  }
+}
+
+describe('Release playability over the socket', () => {
+  it.each([...PLAYABLE, ...WORLD_TWO.slice(-3)])(
     'solves $id end to end',
     async ({ id, dir }) => {
       // UNLOCK_ALL: the singles prove per-level socket solvability in
@@ -93,10 +133,7 @@ describe('World 1 playability over the socket', () => {
           15_000,
           `${id} session_state`,
         );
-        const solution = readFileSync(join(realContentRoot(), 'w1', dir, 'solution.sh'), 'utf8');
-        socket.send(
-          JSON.stringify({ t: 'stdin', d: solution.endsWith('\n') ? solution : `${solution}\n` }),
-        );
+        await solve(socket, messages, id, dir);
         const done = await waitFor(
           () => messages,
           (m) => m.t === 'level_complete',
@@ -107,6 +144,9 @@ describe('World 1 playability over the socket', () => {
           throw new Error('unreachable');
         }
         expect(done.result.xp).toBeGreaterThan(0);
+        if (id === 'w2-14-vim-survival') {
+          expect(done.result.newBadges).toContain('vim-escape');
+        }
       } finally {
         socket?.close();
         await ctx.cleanup();
@@ -115,7 +155,8 @@ describe('World 1 playability over the socket', () => {
     120_000,
   );
 
-  it('unlocks the full World 1 chain in one progression', async () => {
+  it('unlocks both release worlds in one progression', async () => {
+    expect(WORLD_TWO).toHaveLength(15);
     const ctx = await makeDockerTestContext([], {}, realContentRoot());
     let socket: WebSocket | undefined;
     try {
@@ -126,7 +167,7 @@ describe('World 1 playability over the socket', () => {
       }
       const cookie = await guestCookie(ctx.app);
       let first = true;
-      for (const { id, dir } of PLAYABLE) {
+      for (const { id, dir } of [...PLAYABLE, ...WORLD_TWO]) {
         // Start is rate-limited to 10/minute per user: pace the chain.
         if (!first) {
           await new Promise((r) => setTimeout(r, 7000));
@@ -157,10 +198,7 @@ describe('World 1 playability over the socket', () => {
           15_000,
           `${id} session_state`,
         );
-        const solution = readFileSync(join(realContentRoot(), 'w1', dir, 'solution.sh'), 'utf8');
-        socket.send(
-          JSON.stringify({ t: 'stdin', d: solution.endsWith('\n') ? solution : `${solution}\n` }),
-        );
+        await solve(socket, messages, id, dir);
         await waitFor(
           () => messages,
           (m) => m.t === 'level_complete',
