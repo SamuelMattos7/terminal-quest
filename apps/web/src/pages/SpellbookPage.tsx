@@ -173,7 +173,7 @@ export function SpellbookPage() {
                 <ul className="mt-2 flex flex-col gap-1">
                   {entry.examples.map((example) => (
                     <li key={example} className="text-sm text-muted">
-                      Example: <code className="font-mono">{example}</code>
+                      {strings.spellbookExample} <code className="font-mono">{example}</code>
                     </li>
                   ))}
                 </ul>

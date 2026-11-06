@@ -27,6 +27,7 @@ import {
   WorldsResponseSchema,
 } from '@terminal-quest/shared';
 import type { ZodType } from 'zod';
+import { strings } from '../strings.js';
 
 /** Typed HTTP error from the Terminal Quest API. `status` is 0 on network failure. */
 export class ApiError extends Error {
@@ -49,14 +50,14 @@ async function request<T>(path: string, schema: ZodType<T>, init?: RequestInit):
       ...init,
     });
   } catch {
-    throw new ApiError(0, 'Network error: could not reach the server.');
+    throw new ApiError(0, strings.networkError);
   }
   if (!res.ok) {
     throw new ApiError(res.status, await readErrorMessage(res), readRetryAfter(res));
   }
   const parsed = schema.safeParse(await readJson(res));
   if (!parsed.success) {
-    throw new ApiError(res.status, 'Bad response from server.');
+    throw new ApiError(res.status, strings.badServerResponse);
   }
   return parsed.data;
 }
@@ -78,7 +79,7 @@ async function readErrorMessage(res: Response): Promise<string> {
       return message;
     }
   }
-  return `Request failed (${res.status}).`;
+  return strings.requestFailed(res.status);
 }
 
 function readRetryAfter(res: Response): number | null {
@@ -156,7 +157,7 @@ export const api = {
     try {
       res = await fetch('/api/spellbook/export', { credentials: 'same-origin' });
     } catch {
-      throw new ApiError(0, 'Network error: could not reach the server.');
+      throw new ApiError(0, strings.networkError);
     }
     if (!res.ok) {
       throw new ApiError(res.status, await readErrorMessage(res), readRetryAfter(res));

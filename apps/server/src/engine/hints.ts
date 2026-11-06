@@ -1,4 +1,4 @@
-import type { Level } from '@terminal-quest/shared';
+import { HINT_TIER_PENALTIES, type Level } from '@terminal-quest/shared';
 
 // Hint tiers for plan.md §10.6. State is per attempt (fresh state on
 // `reset`). Stuck-nudge detection belongs to the Tux dialogue system (T6.2).
@@ -12,8 +12,6 @@ export interface RevealedHint {
   text: string;
   penaltyPct: number;
 }
-
-const TIER_PENALTY_PCT: Record<number, number> = { 1: 5, 2: 10, 3: 25 };
 
 export function createHintState(): HintState {
   return { tiersUsed: [] };
@@ -30,5 +28,5 @@ export function nextHint(level: Level, state: HintState): RevealedHint | undefin
     return undefined;
   }
   state.tiersUsed.push(tier);
-  return { tier: tier as 1 | 2 | 3, text, penaltyPct: TIER_PENALTY_PCT[tier] ?? 0 };
+  return { tier: tier as 1 | 2 | 3, text, penaltyPct: HINT_TIER_PENALTIES[tier] ?? 0 };
 }

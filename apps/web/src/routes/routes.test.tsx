@@ -133,6 +133,8 @@ describe('AppRoutes', () => {
   it('renders the level page for /play/:levelId', async () => {
     vi.mocked(api.startLevel).mockResolvedValue({ sessionId: 's1', wsPath: '/ws/sessions/s1' });
     renderAt('/play/w1-01-first-words');
+    expect(screen.getByRole('status').textContent).toBe(strings.pageLoading);
+    expect(api.startLevel).not.toHaveBeenCalled();
     expect(await screen.findByText(strings.levelStarting)).not.toBeNull();
     expect(api.startLevel).toHaveBeenCalledWith('w1-01-first-words');
   });

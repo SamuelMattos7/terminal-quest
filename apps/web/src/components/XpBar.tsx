@@ -12,18 +12,18 @@ export function XpBar({ level, xp, xpToNext }: XpBarProps) {
   const percent = span === 0 ? 100 : Math.min(100, Math.round((xp / span) * 100));
   return (
     <div className="flex items-center gap-2">
-      <span className="font-mono text-sm text-cyan">Lv {level}</span>
+      <span className="font-mono text-sm text-cyan">{strings.playerLevel(level)}</span>
       <div
         role="progressbar"
         aria-valuenow={xp}
         aria-valuemin={0}
         aria-valuemax={span}
-        aria-label={`${xp} XP, ${xpToNext} ${strings.xpToNext}`}
+        aria-label={`${strings.xpAmount(xp)}, ${xpToNext} ${strings.xpToNext}`}
         className="h-2 w-32 overflow-hidden rounded bg-panel-2"
       >
         <div className="h-full rounded bg-green" style={{ width: `${percent}%` }} />
       </div>
-      <span className="font-mono text-xs text-muted">{xp} XP</span>
+      <span className="font-mono text-xs text-muted">{strings.xpAmount(xp)}</span>
     </div>
   );
 }

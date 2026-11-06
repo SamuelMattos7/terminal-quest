@@ -7,6 +7,7 @@ import type {
 } from '@terminal-quest/shared';
 import { create } from 'zustand';
 import { ApiError, api } from '../api/client.js';
+import { strings } from '../strings.js';
 
 interface GameState {
   me: MeResponse | null;
@@ -42,7 +43,7 @@ function toMessage(err: unknown): string {
   if (err instanceof ApiError) {
     return err.message;
   }
-  return 'Something went wrong.';
+  return strings.unexpectedError;
 }
 
 async function loadProfileAndWorlds(): Promise<{
