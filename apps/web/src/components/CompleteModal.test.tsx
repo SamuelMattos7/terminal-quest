@@ -51,6 +51,23 @@ describe('CompleteModal', () => {
     expect(onBackToMap).toHaveBeenCalledTimes(1);
   });
 
+  it('renders XP deductions with only a minus sign', () => {
+    render(
+      <CompleteModal
+        result={{
+          ...result,
+          xp: 53,
+          breakdown: [...result.breakdown, { label: 'hints (-5%)', xp: -2 }],
+        }}
+        onNext={null}
+        onReplay={() => {}}
+        onBackToMap={() => {}}
+      />,
+    );
+    expect(screen.getByText('+50')).not.toBeNull();
+    expect(screen.getByText('-2')).not.toBeNull();
+  });
+
   it('hides the next button when there is no next level', () => {
     render(
       <CompleteModal
@@ -62,5 +79,22 @@ describe('CompleteModal', () => {
     );
     expect(screen.queryByTestId('complete-next')).toBeNull();
     expect(screen.getByRole('dialog', { name: strings.completeTitle })).not.toBeNull();
+  });
+
+  it('wraps focus between Replay and Back when there is no next level', () => {
+    render(
+      <CompleteModal result={result} onNext={null} onReplay={() => {}} onBackToMap={() => {}} />,
+    );
+    const title = screen.getByRole('heading', { name: strings.completeTitle });
+    const replay = screen.getByTestId('complete-replay');
+    const back = screen.getByTestId('complete-back');
+    expect(document.activeElement).toBe(title);
+
+    fireEvent.keyDown(title, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(back);
+    fireEvent.keyDown(back, { key: 'Tab' });
+    expect(document.activeElement).toBe(replay);
+    fireEvent.keyDown(replay, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(back);
   });
 });

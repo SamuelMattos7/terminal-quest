@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { authTokens, users, type User } from './db/schema.js';
 import type { Db } from './db/client.js';
+import { dayString, effectiveStreakDays } from './progression/streaks.js';
 
 // Guest auth for plan.md §6 / D-003: httpOnly SameSite=Lax cookie
 // `tq_session` with a random 32-byte token; only its sha256 is stored.
@@ -58,7 +59,12 @@ export function toUserShape(user: User): {
   xp: number;
   streakDays: number;
 } {
-  return { id: user.id, displayName: user.displayName, xp: user.xp, streakDays: user.streakDays };
+  return {
+    id: user.id,
+    displayName: user.displayName,
+    xp: user.xp,
+    streakDays: effectiveStreakDays(user.streakDays, user.lastActiveDay, dayString(Date.now())),
+  };
 }
 
 export function requestToken(request: FastifyRequest): string | undefined {

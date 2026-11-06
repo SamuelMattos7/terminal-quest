@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { StartSessionResponseSchema } from '@terminal-quest/shared';
-import { guestCookie, makeLevel, makeTestContext } from '../testUtils.js';
+import { guestCookie, makeLevel, makeDockerTestContext } from '../testUtils.js';
 
 const tree = [makeLevel('a', 1, 1), makeLevel('b', 1, 2)];
 
 describe('POST /api/levels/:id/start', () => {
   it('starts a session and returns its socket path', async () => {
-    const ctx = await makeTestContext(tree);
+    const ctx = await makeDockerTestContext(tree);
     try {
       const cookie = await guestCookie(ctx.app);
       const res = await ctx.app.inject({
@@ -28,7 +28,7 @@ describe('POST /api/levels/:id/start', () => {
   });
 
   it('rejects unknown levels, locked levels, and strangers', async () => {
-    const ctx = await makeTestContext(tree);
+    const ctx = await makeDockerTestContext(tree);
     try {
       const cookie = await guestCookie(ctx.app);
       expect(
@@ -58,7 +58,7 @@ describe('POST /api/levels/:id/start', () => {
   });
 
   it('returns 429 with Retry-After at capacity', async () => {
-    const ctx = await makeTestContext(tree, { MAX_CONTAINERS: 1 });
+    const ctx = await makeDockerTestContext(tree, { MAX_CONTAINERS: 1 });
     try {
       const first = await guestCookie(ctx.app);
       const second = await guestCookie(ctx.app);
@@ -84,7 +84,7 @@ describe('POST /api/levels/:id/start', () => {
   });
 
   it('replaces the previous session of the same user', async () => {
-    const ctx = await makeTestContext(tree);
+    const ctx = await makeDockerTestContext(tree);
     try {
       const cookie = await guestCookie(ctx.app);
       const one = StartSessionResponseSchema.parse(
@@ -128,7 +128,7 @@ describe('POST /api/levels/:id/start', () => {
 
 describe('POST /api/sessions/:id/reset', () => {
   it('hands out a new session and retires the old id', async () => {
-    const ctx = await makeTestContext(tree);
+    const ctx = await makeDockerTestContext(tree);
     try {
       const cookie = await guestCookie(ctx.app);
       const one = StartSessionResponseSchema.parse(
@@ -170,7 +170,7 @@ describe('POST /api/sessions/:id/reset', () => {
 
 describe('DELETE /api/sessions/:id', () => {
   it('abandons owned sessions, 404s unknown, 403s foreign ones', async () => {
-    const ctx = await makeTestContext(tree);
+    const ctx = await makeDockerTestContext(tree);
     try {
       const cookie = await guestCookie(ctx.app);
       const other = await guestCookie(ctx.app);

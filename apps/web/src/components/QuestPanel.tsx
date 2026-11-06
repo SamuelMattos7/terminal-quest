@@ -57,7 +57,11 @@ export function QuestPanel({
       id="quest-panel"
       tabIndex={-1}
       aria-label={strings.missionTab}
-      onClick={onFocusTerminal}
+      onClick={(event) => {
+        if (event.target instanceof Element && !event.target.closest('button, a[href]')) {
+          onFocusTerminal();
+        }
+      }}
       className="flex min-h-0 flex-col gap-4 overflow-y-auto rounded-lg border border-border bg-panel p-4"
     >
       <div role="tablist" aria-label="Panel sections" className="flex gap-1 lg:hidden">

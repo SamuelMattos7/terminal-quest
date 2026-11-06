@@ -10,6 +10,7 @@ import type { ExecResult } from '../sandbox/provider.js';
 import { noteCommand } from '../engine/objectiveTracker.js';
 import { closeLiveSession, evaluateAndReport, requestHint, type FlowDeps } from './sessionFlow.js';
 import * as review from '../progression/review.js';
+import { HINT_NUDGE_TEXT, STUCK_MS } from '../progression/dialogue.js';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -35,7 +36,11 @@ async function setup(levels = [makeLevel('a', 1, 1)]) {
     onClose: vi.fn(),
     close: vi.fn(),
   }));
-  vi.spyOn(app.provider, 'watchFile').mockResolvedValue({ stop: vi.fn() });
+  const watchers = new Map<string, (line: string) => void>();
+  vi.spyOn(app.provider, 'watchFile').mockImplementation(async (_handle, path, onLine) => {
+    watchers.set(path, onLine);
+    return { stop: vi.fn() };
+  });
   const destroy = vi.spyOn(app.provider, 'destroy').mockResolvedValue();
   const cookie = await guestCookie(app);
   expect(
@@ -70,8 +75,41 @@ async function setup(levels = [makeLevel('a', 1, 1)]) {
     await entered.promise;
     return { pending, gate };
   };
-  return { ...ctx, live, deps, exec, destroy, cookie, send, pause };
+  return { ...ctx, live, deps, exec, destroy, cookie, send, pause, watchers };
 }
+
+it.each(['wait', 'progress', 'close'] as const)(
+  'handles an armed idle nudge when the player chooses to %s (A24)',
+  async (action) => {
+    const fixture = makeLevel('a', 1, 1);
+    fixture.level.objectives = [
+      { id: 'pwd', text: 'Run pwd.', check: { type: 'command_used', regex: '^pwd$' } },
+      { id: 'ls', text: 'Run ls.', check: { type: 'command_used', regex: '^ls$' } },
+    ];
+    const ctx = await setup([fixture]);
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
+    vi.setSystemTime(ctx.live.dialogue.lastProgressAt);
+    const command = ctx.watchers.get('/run/tq/cmdlog')!;
+    const nudgeCount = () =>
+      ctx.send.mock.calls.filter(
+        ([payload]) => payload === JSON.stringify({ t: 'tux', text: HINT_NUDGE_TEXT }),
+      ).length;
+    try {
+      for (let i = 1; i <= 3; i += 1) command(`${i}\t1\t/home/player\tfalse`);
+      await vi.advanceTimersByTimeAsync(STUCK_MS - 1);
+      expect(nudgeCount()).toBe(0);
+      if (action === 'progress') command('4\t0\t/home/player\tpwd');
+      if (action === 'close') await closeLiveSession(ctx.deps, ctx.live, 'abandoned');
+      await vi.advanceTimersByTimeAsync(1);
+      expect(nudgeCount()).toBe(action === 'wait' ? 1 : 0);
+      await vi.advanceTimersByTimeAsync(STUCK_MS);
+      expect(nudgeCount()).toBe(action === 'wait' ? 1 : 0);
+    } finally {
+      vi.useRealTimers();
+      await ctx.cleanup();
+    }
+  },
+);
 
 it('reports a required hold file as pending after deletion and done after recreation (A17)', async () => {
   const fixture = makeLevel('a', 1, 1);

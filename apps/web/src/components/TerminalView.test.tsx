@@ -1,5 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useSettings } from '../stores/settings.js';
 import { strings } from '../strings.js';
 import { TerminalView } from './TerminalView.js';
 
@@ -20,7 +21,7 @@ vi.mock('../session/useSession.js', () => {
   return { useSession: useSessionMock };
 });
 
-const termMocks = vi.hoisted(() => ({ instances: [] as Array<MockTerminal> }));
+const termMocks = vi.hoisted(() => ({ instances: [] as Array<MockTerminal>, fit: vi.fn() }));
 
 interface MockTerminal {
   options: Record<string, unknown>;
@@ -46,7 +47,8 @@ vi.mock('@xterm/xterm', () => {
     private dataHandlers: Array<(data: string) => void> = [];
     keyHandler: ((event: KeyboardEvent) => boolean) | null = null;
 
-    constructor() {
+    constructor(options: Record<string, unknown>) {
+      this.options = options;
       termMocks.instances.push(this);
     }
 
@@ -81,7 +83,7 @@ vi.mock('@xterm/xterm', () => {
 
 vi.mock('@xterm/addon-fit', () => {
   class MockFit {
-    fit(): void {}
+    fit = termMocks.fit;
   }
   return { FitAddon: MockFit };
 });
@@ -98,6 +100,8 @@ function lastTerm(): MockTerminal {
 
 beforeEach(() => {
   termMocks.instances = [];
+  termMocks.fit.mockReset();
+  useSettings.setState({ fontSize: 'normal', highContrast: false, reducedMotion: false });
   roCallbacks.list = [];
   sessionStub.status = 'live';
   sessionStub.closeReason = null;
@@ -123,6 +127,41 @@ afterEach(() => {
 });
 
 describe('TerminalView', () => {
+  it('applies accessibility settings on open and updates the same terminal in place', () => {
+    useSettings.setState({ fontSize: 'large', highContrast: true, reducedMotion: true });
+    const { unmount } = render(<TerminalView onLeaveTerminal={() => {}} />);
+    const term = lastTerm();
+    expect(term.options).toMatchObject({
+      fontSize: 17,
+      cursorBlink: false,
+      minimumContrastRatio: 7,
+      theme: { background: '#000000', foreground: '#ffffff' },
+    });
+
+    termMocks.fit.mockImplementation(() => {
+      expect(term.options.fontSize).toBe(19);
+      term.cols = 72;
+      term.rows = 21;
+    });
+    act(() => {
+      useSettings.setState({ fontSize: 'xlarge', highContrast: false, reducedMotion: false });
+    });
+
+    expect(termMocks.instances).toEqual([term]);
+    expect(term.options).toMatchObject({
+      fontSize: 19,
+      cursorBlink: true,
+      minimumContrastRatio: 1,
+      theme: { background: '#0b0f14', foreground: '#d7e0ea' },
+    });
+    expect(termMocks.fit).toHaveBeenCalledTimes(2);
+    expect(sessionStub.sendResize).toHaveBeenLastCalledWith(72, 21);
+
+    unmount();
+    act(() => useSettings.setState({ fontSize: 'normal' }));
+    expect(termMocks.fit).toHaveBeenCalledTimes(2);
+  });
+
   it('opens a terminal and wires stdout, stdin, and resize', () => {
     const onLeave = vi.fn();
     render(<TerminalView onLeaveTerminal={onLeave} />);

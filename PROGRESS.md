@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** Audit remediation: A01–A18 and A28 fixed. A19 is the next open audit finding. M8 is the next unfinished milestone (M5 gate green).
+**Current focus:** Audit remediation: A01–A28 fixed. A29 is the next open audit finding. M8 is the next unfinished milestone (M5 gate green).
 
 ---
 
@@ -204,6 +204,16 @@ Each branch records its own regression and verification evidence. The milestone 
 - [x] A17 — send a pending update when a hold objective stops passing. ✅ `pnpm verify`: build/lint + 417 tests passed. The regression reproduced the missing frame and now verifies that deleting and recreating the required file sends `done → pending → done` without repeating the pending update, then completes after the remaining objective passes.
 - [x] A18 — attach stdin for non-PTY Docker execs when supplied and deliver EOF without closing the output stream. ✅ `pnpm verify`: build/lint + 417 tests passed; 24 targeted Docker tests passed. Three new cases cover empty input, nonempty UTF-8 input without a final newline, and input larger than Linux's argument size limit. The large case failed before the fix. See D-037.
 
+- [x] A19 — match the exact local port and protocol in socket checks. ✅ `pnpm verify`: build/lint + 425 tests passed (8 new cases). Regressions cover neighboring and prefix ports, protocol mismatches, and peer-only matches. Six targeted Docker tests passed.
+- [x] A20 — resolve script-test file globs and reads from the case scratch directory. ✅ `pnpm verify`: build/lint + 425 tests passed. Four targeted Docker tests passed, including the new relative-file regression that failed before the fix.
+- [x] A21 — reconcile the XP breakdown with awarded XP and rank review replays using completed bonuses. ✅ `pnpm verify`: build/lint + 429 tests passed. Regressions cover hinted first clears and repeats, review ranks with no, completed, or missing bonus objectives, and deduction signs in the completion modal.
+- [x] A22 — invalidate the Spellbook and Skills caches on level completion. ✅ `pnpm verify`: build/lint + 435 tests passed. Two navigation regressions reproduced the stale Spellbook with a cached or in-flight pre-clear response and now show the learned skill after returning through the map.
+- [x] A23 — report the effective streak on user reads. ✅ `pnpm verify`: build/lint + 435 tests passed. The profile API regression checks the UTC midnight boundary after a missed day and verifies the stored streak is preserved.
+- [x] A24 — schedule a hint nudge during inactivity. ✅ `pnpm verify`: build/lint + 435 tests passed. Fake-clock session tests verify the nudge fires once without more input and is canceled by objective progress or session teardown.
+- [x] A25 — apply font size, high contrast, and reduced motion to the live terminal. ✅ `pnpm verify`: build/lint + 437 tests passed. The terminal regression covers initial preferences, updates to the same xterm instance, refit and resize notification, and subscription cleanup.
+- [x] A26 — keep focus on quest-panel controls and inside the scrollable completion dialog, restore focus on replay, and keep the mobile keybar above the keyboard. ✅ `pnpm verify`: build/lint + 438 tests passed. `pnpm e2e --workers=1`: both Chromium tests passed, including focus containment and restoration, short-screen scrolling, touch focus, and simulated keyboard viewport resize and pan. Lighthouse 13.6 accessibility snapshots scored 100 on Map, Level, and the open completion dialog.
+- [x] A27 — run the Docker integration suite in CI, reject missing worlds and incomplete level counts, and require Docker readiness in Chromium. ✅ `pnpm verify`: 442 tests passed. Local `pnpm test:docker`: 78 passed, including the full World 1 socket progression. `pnpm e2e`: 3 passed. `pnpm levels:lint`: 12 levels, zero issues. The CI World 1 gate passed all 12 levels across three seeds, and `--world 1,2` exited 1 with a missing World 2 diagnostic. actionlint 1.7.7 accepted the workflow. The World 2 gate is scheduled for M8 (D-043).
+
 ## Known gaps
 
 _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing silent._
@@ -213,7 +223,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 | 2026-10-06 | skills.yaml prereqs | W1 skill edges authored in M7; W2+ skills still have empty `prereqs` | Author remaining edges during M8 |
 | 2026-10-06 | cron daemon start   | `needs_cron` field present (default true); daemon start not implemented                 | Implement in T10.1 admin polish; no admin levels exist yet |
 | 2026-10-11 | Web bundle size     | `dist` JS is ~576 KB (xterm.js); vite emits a chunk-size warning, no code-splitting yet | Consider `React.lazy` for `/play` during polish            |
-| 2026-11-04 | Repository audit | 31 original prioritized findings; A01–A18 and A28 fixed with regressions (see Audit remediation above). Remaining progression/recovery, checks, UI, CI, and documentation gaps are detailed in [PROJECT_AUDIT.md](PROJECT_AUDIT.md). | Resolve remaining findings alongside planned milestones and complete M9 production validation. |
+| 2026-11-05 | Repository audit | 31 original prioritized findings. A01–A28 fixed with regressions (see Audit remediation above). Remaining validation, UI polish, and documentation gaps are detailed in [PROJECT_AUDIT.md](PROJECT_AUDIT.md). | Resolve remaining findings alongside planned milestones and complete M9 production validation. |
 
 ## Blockers
 

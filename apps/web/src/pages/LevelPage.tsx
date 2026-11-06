@@ -25,6 +25,7 @@ export function LevelPage() {
   const spellbook = useGame((s) => s.spellbook);
   const [ctrlArmed, setCtrlArmed] = useState(false);
   const ctrlKey = useRef({ armed: false });
+  const replayFocusLevel = useRef<string | undefined>(undefined);
 
   // (Re)start whenever the route level changes. Unmount closes the socket
   // only — the server session idles out via the reaper (T1.3).
@@ -44,12 +45,28 @@ export function LevelPage() {
     };
   }, []);
 
-  // Map progress may have changed (completions, unlocks, badges).
+  // Completion changes progression and can unlock skills in the Spellbook.
   useEffect(() => {
     if (completion !== null) {
-      void useGame.getState().refresh();
+      void useGame.getState().refreshAfterCompletion();
     }
   }, [completion]);
+
+  useEffect(() => {
+    if (replayFocusLevel.current === undefined) return;
+    if (replayFocusLevel.current !== levelId || status === 'closed') {
+      replayFocusLevel.current = undefined;
+      return;
+    }
+    if (level === null) return;
+
+    // Reset replaces the original terminal. Wait until its new input has mounted.
+    const frame = requestAnimationFrame(() => {
+      replayFocusLevel.current = undefined;
+      useSession.getState().terminalFocus?.();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [level, levelId, status]);
 
   // Notes tab content: saved spellbook notes for this level's skills.
   useEffect(() => {
@@ -131,13 +148,6 @@ export function LevelPage() {
               setCtrlArmed(false);
             }}
           />
-          <MobileKeyBar
-            ctrlArmed={ctrlArmed}
-            onToggleCtrl={toggleCtrl}
-            onKey={(seq) => {
-              useSession.getState().sendStdin(seq);
-            }}
-          />
         </div>
         <QuestPanel
           level={level}
@@ -171,11 +181,19 @@ export function LevelPage() {
           {closeReason !== null ? ` (${closeReason})` : ''}
         </p>
       )}
+      <MobileKeyBar
+        ctrlArmed={ctrlArmed}
+        onToggleCtrl={toggleCtrl}
+        onKey={(seq) => {
+          useSession.getState().sendStdin(seq);
+        }}
+      />
       {completion !== null && (
         <CompleteModal
           result={completion}
           onNext={nextId === null ? null : () => navigate(`/play/${nextId}`)}
           onReplay={() => {
+            replayFocusLevel.current = levelId;
             void useSession.getState().reset();
           }}
           onBackToMap={() => {

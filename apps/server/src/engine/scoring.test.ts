@@ -61,8 +61,8 @@ describe('computeScore', () => {
 
   it('applies hint penalties to the base', () => {
     const result = computeScore({
-      level: makeLevel(),
-      hintTiers: [2],
+      level: makeLevel({ xp: 50 }),
+      hintTiers: [1],
       commandCount: 3,
       bonusDoneIds: [],
       manualBonus: false,
@@ -70,8 +70,13 @@ describe('computeScore', () => {
       bestXp: 0,
     });
     expect(result.rank).toBe('A');
-    expect(result.xp).toBe(90 + 10);
-    expect(result.breakdown[1]).toEqual({ label: 'hints (-10%)', xp: -10 });
+    expect(result.xp).toBe(53);
+    expect(result.breakdown).toEqual([
+      { label: 'base', xp: 50 },
+      { label: 'hints (-5%)', xp: -2 },
+      { label: 'first clear', xp: 5 },
+    ]);
+    expect(result.breakdown.reduce((total, entry) => total + entry.xp, 0)).toBe(result.xp);
   });
 
   it('adds manual and bonus-objective XP', () => {
@@ -112,18 +117,22 @@ describe('computeScore', () => {
     expect(result.rank).toBe('A');
   });
 
-  it('awards only the improvement on repeats, never negative', () => {
-    const input = {
+  it.each([
+    { bestXp: 60, awarded: 35 },
+    { bestXp: 200, awarded: 0 },
+  ])('reconciles hinted repeat XP with best XP of $bestXp', ({ bestXp, awarded }) => {
+    const result = computeScore({
       level: makeLevel(),
-      hintTiers: [] as number[],
+      hintTiers: [1],
       commandCount: 3,
-      bonusDoneIds: [] as string[],
+      bonusDoneIds: [],
       manualBonus: false,
       isFirstClear: false,
-      bestXp: 60,
-    };
-    expect(computeScore(input).xp).toBe(40);
-    expect(computeScore({ ...input, bestXp: 200 }).xp).toBe(0);
+      bestXp,
+    });
+    expect(result.fullXp).toBe(95);
+    expect(result.xp).toBe(awarded);
+    expect(result.breakdown.reduce((total, entry) => total + entry.xp, 0)).toBe(result.xp);
   });
 
   it('awards 25% of base on review replays, ignoring improvement', () => {
@@ -139,11 +148,43 @@ describe('computeScore', () => {
     });
     expect(result.xp).toBe(25);
     expect(result.fullXp).toBe(25);
+    expect(result.rank).toBe('S');
     expect(result.breakdown).toEqual([
       { label: 'base', xp: 100 },
       { label: 'review replay (25%)', xp: -75 },
     ]);
   });
+
+  it.each([
+    { bonusDoneIds: ['style'], rank: 'S' },
+    { bonusDoneIds: [], rank: 'A' },
+  ])(
+    'ranks a review replay $rank with completed bonuses $bonusDoneIds',
+    ({ bonusDoneIds, rank }) => {
+      const result = computeScore({
+        level: makeLevel({
+          objectives: [
+            ...makeLevel().objectives,
+            {
+              id: 'style',
+              text: 'Bonus.',
+              bonus: true,
+              check: { type: 'file_exists', path: '/b' },
+            },
+          ],
+        }),
+        hintTiers: [],
+        commandCount: 3,
+        bonusDoneIds,
+        manualBonus: false,
+        isFirstClear: false,
+        bestXp: 90,
+        isReviewReplay: true,
+      });
+      expect(result.rank).toBe(rank);
+      expect(result.xp).toBe(25);
+    },
+  );
 
   it('ranks B within 3 hints', () => {
     const result = computeScore({

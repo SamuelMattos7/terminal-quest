@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
 import { StartSessionResponseSchema, type ServerMessage } from '@terminal-quest/shared';
 import { events, users } from '../db/schema.js';
-import { guestCookie, makeTestContext } from '../testUtils.js';
+import { guestCookie, makeDockerTestContext } from '../testUtils.js';
 
 function realContentRoot(): string {
   const here = dirname(fileURLToPath(import.meta.url));
@@ -31,7 +31,7 @@ async function waitFor(
 
 describe('telemetry events over a full w1-01 attempt', () => {
   it('records start, hint, objectives, completion, and abandon in order', async () => {
-    const ctx = await makeTestContext([], {}, realContentRoot());
+    const ctx = await makeDockerTestContext([], {}, realContentRoot());
     const sockets: WebSocket[] = [];
     try {
       await ctx.app.listen({ port: 0, host: '127.0.0.1' });

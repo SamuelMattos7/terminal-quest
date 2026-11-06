@@ -8,7 +8,7 @@ import {
   StartSessionResponseSchema,
   type ServerMessage,
 } from '@terminal-quest/shared';
-import { guestCookie, makeTestContext } from '../testUtils.js';
+import { guestCookie, makeDockerTestContext } from '../testUtils.js';
 
 function realContentRoot(): string {
   const here = dirname(fileURLToPath(import.meta.url));
@@ -59,7 +59,7 @@ describe('World 1 playability over the socket', () => {
     async ({ id, dir }) => {
       // UNLOCK_ALL: the singles prove per-level socket solvability in
       // isolation; the chain test below proves the unlock progression.
-      const ctx = await makeTestContext([], { UNLOCK_ALL: 1 }, realContentRoot());
+      const ctx = await makeDockerTestContext([], { UNLOCK_ALL: 1 }, realContentRoot());
       let socket: WebSocket | undefined;
       try {
         await ctx.app.listen({ port: 0, host: '127.0.0.1' });
@@ -116,7 +116,7 @@ describe('World 1 playability over the socket', () => {
   );
 
   it('unlocks the full World 1 chain in one progression', async () => {
-    const ctx = await makeTestContext([], {}, realContentRoot());
+    const ctx = await makeDockerTestContext([], {}, realContentRoot());
     let socket: WebSocket | undefined;
     try {
       await ctx.app.listen({ port: 0, host: '127.0.0.1' });

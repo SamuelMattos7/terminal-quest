@@ -340,3 +340,51 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A18 calls for attaching stdin to non-PTY execs. The A04 workaround for Windows named pipes encoded input in command arguments, which worked for small input but failed when it exceeded Linux's argument size limit.
 - **Decision:** Attach stdin only when the caller supplies it, and pass its UTF-8 byte count to the supervisor. The supervisor reads exactly that many bytes into a temporary file and gives the command that file as stdin. An omitted input still uses `/dev/null`.
 - **Consequences:** Commands see EOF for both empty and nonempty input without requiring a half-close on the Docker connection. Stdout and stderr remain available on Windows named pipes, and stdin contents no longer count toward the argument size limit.
+
+### D-038 — Invalidate learning data after a level clear
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A22 found that the level's Notes tab could cache the Spellbook before the first clear.
+- **Decision:** Invalidate both learning caches on completion and keep loading them on demand. Discard results from requests issued before invalidation. Stack A22–A24 on the A21 branch in `codex/a22-a24-audit-fixes`.
+- **Consequences:** Navigating to the Spellbook or Skills fetches current data, including when an earlier request is still pending.
+
+### D-039 — Derive the displayed streak from the UTC date
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A23 found that user responses displayed the stored streak after a missed day.
+- **Decision:** Use the stored count in the shared user response only when the last active date is today or yesterday in UTC. Return zero for other dates.
+- **Consequences:** User reads are read-only and the next completion still uses the persisted history for streak arithmetic.
+
+### D-040 — Re-evaluate once at the idle nudge deadline
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A24 found that the idle nudge depended on another evaluation triggered by player activity.
+- **Decision:** When an evaluation finds pending objectives and at least three failures since progress, arm one timer per attempt for the remaining wait. Use the existing evaluation queue when it fires so the current objective state determines whether to nudge. Cancel the timer on objective progress, when required objectives are done, or at session teardown.
+- **Consequences:** Waiting can trigger the nudge without further input. An attempt still gets at most one nudge per period without objective progress.
+
+### D-041 — Apply accessibility preferences to the existing xterm instance
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A25 found that root CSS preferences did not update xterm. A26 found that activating panel controls could send focus back to the terminal.
+- **Decision:** Map the three font choices to 15, 17, and 19 px, matching the rounded page scale from xterm's 15 px default. Use a black-and-white theme with a contrast ratio target of 7 for terminal text in high-contrast mode. Turn off cursor blinking when reduced motion is enabled. Apply settings directly to xterm and refit. Keep click-to-focus for non-interactive quest-panel content.
+- **Consequences:** Players can change terminal preferences without losing terminal output or reconnecting, and panel controls keep their normal focus behavior.
+
+### D-042 — Use a native completion dialog and position the mobile keybar in the visible viewport
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A26 found that completion left keyboard focus on the game behind the dialog, short screens could hide actions, and the software keyboard could cover the keybar.
+- **Decision:** Open a native modal dialog, focus its heading, wrap Tab among the actions, and bound its scrolling to the viewport. Keep the existing completion actions as the way out of the dialog. Restore focus to the previous element if it still exists, or to the new terminal after replay. Dock the keybar to the visible viewport and reserve its height below the page content. Keep terminal focus on touch key presses.
+- **Consequences:** Completion content and actions remain reachable on short screens. The browser regression checks keyboard resize and pan through Chromium touch emulation with simulated viewport changes.
+
+### D-043 — Validate authored release worlds and wait for Docker in browser tests
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A27 found that the planned World 1 and 2 CI command silently skipped unbuilt World 2, CI omitted the Docker integration suite, and an HTTP 200 did not establish browser test readiness.
+- **Decision:** Reject each explicitly requested world with no levels and allow CI to assert an exact level count. Until M8, the levels job checks all 12 World 1 levels and runs the Docker integration suite using the same image build. At M8, require both worlds and 27 levels. Use the real Docker socket in integration test fixtures. Proxy the health route through Vite and require a valid health response with Docker ready. Use the gameplay Docker connection options for the health probe.
+- **Consequences:** An incomplete selection fails before Docker starts. Both live Chromium tests wait for the API and Docker using the same health contract.

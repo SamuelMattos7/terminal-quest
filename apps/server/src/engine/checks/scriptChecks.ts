@@ -82,6 +82,7 @@ async function runCase(
   for (const file of testCase.expect.files ?? []) {
     const ls = await provider.exec(handle, ['bash', '-c', `compgen -G ${shQuote(file.path)}`], {
       user: 'player',
+      cwd: scratch,
       timeoutMs: 10_000,
     });
     const matches = ls.stdout.split('\n').filter((l) => l !== '');
@@ -92,6 +93,7 @@ async function runCase(
     if ((file.contains !== undefined || file.matches !== undefined) && matches[0] !== undefined) {
       const content = await provider.exec(handle, ['cat', '--', matches[0]], {
         user: 'player',
+        cwd: scratch,
         timeoutMs: 10_000,
       });
       if (content.code !== 0) {

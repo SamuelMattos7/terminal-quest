@@ -39,7 +39,7 @@ async function bootProduction(database: TempDb, fakeDocker = false) {
         NODE_ENV: 'production',
         PORT: String(port),
         DB_PATH: database.db.$client.name,
-        DOCKER_SOCKET: '/nonexistent/docker.sock',
+        DOCKER_SOCKET: testConfig().DOCKER_SOCKET,
         PUBLIC_ORIGIN: publicOrigin,
       },
       stdio: fakeDocker ? ['ignore', 'pipe', 'pipe', 'ipc'] : ['ignore', 'pipe', 'pipe'],

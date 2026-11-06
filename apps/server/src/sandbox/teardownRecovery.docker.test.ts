@@ -5,7 +5,7 @@ import { connectOptions, DockerProvider } from './dockerProvider.js';
 import { SessionManager, CapacityError } from './sessionManager.js';
 import type { SandboxSpec } from './provider.js';
 import { attempts } from '../db/schema.js';
-import { guestCookie, makeTestContext } from '../testUtils.js';
+import { guestCookie, makeDockerTestContext } from '../testUtils.js';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -83,7 +83,7 @@ describe('real-container teardown recovery (A05)', () => {
   it.each(['watcher', 'expiry'] as const)(
     'retries failed %s teardown and removes the real sandbox',
     async (stage) => {
-      const ctx = await makeTestContext(undefined, { MAX_CONTAINERS: 1 });
+      const ctx = await makeDockerTestContext(undefined, { MAX_CONTAINERS: 1 });
       const { app } = ctx;
       const create = vi.spyOn(app.provider, 'create');
       const destroy = vi.spyOn(app.provider, 'destroy');

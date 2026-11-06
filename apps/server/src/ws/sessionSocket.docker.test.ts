@@ -7,7 +7,7 @@ import {
   StartSessionResponseSchema,
   type ServerMessage,
 } from '@terminal-quest/shared';
-import { guestCookie, makeTestContext } from '../testUtils.js';
+import { guestCookie, makeDockerTestContext } from '../testUtils.js';
 
 function realContentRoot(): string {
   const here = dirname(fileURLToPath(import.meta.url));
@@ -70,7 +70,7 @@ describe('session socket over the w1-02 sample', () => {
   it('streams stdin, ticks objectives, and completes the level', async () => {
     // UNLOCK_ALL: this suite tests socket behavior, not unlock progression
     // (w1-01 now precedes w1-02 since T5.1).
-    const ctx = await makeTestContext([], { UNLOCK_ALL: 1 }, realContentRoot());
+    const ctx = await makeDockerTestContext([], { UNLOCK_ALL: 1 }, realContentRoot());
     const sockets: WebSocket[] = [];
     try {
       await ctx.app.listen({ port: 0, host: '127.0.0.1' });
@@ -164,7 +164,7 @@ describe('session socket over the w1-02 sample', () => {
   }, 120_000);
 
   it('enforces ownership, origin, frame limits, and ping', async () => {
-    const ctx = await makeTestContext([], { UNLOCK_ALL: 1 }, realContentRoot());
+    const ctx = await makeDockerTestContext([], { UNLOCK_ALL: 1 }, realContentRoot());
     const sockets: WebSocket[] = [];
     try {
       await ctx.app.listen({ port: 0, host: '127.0.0.1' });

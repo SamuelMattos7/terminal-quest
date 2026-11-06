@@ -2,10 +2,11 @@ import Docker from 'dockerode';
 import type { FastifyInstance } from 'fastify';
 import { HealthResponseSchema } from '@terminal-quest/shared';
 import type { AppConfig } from '../config.js';
+import { connectOptions } from '../sandbox/dockerProvider.js';
 
 async function isDockerReachable(socketPath: string): Promise<boolean> {
   try {
-    const docker = new Docker({ socketPath });
+    const docker = new Docker(connectOptions(socketPath));
     await docker.ping();
     return true;
   } catch {

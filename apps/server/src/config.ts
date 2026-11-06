@@ -44,7 +44,10 @@ export function testConfig(overrides: Partial<AppConfig> = {}): AppConfig {
   return {
     PORT: 3001,
     PUBLIC_ORIGIN: 'http://localhost:5173',
-    DOCKER_SOCKET: '/nonexistent/docker.sock',
+    DOCKER_SOCKET:
+      process.platform === 'win32'
+        ? 'npipe:////./pipe/tq-test-no-docker'
+        : '/nonexistent/docker.sock',
     DB_PATH: ':memory:',
     MAX_CONTAINERS: 20,
     IDLE_TTL_SECONDS: 900,
