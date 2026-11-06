@@ -105,7 +105,7 @@
   title: 'globs'
   group: searching
   world: 2
-  prereqs: []
+  prereqs: [ls, mv]
 - id: brace-expansion
   title: 'brace expansion'
   group: searching

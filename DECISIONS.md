@@ -412,3 +412,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A31 found that the plan and contributor docs pointed to a nonexistent `docs/` directory. The deployment guide also used the default migration path before defining a different service database.
 - **Decision:** Keep `deploy.md` and `loadtest.md` at their existing root paths and correct the references, including the paths in plan §§0, 3, and 15. Use one deployment environment file for service startup, migrations, and backups. Document World 1 and the base image as the current deployment scope.
 - **Consequences:** The operational docs describe the implemented app and preserve the planned M8 and M10 work. T9.2 and T9.3 still require a measured load run and a clean-VM deployment rehearsal.
+
+### D-047 — Check wildcard sorting with directory listings
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** World 2 opens with a file-sorting exercise that introduces `*`, `?`, and character classes.
+- **Decision:** Use fixed example filenames and exact listings for the two destinations and the inbox. Include zero- and two-character report suffixes to distinguish `?` from `*`. Use a digit class in the preview and allow any commands that produce the required layout.
+- **Consequences:** The examples are consistent across attempts, and there is no seed-dependent answer to submit. The inbox check catches copying and protects the unmatched filenames.

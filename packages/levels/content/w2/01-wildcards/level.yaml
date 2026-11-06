@@ -1,0 +1,81 @@
+id: w2-01-wildcards
+world: 2
+order: 1
+title: Wildcard Wizardry
+kind: lesson
+difficulty: 2
+estimated_minutes: 5
+story: |
+  Tux-9000: "Welcome to the Filing Room. Audit wants the logs and the
+  single-character reports. The long-numbered reports are still under review.
+  They stay in the inbox. Preview each batch before moving it. It saves me
+  a form."
+teaches: [globs]
+par_commands: 4
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  dirs:
+    - { path: /home/player/inbox, owner: player }
+    - { path: /home/player/logs, owner: player }
+    - { path: /home/player/reports, owner: player }
+  files:
+    - { path: /home/player/inbox/audit.log, owner: player, content: "Audit opened.\n" }
+    - { path: /home/player/inbox/door.log, owner: player, content: "Door unlocked.\n" }
+    - { path: /home/player/inbox/night-shift.log, owner: player, content: "Shift ended.\n" }
+    - { path: /home/player/inbox/report-1.txt, owner: player, content: "Inventory counted.\n" }
+    - { path: /home/player/inbox/report-a.txt, owner: player, content: "Labels checked.\n" }
+    - { path: /home/player/inbox/report-10.txt, owner: player, content: "Pending review.\n" }
+    - { path: /home/player/inbox/report-.txt, owner: player, content: "Unassigned draft.\n" }
+    - { path: /home/player/inbox/audit.log.bak, owner: player, content: "Previous audit.\n" }
+objectives:
+  - id: file-logs
+    text: 'Move all `*.log` files from `inbox/` into `logs/`.'
+    hold: true
+    check:
+      { type: dir_listing, path: /home/player/logs, equals: [audit.log, door.log, night-shift.log] }
+  - id: file-reports
+    text: 'Move all `report-?.txt` files from `inbox/` into `reports/`.'
+    hold: true
+    check: { type: dir_listing, path: /home/player/reports, equals: [report-1.txt, report-a.txt] }
+  - id: leave-other-files
+    text: 'Leave only the unmatched files in `inbox/`.'
+    hold: true
+    check:
+      {
+        type: dir_listing,
+        path: /home/player/inbox,
+        equals: [audit.log.bak, report-.txt, report-10.txt],
+      }
+hints:
+  - 'Compare the filenames. The log suffix is fixed, and the reports Audit wants have exactly one character between the dash and the extension.'
+  - 'Preview with `ls` before using `mv`. An unquoted `*` matches zero or more characters, and `?` matches exactly one.'
+  - 'Try `mv inbox/*.log logs/` and `mv inbox/report-?.txt reports/`. The destination folders are ready.'
+explain:
+  - command: 'mv inbox/*.log logs/'
+    parts:
+      - {
+          token: 'inbox/*.log',
+          meaning: 'the shell expands this to the inbox names ending in .log',
+        }
+      - { token: 'mv … logs/', meaning: 'move every matched file into logs/' }
+  - command: 'mv inbox/report-?.txt reports/'
+    parts:
+      - {
+          token: '?',
+          meaning: 'match exactly one character, so report-1.txt and report-a.txt qualify',
+        }
+      - { token: 'reports/', meaning: 'the destination for the matched reports' }
+  - command: 'ls inbox/report-[0-9].txt'
+    parts:
+      - {
+          token: '[0-9]',
+          meaning: 'match exactly one digit, which narrows the preview to report-1.txt',
+        }
+      - { token: 'ls', meaning: 'show what the shell matched before you move anything' }
+cheatsheet:
+  - skill: globs
+    syntax: 'ls *.log report-?.txt report-[0-9].txt'
+    note: 'Leave shell globs unquoted. Use * for zero or more characters, ? for one character, and [] for one character from a set or range.'
+success_message: 'Audit has its files. The drafts are still in the inbox. I can put the form away.'
+solutions: { reference: solution.sh, wrong: [wrong/overbroad-reports.sh, wrong/copy-instead.sh] }
