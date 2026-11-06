@@ -436,3 +436,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** Seek and Find requires a seed-dependent answer and an unordered comparison. The plan permits secret references in file-content values, but the unordered comparison previously treated every entry as literal.
 - **Decision:** Resolve secret references in unordered expectations and treat a multi-line manifest as one expected entry per line. Generate three to five config files under a root-owned tree with mixed-case suffixes and a directory decoy. Put the expected paths in a mode-600 manifest.
 - **Consequences:** Players can submit any ordering of the exact paths. Duplicate paths, missing paths, and directory matches fail the check. The submission must be a regular file, which prevents a direct symlink to the protected manifest from passing.
+
+### D-050 — Check search boundaries in the World 2 find and grep lessons
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** Levels 04–06 teach search by file attributes, filtering text, and matching a whole line across nested files. Each needs fixtures that expose common mistakes.
+- **Decision:** Use fixed cache entries and a file aged seven days and one hour to demonstrate how `find -mtime` rounds down. Check that the retained files and directories still exist. Seed the grep exercises and keep the expected count, filtered config, and leaked filename in mode-600 files. Match the config output exactly and require a regular output file. For the key exercise, accept the filename with its extension and make recursive grep a bonus.
+- **Consequences:** Wrong scripts exercise the age boundary, accidental directory deletion, case-sensitive counts, overbroad text filters, missing regex anchors, and submitting the full path. Required checks accept solutions based on the resulting files and submitted answers.

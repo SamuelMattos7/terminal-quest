@@ -120,17 +120,17 @@
   title: 'grep'
   group: searching
   world: 2
-  prereqs: []
+  prereqs: [cat]
 - id: regex-basics
   title: 'regex basics'
   group: searching
   world: 2
-  prereqs: []
+  prereqs: [grep]
 - id: recursive-search
   title: 'recursive search'
   group: searching
   world: 2
-  prereqs: []
+  prereqs: [find, grep]
 - id: pipes
   title: 'pipes'
   group: text

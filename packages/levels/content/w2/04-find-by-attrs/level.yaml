@@ -1,0 +1,75 @@
+id: w2-04-find-by-attrs
+world: 2
+order: 4
+title: Find by Attributes
+kind: lesson
+difficulty: 2
+estimated_minutes: 6
+story: |
+  Tux-9000: "The cache has accumulated some empty files and some very old
+  ones. Clear both out, including in subdirectories. Leave the recent
+  nonempty files and every directory in place. Preview your matches first.
+  The cache is disposable. Your judgment is under evaluation."
+teaches: [find]
+par_commands: 4
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  generators:
+    - { script: setup/gen.sh }
+objectives:
+  - id: remove-empty
+    text: 'Remove all empty regular files under `~/cache`.'
+    check:
+      type: all
+      checks:
+        - { type: file_absent, path: /home/player/cache/session.tmp }
+        - { type: file_absent, path: /home/player/cache/images/render.tmp }
+  - id: remove-old
+    text: 'Remove regular files whose modification age exceeds 7 full 24-hour periods.'
+    check:
+      type: all
+      checks:
+        - { type: file_absent, path: /home/player/cache/catalog.bin }
+        - { type: file_absent, path: /home/player/cache/images/thumbnail.bin }
+  - id: keep-cache
+    text: 'Keep every cache directory and every nonempty file with a modification age of 7 full days or less.'
+    hold: true
+    check:
+      type: all
+      checks:
+        - { type: file_exists, path: /home/player/cache, kind: dir }
+        - { type: file_exists, path: /home/player/cache/images, kind: dir }
+        - { type: file_exists, path: /home/player/cache/pending, kind: dir }
+        - { type: file_exists, path: /home/player/cache/index.bin, kind: file }
+        - { type: file_exists, path: /home/player/cache/images/preview.bin, kind: file }
+hints:
+  - 'Search by file properties. Preview both sets of matches before deleting anything.'
+  - 'Use `-type f -empty` (or `-type f -size 0c`) for empty files and `-type f -mtime +7` for age.'
+  - 'Preview with `find ~/cache -type f -empty` and `find ~/cache -type f -mtime +7`. Once each list looks right, repeat each command with `-exec rm -- {} +` at the end.'
+explain:
+  - command: 'find ~/cache -type f -size 0c'
+    parts:
+      - { token: '-type f', meaning: 'restrict the matches to regular files' }
+      - {
+          token: '-size 0c',
+          meaning: 'match files of exactly zero bytes, as -empty does for regular files',
+        }
+  - command: 'find ~/cache -type f -mtime +7 -exec rm -- {} +'
+    parts:
+      - {
+          token: '-mtime +7',
+          meaning: 'round the modification age down to whole days, then match ages greater than seven',
+        }
+      - {
+          token: '-exec rm -- {} +',
+          meaning: 'pass the matched paths to rm in batches, after the end-of-options marker',
+        }
+cheatsheet:
+  - skill: find
+    syntax: 'find START -type f TEST [-exec COMMAND {} +]'
+    note: 'Use -empty or -size 0c for empty files and -mtime +N for more than N full days. Preview before adding -exec.'
+success_message: 'The old cache entries are gone. The cache can still do its job.'
+solutions:
+  reference: solution.sh
+  wrong: [wrong/only-empty.sh, wrong/empty-directories.sh, wrong/seven-day-boundary.sh]

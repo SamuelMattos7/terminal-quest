@@ -108,9 +108,9 @@ Columns: **A** = authored (level.yaml, setup, solution, wrong, hints, explain) �
 | w2-01-wildcards            | [x] | [x] | [x] |
 | w2-02-brace-expansion      | [x] | [x] | [x] |
 | w2-03-find-by-name         | [x] | [x] | [x] |
-| w2-04-find-by-attrs        | [ ] | [ ] | [ ] |
-| w2-05-grep-basics          | [ ] | [ ] | [ ] |
-| w2-06-grep-recursive-regex | [ ] | [ ] | [ ] |
+| w2-04-find-by-attrs        | [x] | [x] | [x] |
+| w2-05-grep-basics          | [x] | [x] | [x] |
+| w2-06-grep-recursive-regex | [x] | [x] | [x] |
 | w2-07-pipes                | [ ] | [ ] | [ ] |
 | w2-08-redirection          | [ ] | [ ] | [ ] |
 | w2-09-text-tools           | [ ] | [ ] | [ ] |
@@ -124,6 +124,11 @@ Columns: **A** = authored (level.yaml, setup, solution, wrong, hints, explain) �
 - **w2-01-wildcards** ✅ `pnpm levels:lint` reported 13 levels and zero problems. `pnpm levels:test --level w2-01-wildcards --seeds 3` passed all 12 cases. For seeds 1–3, the baseline, overbroad report move, and copy-only solution stayed incomplete, and the reference solution completed. `pnpm verify` passed build, lint, and all 476 tests.
 - **w2-02-brace-expansion** ✅ `pnpm levels:lint` reported 14 levels and zero problems. `pnpm levels:test --level w2-02-brace-expansion --seeds 3` passed all 12 cases. For seeds 1–3, the baseline and the unpadded-month and swapped-type solutions stayed incomplete, and the reference solution completed. `pnpm verify` passed build, lint, and all 476 tests.
 - **w2-03-find-by-name** ✅ `pnpm levels:lint` reported 15 levels and zero problems. `pnpm levels:test --level w2-03-find-by-name --seeds 3` passed all 15 cases. For each seed, the reference completed while the baseline, case-sensitive search, search including directories, and symlink to the manifest stayed incomplete. The focused Docker file-check suite passed 7 tests, and `pnpm verify` passed build, lint, and all 476 tests.
+- **w2-04-find-by-attrs** ✅ `pnpm levels:test --level w2-04-find-by-attrs --seeds 3` passed all 15 cases. The baseline, empty-files-only cleanup, deletion of an empty directory, and incorrect age cutoff stayed incomplete.
+- **w2-05-grep-basics** ✅ `pnpm levels:test --level w2-05-grep-basics --seeds 3` passed all 15 cases. The baseline, case-sensitive count, unanchored count, and removal of every line containing `#` stayed incomplete.
+- **w2-06-grep-recursive-regex** ✅ `pnpm levels:test --level w2-06-grep-recursive-regex --seeds 3` passed all 15 cases. The reference earned the recursive grep bonus on every seed. The baseline, unanchored match, full path submission, and prefix-only match stayed incomplete.
+
+Batch verification for w2-04 through w2-06 passed `pnpm levels:lint` (18 levels, zero problems) and `pnpm verify` (476 tests).
 
 ### World 3 — The Engine Room
 
@@ -227,7 +232,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 
 | Date       | Area                | Gap                                                                                     | Planned resolution                                         |
 | ---------- | ------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| 2026-10-06 | skills.yaml prereqs | W1 skill edges were authored in M7. In W2, `globs`, `brace-expansion`, and `find` have prerequisites. The remaining W2+ skills still have empty `prereqs`. | Author remaining edges as their levels land |
+| 2026-10-06 | skills.yaml prereqs | W1 skill edges were authored in M7. World 2 skill edges are authored through the recursive grep lesson. The remaining W2+ skills still have empty `prereqs`. | Author remaining edges as their levels land |
 | 2026-10-06 | cron daemon start   | `needs_cron` field present (default true); daemon start not implemented                 | Implement in T10.1 admin polish; no admin levels exist yet |
 | 2026-11-06 | Production validation | T9.1 security review and waivers, T9.2 capacity/latency/cleanup measurements, and T9.3 clean-VM install, rootless limits, Caddy/TLS, backup/restore, and upgrade still need evidence. | Record security decisions and complete the checklists in [loadtest.md](loadtest.md) and [deploy.md](deploy.md). |
 

@@ -1,0 +1,57 @@
+id: w2-06-grep-recursive-regex
+world: 2
+order: 6
+title: The Leaked Key
+kind: lesson
+difficulty: 3
+estimated_minutes: 8
+story: |
+  Tux-9000: "Someone left a key in the config archive. Forty files, several
+  folders, and just one line made up entirely of the key. The examples in
+  the archive are going to waste your time if you search too broadly.
+  Tell me which file to quarantine."
+teaches: [grep, regex-basics, recursive-search]
+par_commands: 3
+xp: 75
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  generators:
+    - { script: setup/gen.sh }
+objectives:
+  - id: find-leak
+    text: 'Find the file under `~/config` with a line containing only AKIA followed by exactly 16 uppercase letters or digits. Submit the filename with its extension, without the directory path.'
+    check: { type: answer_equals, from_file: /opt/tq/secret/leak_file, case_sensitive: true }
+  - id: used-recursive
+    text: 'Bonus: find the leak with recursive grep.'
+    bonus: true
+    check:
+      type: command_used
+      regex: '^grep\s+(?:-[A-Za-z]+\s+|--[a-z-]+\s+)*(?:-[A-Za-z]*[rR][A-Za-z]*|--recursive|--dereference-recursive)(?:\s|$)'
+hints:
+  - 'Look inside the files, including nested directories. A mention of the key format inside another line does not count.'
+  - 'Use `grep -r` to recurse, `-E` for extended regular expressions, and `^` and `$` to anchor the pattern to the whole line.'
+  - "Run `grep -rEn '^AKIA[A-Z0-9]{16}$' ~/config`. Submit only the filename after the last slash, before the first colon."
+explain:
+  - command: "grep -rEn '^AKIA[A-Z0-9]{16}$' ~/config"
+    parts:
+      - { token: '-r', meaning: 'read files in the starting directory and its subdirectories' }
+      - { token: '-En', meaning: 'use extended regex syntax and show each matching line number' }
+      - {
+          token: '[A-Z0-9]{16}',
+          meaning: 'require exactly sixteen uppercase letters or digits after AKIA',
+        }
+      - { token: '^ and $', meaning: 'anchor the match to the start and end of the line' }
+cheatsheet:
+  - skill: grep
+    syntax: "grep -En 'PATTERN' FILE"
+    note: 'Use extended regular expressions and show line numbers.'
+  - skill: regex-basics
+    syntax: "'^PREFIX[A-Z0-9]{N}$'"
+    note: 'Match a whole line with a fixed prefix and exactly N uppercase letters or digits.'
+  - skill: recursive-search
+    syntax: "grep -rEn 'PATTERN' DIRECTORY"
+    note: 'Search nested files and show where each matching line came from. Use -l in place of -n for paths only.'
+success_message: 'Leak located. The auditors can have the filename. The key is headed for rotation.'
+solutions:
+  reference: solution.sh
+  wrong: [wrong/unanchored.sh, wrong/full-path.sh, wrong/prefix-only.sh]
