@@ -40,7 +40,10 @@ export function LevelNode({ level }: LevelNodeProps) {
         to={`/play/${level.id}`}
         className="flex items-center gap-2 rounded-md border border-border bg-panel px-3 py-2 text-text hover:border-green"
       >
-        <StatusDot color={done ? 'bg-purple' : 'bg-green'} label={level.state} />
+        <StatusDot
+          color={done ? 'bg-purple' : 'bg-green'}
+          label={done ? strings.levelCompleted : strings.levelAvailable}
+        />
         <span>{level.title}</span>
         {level.kind === 'boss' && (
           <span className="rounded bg-amber px-1 font-mono text-xs text-bg">{level.kind}</span>

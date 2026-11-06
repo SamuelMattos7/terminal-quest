@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import type { SessionToast } from '../session/useSession.js';
+import { strings } from '../strings.js';
 
 const DISMISS_MS = 8000;
 
@@ -25,7 +26,7 @@ function ToastItem({ toast, onDismiss }: { toast: SessionToast; onDismiss: (id: 
       <span className="flex-1">{toast.text}</span>
       <button
         type="button"
-        aria-label="Dismiss"
+        aria-label={strings.dismissToast}
         onClick={() => {
           onDismiss(toast.id);
         }}

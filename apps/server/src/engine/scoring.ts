@@ -1,4 +1,4 @@
-import type { Level } from '@terminal-quest/shared';
+import { HINT_TIER_PENALTIES, type Level } from '@terminal-quest/shared';
 import { countCommands } from './cmdlog.js';
 
 // XP and rank math for plan.md §10.1.
@@ -35,13 +35,12 @@ export interface ScoreResult {
   breakdown: ScoreBreakdownEntry[];
 }
 
-const TIER_PENALTY: Record<number, number> = { 1: 5, 2: 10, 3: 25 };
 const MAX_PENALTY_PCT = 40;
 const MANUAL_BONUS = 5;
 const BONUS_OBJECTIVE_XP = 10;
 
 export function hintPenaltyPct(tiers: number[]): number {
-  const total = tiers.reduce((sum, t) => sum + (TIER_PENALTY[t] ?? 0), 0);
+  const total = tiers.reduce((sum, t) => sum + (HINT_TIER_PENALTIES[t] ?? 0), 0);
   return Math.min(MAX_PENALTY_PCT, total);
 }
 

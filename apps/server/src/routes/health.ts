@@ -1,7 +1,6 @@
 import Docker from 'dockerode';
 import type { FastifyInstance } from 'fastify';
 import { HealthResponseSchema } from '@terminal-quest/shared';
-import type { AppConfig } from '../config.js';
 import { connectOptions } from '../sandbox/dockerProvider.js';
 
 async function isDockerReachable(socketPath: string): Promise<boolean> {
@@ -14,9 +13,9 @@ async function isDockerReachable(socketPath: string): Promise<boolean> {
   }
 }
 
-export async function registerHealthRoute(app: FastifyInstance, config: AppConfig): Promise<void> {
+export async function registerHealthRoute(app: FastifyInstance, socketPath: string): Promise<void> {
   app.get('/healthz', async (_request, reply) => {
-    const docker = await isDockerReachable(config.DOCKER_SOCKET);
+    const docker = await isDockerReachable(socketPath);
     const payload = HealthResponseSchema.parse({ ok: true, docker });
     return reply.send(payload);
   });

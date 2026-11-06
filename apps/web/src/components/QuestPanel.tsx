@@ -64,7 +64,7 @@ export function QuestPanel({
       }}
       className="flex min-h-0 flex-col gap-4 overflow-y-auto rounded-lg border border-border bg-panel p-4"
     >
-      <div role="tablist" aria-label="Panel sections" className="flex gap-1 lg:hidden">
+      <div role="tablist" aria-label={strings.panelSections} className="flex gap-1 lg:hidden">
         {(
           [
             ['mission', strings.missionTab],
