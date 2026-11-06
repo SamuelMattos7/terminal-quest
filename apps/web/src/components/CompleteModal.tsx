@@ -65,7 +65,7 @@ export function CompleteModal({ result, onNext, onReplay, onBackToMap }: Complet
           {strings.completeTitle}
         </h2>
         <p className="mt-2 text-sm italic text-muted" data-testid="complete-message">
-          Tux-9000: “{result.message}”
+          {strings.completeMessage(result.message)}
         </p>
         <p className="mt-2 font-mono text-4xl text-text" data-testid="complete-rank">
           {result.rank}

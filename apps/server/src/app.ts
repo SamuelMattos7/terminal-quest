@@ -77,7 +77,12 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   const levels = loadLevels(contentRoot);
   const coachRules = loadCoachRules(contentRoot);
   const badgeList = loadBadges(join(dirname(contentRoot), 'badges.yaml'));
-  const provider = new DockerProvider({ socketPath: opts.socketPath ?? config.DOCKER_SOCKET });
+  const socketPath = opts.socketPath ?? config.DOCKER_SOCKET;
+  const provider = new DockerProvider({
+    socketPath,
+    image: config.SANDBOX_IMAGE,
+    runtime: config.SANDBOX_RUNTIME,
+  });
   const live = new LiveSessionRegistry();
   const manager = new SessionManager({
     provider,
@@ -146,7 +151,7 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
     request.user = user;
   });
 
-  await registerHealthRoute(app, config);
+  await registerHealthRoute(app, socketPath);
   await registerAuthRoutes(app, production);
   await registerMeRoutes(app);
   await registerWorldsRoutes(app);

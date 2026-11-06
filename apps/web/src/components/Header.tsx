@@ -25,7 +25,7 @@ export function Header({ me }: HeaderProps) {
             )}
           </>
         )}
-        <nav aria-label="Sections" className="flex items-center gap-3 text-sm">
+        <nav aria-label={strings.navSections} className="flex items-center gap-3 text-sm">
           <Link className="text-muted hover:text-text" to="/map">
             {strings.navMap}
           </Link>

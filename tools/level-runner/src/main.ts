@@ -2,6 +2,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LevelLoadError, loadLevels } from '@terminal-quest/server/engine/levelLoader';
 import { DockerProvider } from '@terminal-quest/server/sandbox/dockerProvider';
+import { SandboxEnvSchema } from '@terminal-quest/shared';
 import { lintLevels } from './lint.js';
 import { formatReport, runMatrix } from './testLevels.js';
 
@@ -126,7 +127,12 @@ async function runTest(): Promise<void> {
     return;
   }
 
-  const provider = new DockerProvider({ socketPath: process.env['DOCKER_SOCKET'] });
+  const config = SandboxEnvSchema.parse(process.env);
+  const provider = new DockerProvider({
+    socketPath: process.env['DOCKER_SOCKET'],
+    image: config.SANDBOX_IMAGE,
+    runtime: config.SANDBOX_RUNTIME,
+  });
   const { reports, ok } = await runMatrix(provider, selected, seeds);
   let failures = 0;
   for (const report of reports) {

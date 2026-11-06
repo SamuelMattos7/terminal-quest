@@ -61,7 +61,14 @@ function tarName(absolutePath: string): string {
 export class DockerProvider implements SandboxProvider {
   private readonly docker: DockerClient;
 
-  constructor(opts?: { socketPath?: string; client?: DockerClient }) {
+  constructor(
+    private readonly opts?: {
+      socketPath?: string | undefined;
+      client?: DockerClient;
+      image?: string | undefined;
+      runtime?: string | undefined;
+    },
+  ) {
     if (opts?.client !== undefined) {
       this.docker = opts.client;
     } else {
@@ -74,13 +81,13 @@ export class DockerProvider implements SandboxProvider {
     // sandbox alive. All interaction (shell, setup, checks) happens via
     // exec, so a bare `bash` CMD would exit immediately and stop the box.
     const container = await this.docker.createContainer({
-      Image: spec.image,
+      Image: this.opts?.image ?? spec.image,
       Cmd: ['sleep', 'infinity'],
       User: 'player',
       WorkingDir: spec.startCwd,
       Env: toEnvList(spec.env),
       Labels: buildLabels(spec),
-      HostConfig: buildHostConfig(spec),
+      HostConfig: buildHostConfig(spec, this.opts?.runtime),
     });
     const handle = { id: container.id, spec };
     try {

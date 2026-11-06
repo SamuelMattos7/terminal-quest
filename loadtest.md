@@ -26,14 +26,16 @@ Confirm that one VM can host the target number of concurrent sandboxes, that the
 
 ## 3. Procedure
 
+Set up the target VM using the [draft deployment guide](deploy.md). Record the
+commit, use `ENABLE_WORLDS=1` for current content, and confirm
+`/healthz` reports `docker:true` before starting the run.
+
 Implement a script `tools/scripts/loadtest.ts` (part of T9.2) that:
-1. Creates N guest users (`POST /api/guest`, keep each cookie jar).
-2. Each virtual user starts `w1-01-first-words`, connects the WebSocket, then repeatedly:
-   - sends `echo test` / `ls` / `pwd` keystrokes every 2–5 s (random jitter) for 5 minutes,
-   - measures time from sending a command to receiving the matching output chunk (echo latency),
-   - then completes the level by running the reference commands and records time to `level_complete`.
-3. Ramps from 1 → 20 users over 60 s, holds for 5 min, then sends a 21st `start` and records the response code.
-4. All users leave (`DELETE /api/sessions/:id`) and the script waits 60 s.
+1. Creates 21 distinct guests with `POST /api/guest` and keeps each session cookie. Spread launches over the ramp so the per-IP HTTP rate limit does not mask the sandbox capacity test.
+2. Starts 20 guests over 60 s via `POST /api/levels/w1-01-first-words/start`. Records start request latency and opens each returned `wsPath` with that guest's cookie and the configured public Origin.
+3. Holds 20 sessions open for five minutes. Sends terminal input every 2–5 s and measures the time until a distinct input marker is echoed by the PTY. Match markers across output frames. Use commands that leave the level incomplete during the hold.
+4. While all 20 sessions are active, starts the level as the 21st guest. Records HTTP 429, `Retry-After`, and the `sandbox capacity reached` response to distinguish it from HTTP rate limiting.
+5. Runs the reference commands and records time to `level_complete`. Closes any remaining sessions with `DELETE /api/sessions/:sessionId` and waits 60 s before checking cleanup.
 
 Sampling during the run (every 5 s, written to CSV):
 ```bash
@@ -44,9 +46,9 @@ docker ps -q --filter label=tq.managed=true | wc -l
 Post-run checks:
 ```bash
 docker ps -a --filter label=tq.managed=true            # expect empty
-docker network ls --filter label=tq.managed=true       # expect empty
+# LAN cleanup belongs to T10.2 once per-attempt networks exist.
 ```
-Also run one **idle expiry** check (leave a session idle past `IDLE_TTL_SECONDS` with a shortened TTL) and one **server restart** check (restart server mid-test; verify the orphan sweep removes leftover sandboxes).
+Also run one **idle expiry** check (leave a session idle past `IDLE_TTL_SECONDS` with a shortened TTL) and one **orphan recovery** check (interrupt the server without graceful shutdown on the test VM, restart it, and verify the boot sweep removes leftover managed containers).
 
 ## 4. Results (fill in after running)
 
@@ -56,7 +58,6 @@ Also run one **idle expiry** check (leave a session idle past `IDLE_TTL_SECONDS`
 | Concurrent sessions sustained | 20 | |
 | 21st start response | 429 + Retry-After | |
 | Leftover containers after run | 0 | |
-| Leftover networks after run | 0 | |
 | Idle expiry destroyed sandbox | yes | |
 | Orphan sweep after restart | yes | |
 

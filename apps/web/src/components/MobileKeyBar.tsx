@@ -10,18 +10,18 @@ interface KeypadKey {
 // Raw sequences from plan.md §9.6. Accessible names match the visible labels
 // exactly (WCAG 2.5.3 Label in Name).
 const KEYS: KeypadKey[] = [
-  { label: 'Tab', ariaLabel: 'Tab', seq: '\t' },
-  { label: 'Esc', ariaLabel: 'Esc', seq: '\x1b' },
-  { label: '↑', ariaLabel: 'Up arrow', seq: '\x1b[A' },
-  { label: '↓', ariaLabel: 'Down arrow', seq: '\x1b[B' },
-  { label: '←', ariaLabel: 'Left arrow', seq: '\x1b[D' },
-  { label: '→', ariaLabel: 'Right arrow', seq: '\x1b[C' },
+  { label: strings.keyTab, ariaLabel: strings.keyTab, seq: '\t' },
+  { label: strings.keyEsc, ariaLabel: strings.keyEsc, seq: '\x1b' },
+  { label: '↑', ariaLabel: strings.keyUp, seq: '\x1b[A' },
+  { label: '↓', ariaLabel: strings.keyDown, seq: '\x1b[B' },
+  { label: '←', ariaLabel: strings.keyLeft, seq: '\x1b[D' },
+  { label: '→', ariaLabel: strings.keyRight, seq: '\x1b[C' },
   { label: '|', ariaLabel: '|', seq: '|' },
   { label: '~', ariaLabel: '~', seq: '~' },
   { label: '/', ariaLabel: '/', seq: '/' },
   { label: '-', ariaLabel: '-', seq: '-' },
-  { label: 'Ctrl+C', ariaLabel: 'Ctrl+C', seq: '\x03' },
-  { label: 'Ctrl+D', ariaLabel: 'Ctrl+D', seq: '\x04' },
+  { label: strings.keyInterrupt, ariaLabel: strings.keyInterrupt, seq: '\x03' },
+  { label: strings.keyEof, ariaLabel: strings.keyEof, seq: '\x04' },
 ];
 
 interface MobileKeyBarProps {
@@ -86,7 +86,7 @@ export function MobileKeyBar({ ctrlArmed, onToggleCtrl, onKey }: MobileKeyBarPro
       >
         <button
           type="button"
-          aria-label="Ctrl"
+          aria-label={strings.keyCtrl}
           aria-pressed={ctrlArmed}
           title={ctrlArmed ? strings.ctrlArmed : undefined}
           onClick={onToggleCtrl}
@@ -94,7 +94,7 @@ export function MobileKeyBar({ ctrlArmed, onToggleCtrl, onKey }: MobileKeyBarPro
             ctrlArmed ? 'bg-green text-bg' : 'border border-border text-text'
           }`}
         >
-          Ctrl
+          {strings.keyCtrl}
         </button>
         {KEYS.map((key) => (
           <button

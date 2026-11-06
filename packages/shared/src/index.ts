@@ -3,4 +3,6 @@ export * from './checks.js';
 export * from './level.js';
 export * from './protocol.js';
 export * from './skills.js';
+export * from './scoring.js';
 export * from './limits.js';
+export { SandboxEnvSchema } from './validation.js';

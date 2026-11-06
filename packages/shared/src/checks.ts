@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { regexSource } from './validation.js';
 
 // Check schemas for plan.md §8.2. The discriminated union below is the
 // machine-verifiable condition behind a level objective. Secret references
@@ -31,7 +32,7 @@ const FileContentCheckSchema = z
     path: AbsPathSchema,
     equals: z.string().optional(),
     contains: z.string().optional(),
-    matches: z.string().min(1).optional(),
+    matches: regexSource(true).optional(),
     sha256: z
       .string()
       .regex(/^[0-9a-fA-F]{64}$/, 'must be a 64-char hex sha256')
@@ -105,7 +106,7 @@ const ShellCwdCheckSchema = z
 const CommandUsedCheckSchema = z
   .object({
     type: z.literal('command_used'),
-    regex: z.string().min(1),
+    regex: regexSource(),
     min_count: z.number().int().positive().default(1),
     exit_code: z.union([z.number().int(), z.literal('any')]).default(0),
   })
@@ -132,7 +133,7 @@ const AnswerEqualsCheckSchema = z
 
 const ProcessMatchFields = {
   name: z.string().min(1).optional(),
-  cmdline_regex: z.string().min(1).optional(),
+  cmdline_regex: regexSource().optional(),
   user: z.string().min(1).optional(),
 };
 
@@ -163,7 +164,7 @@ const ProcessAbsentCheckSchema = z
 const ProcessStateCheckSchema = z
   .object({
     type: z.literal('process_state'),
-    cmdline_regex: z.string().min(1),
+    cmdline_regex: regexSource(),
     state: z.enum(['R', 'S', 'T', 'Z']),
   })
   .strict();
@@ -181,7 +182,7 @@ const CrontabEntryCheckSchema = z
     type: z.literal('crontab_entry'),
     user: z.string().min(1),
     schedule: z.string().min(1),
-    command_regex: z.string().min(1),
+    command_regex: regexSource(),
   })
   .strict();
 
@@ -190,10 +191,10 @@ const CronDryRunExpectSchema = z
     exit_code: z.number().int().optional(),
     stdout_equals: z.string().optional(),
     stdout_contains: z.string().optional(),
-    stdout_matches: z.string().min(1).optional(),
+    stdout_matches: regexSource().optional(),
     stderr_equals: z.string().optional(),
     stderr_contains: z.string().optional(),
-    stderr_matches: z.string().min(1).optional(),
+    stderr_matches: regexSource().optional(),
   })
   .strict()
   .superRefine((v, ctx) => {
@@ -210,7 +211,7 @@ const CronDryRunCheckSchema = z
     type: z.literal('cron_dry_run'),
     user: z.string().min(1),
     entry_index: z.number().int().min(0).optional(),
-    command_regex: z.string().min(1).optional(),
+    command_regex: regexSource().optional(),
     expect: CronDryRunExpectSchema,
     timeout_s: z.number().int().positive().optional(),
   })
@@ -222,7 +223,7 @@ const LoginShellEvalCheckSchema = z
     user: z.string().min(1),
     script: z.string().min(1),
     stdout_equals: z.string().optional(),
-    stdout_matches: z.string().min(1).optional(),
+    stdout_matches: regexSource().optional(),
   })
   .strict()
   .superRefine((v, ctx) => {
@@ -239,7 +240,7 @@ const ScriptCaseFileSchema = z
     path: z.string().min(1),
     exists: z.boolean().optional(),
     contains: z.string().optional(),
-    matches: z.string().min(1).optional(),
+    matches: regexSource().optional(),
   })
   .strict();
 
@@ -248,10 +249,10 @@ const ScriptCaseExpectSchema = z
     exit_code: z.number().int().optional(),
     stdout_equals: z.string().optional(),
     stdout_contains: z.string().optional(),
-    stdout_matches: z.string().min(1).optional(),
+    stdout_matches: regexSource().optional(),
     stderr_equals: z.string().optional(),
     stderr_contains: z.string().optional(),
-    stderr_matches: z.string().min(1).optional(),
+    stderr_matches: regexSource().optional(),
     files: z.array(ScriptCaseFileSchema).optional(),
   })
   .strict()
@@ -291,7 +292,7 @@ const ExecCheckSchema = z
     script: z.string().min(1).optional(),
     inline: z.string().min(1).optional(),
     expect_exit: z.number().int().default(0),
-    stdout_matches: z.string().min(1).optional(),
+    stdout_matches: regexSource().optional(),
   })
   .strict()
   .superRefine((v, ctx) => {

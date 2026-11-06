@@ -8,7 +8,7 @@
 ## 0. How to Use This Document (Agent Instructions)
 
 ### 0.1 Operating rules
-0. **Read `AGENTS.md` first** (how to work: commands, conventions, hard rules). `PROGRESS.md` and `DECISIONS.md` already exist in the repo root; update them as you go rather than recreating them. `docs/deploy.md` and `docs/loadtest.md` exist as a draft and a template; T9.3 and T9.2 finish them.
+0. **Read `AGENTS.md` first** (how to work: commands, conventions, hard rules). `PROGRESS.md` and `DECISIONS.md` already exist in the repo root; update them as you go rather than recreating them. `deploy.md` and `loadtest.md` exist as a draft and a template; T9.3 and T9.2 finish them.
 1. **Read the whole document first**, then start at Milestone M0 (§15) and proceed in order. Do not skip ahead.
 2. **Vertical slice first.** Get ONE level playable end-to-end (browser → terminal → sandbox → validation → completion screen) before building breadth (M5). Everything before M5 exists to support that slice.
 3. **Make decisions, don't ask.** If something is ambiguous, pick the simplest option that satisfies the acceptance criteria, and record it in `DECISIONS.md` (one short entry: context, decision, reason).
@@ -87,9 +87,8 @@ terminal-quest/
 ├─ AGENTS.md                    # working instructions for coding agents (read first)
 ├─ PROGRESS.md                  # build status checklist (milestones + per-level tracker)
 ├─ DECISIONS.md                 # decision log (pre-seeded D-001..D-010)
-├─ docs/
-│  ├─ deploy.md                 # draft deploy guide; verified in T9.3
-│  └─ loadtest.md               # template; filled in by T9.2
+├─ deploy.md                    # draft deploy guide; verified in T9.3
+├─ loadtest.md                  # template; filled in by T9.2
 ├─ docker-compose.yml           # dev helpers (sidecars, optional); see §14
 ├─ .github/workflows/ci.yml
 ├─ apps/
@@ -797,11 +796,13 @@ Loads all `level.yaml` at server start, validates with zod, builds indexes: by i
 Turns `setup` into: (1) a list of tar entries for `putFiles` (files, `content_file`, `checks/*` into `/opt/tq/checks/<levelId>/`, generator scripts into `/opt/tq/gen/`); (2) a root-run script executed with `bash -e`: create dirs → set owners/modes → run generators (`TQ_SEED`) → run `commands` → write `rc_extra` to `/home/player/.bashrc` (create if missing; chown player) → create `/run/tq/{cmdlog,inbox}` (0622) and `/opt/tq/secret` → start cron if profile `admin` and level declares `needs_cron: true` (default true for admin).
 
 ### 12.3 `levels:lint` rules (beyond schema)
+**2026-11-06 (A29, D-044):** Require explain cards, cheatsheet entries, and distinct wrong solutions. Check both setup file sources for seeded answers.
+
 - `id` matches directory; `order` unique and contiguous within a world.
 - Exactly 3 hints; story ≤ 80 words; ≤ 4 non-bonus objectives (bosses ≤ 8); ≥1 non-optional objective.
-- Every `teaches` skill exists; every `exec.script`/`content_file`/generator path exists.
-- Every level has `solutions.reference`; boss levels have ≥ 1 `wrong` solution.
-- No check references answers in `setup.files.content` plaintext when `seeded` generators exist (answers must come from `secret`).
+- Every `teaches` skill exists. Referenced scripts and content files exist inside the level directory.
+- Every level has at least one explain card, one cheatsheet entry, a reference solution, and at least one distinct wrong solution. Bosses have at least two distinct wrong solutions.
+- For levels with generators, lint checks inline and referenced setup files for plaintext answers identifiable from objective checks. Generate seeded answers under `/opt/tq/secret`.
 - `levels:lint` must run in < 5 s for the whole content tree.
 
 ### 12.4 `levels:test` (the content test harness, `tools/level-runner`)
@@ -905,8 +906,8 @@ Each task: **do** → **acceptance** (verify before ticking in `PROGRESS.md`).
 
 ### M9 — Hardening & deploy
 - **T9.1** Walk the §13 checklist; add tests where feasible (origin check, ownership, DTO whitelist, rate limits). *Accept:* all boxes ticked or explicitly waived in `DECISIONS.md`.
-- **T9.2** Load test: 20 concurrent sessions on a 4-vCPU box with MAX_CONTAINERS=20; confirm 21st gets 429 and reaper keeps memory stable. *Accept:* short report in `docs/loadtest.md`.
-- **T9.3** Deploy docs (`docs/deploy.md`): rootless Docker, systemd unit, Caddyfile, backups. *Accept:* doc is followable end to end.
+- **T9.2** Load test: 20 concurrent sessions on a 4-vCPU box with MAX_CONTAINERS=20; confirm 21st gets 429 and reaper keeps memory stable. *Accept:* short report in `loadtest.md`.
+- **T9.3** Deploy docs (`deploy.md`): rootless Docker, systemd unit, Caddyfile, backups. *Accept:* doc is followable end to end.
 
 ### M10 — Infra for Worlds 3–5 and content
 - **T10.1** `admin` profile polish (sudo allow-list, cron daemon start, capabilities mapping). *Accept:* `w3-01` passes `levels:test`.

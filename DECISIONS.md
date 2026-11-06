@@ -388,3 +388,27 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A27 found that the planned World 1 and 2 CI command silently skipped unbuilt World 2, CI omitted the Docker integration suite, and an HTTP 200 did not establish browser test readiness.
 - **Decision:** Reject each explicitly requested world with no levels and allow CI to assert an exact level count. Until M8, the levels job checks all 12 World 1 levels and runs the Docker integration suite using the same image build. At M8, require both worlds and 27 levels. Use the real Docker socket in integration test fixtures. Proxy the health route through Vite and require a valid health response with Docker ready. Use the gameplay Docker connection options for the health probe.
 - **Consequences:** An incomplete selection fails before Docker starts. Both live Chromium tests wait for the API and Docker using the same health contract.
+
+### D-044 — Validate release configuration and authored content before use
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** A29 found that world-list typos were silently ignored, sandbox overrides bypassed config or had no effect, and malformed level content could pass validation. Plan §12.3 previously specified one wrong solution for bosses, while the authoring checklist specifies two.
+- **Decision:** Validate each world token as a decimal ID from 1 to 5. A blank list explicitly disables every world, while an unset list defaults to Worlds 1 and 2. Deduplicate valid tokens. Pass validated sandbox overrides from server and CLI startup to the Docker provider. An explicit image override takes precedence over the level image. Validate skill references and cycles during loading and compile regex sources during schema validation. Align plan §12.3 with the authoring checklist for wrong solutions and require explain cards and cheatsheet entries in lint.
+- **Consequences:** Authors can keep static instructions and fixtures in levels with generators. Lint checks both setup file sources for answers it can identify from declarative checks. The Docker level matrix remains the behavioral check for seeded data and shell scripts.
+
+### D-045 — Share hint pricing and the effective Docker socket
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** A30 found that hint copy always showed the first-tier penalty and xterm loaded with the initial page. A27 already aligned Docker connection options, but an app-level socket override was still applied only to gameplay.
+- **Decision:** Share tier penalties between hint copy, hint delivery, and scoring. Load the Play page and xterm on demand. Resolve the Docker socket once for gameplay and the probe. Keep the existing `/healthz` response because HTTP 200 serves as liveness and consumers that need Docker check the `docker` field.
+- **Consequences:** Each tier advertises its own penalty and exhausted hints show no penalty. The landing page no longer downloads xterm on initial load. The health probe checks the same configured endpoint as gameplay, including named-pipe overrides.
+
+### D-046 — Keep operational docs at the repository root
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** A31 found that the plan and contributor docs pointed to a nonexistent `docs/` directory. The deployment guide also used the default migration path before defining a different service database.
+- **Decision:** Keep `deploy.md` and `loadtest.md` at their existing root paths and correct the references, including the paths in plan §§0, 3, and 15. Use one deployment environment file for service startup, migrations, and backups. Document World 1 and the base image as the current deployment scope.
+- **Consequences:** The operational docs describe the implemented app and preserve the planned M8 and M10 work. T9.2 and T9.3 still require a measured load run and a clean-VM deployment rehearsal.

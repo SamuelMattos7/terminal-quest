@@ -1,6 +1,7 @@
 import type { PublicLevel, ServerMessage } from '@terminal-quest/shared';
 import { create } from 'zustand';
 import { ApiError, api } from '../api/client.js';
+import { strings } from '../strings.js';
 import { SessionSocket, type SessionEvent } from './socket.js';
 
 export type SessionStatus = 'idle' | 'starting' | 'live' | 'reconnecting' | 'closed' | 'completed';
@@ -75,7 +76,7 @@ function toMessage(err: unknown): string {
   if (err instanceof ApiError) {
     return err.message;
   }
-  return 'Something went wrong.';
+  return strings.unexpectedError;
 }
 
 function initialProgress(): Pick<
@@ -136,9 +137,9 @@ function handleEvent(gen: number, event: SessionEvent): void {
       return;
     case 'closed':
       if (event.gaveUp) {
-        useSession.setState({ status: 'closed', closeReason: 'connection lost' });
+        useSession.setState({ status: 'closed', closeReason: strings.connectionLost });
       } else if (event.code === 4401 || event.code === 4403) {
-        useSession.setState({ status: 'closed', error: 'Session not authorized.' });
+        useSession.setState({ status: 'closed', error: strings.sessionUnauthorized });
       } else if (state.status !== 'closed' && state.status !== 'completed') {
         useSession.setState({ status: 'closed' });
       }

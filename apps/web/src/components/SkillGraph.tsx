@@ -80,7 +80,7 @@ export function SkillGraph({
   return (
     <svg
       role="img"
-      aria-label={`${skills.length} skills, ${mastered} mastered`}
+      aria-label={strings.skillsSummary(skills.length, mastered)}
       data-testid="skill-graph"
       width="100%"
       viewBox={`0 0 ${width} ${height}`}
@@ -101,7 +101,7 @@ export function SkillGraph({
           fontSize="12"
           fontFamily="'JetBrains Mono', monospace"
         >
-          {worldTitles.get(world) ?? `World ${world}`}
+          {worldTitles.get(world) ?? strings.worldFallback(world)}
         </text>
       ))}
       {edges.map((edge) => (

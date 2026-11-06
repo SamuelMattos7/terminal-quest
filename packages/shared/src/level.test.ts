@@ -59,4 +59,39 @@ describe('LevelSchema', () => {
   it('rejects a malformed level id', () => {
     expect(() => LevelSchema.parse(withOverrides({ id: 'level-one' }))).toThrow();
   });
+
+  it.each([
+    { coach: [{ when: { command_regex: '(' }, say: 'Try pwd' }] },
+    { forbidden_commands: ['['] },
+    {
+      objectives: [
+        {
+          id: 'nested',
+          text: 'Run pwd',
+          check: { type: 'all', checks: [{ type: 'command_used', regex: '[' }] },
+        },
+      ],
+    },
+    { sandbox: { image: 'bad image' } },
+    { setup: { files: [{ path: '/tmp/file', content: '', content_file: 'setup/data' }] } },
+    { setup: { files: [{ path: '/tmp/file' }] } },
+  ])('rejects invalid authoring input %j', (overrides) => {
+    expect(LevelSchema.safeParse(withOverrides(overrides)).success).toBe(false);
+  });
+
+  it('accepts a file-content pattern with a secret placeholder', () => {
+    expect(
+      LevelSchema.safeParse(
+        withOverrides({
+          objectives: [
+            {
+              id: 'report',
+              text: 'Write the report.',
+              check: { type: 'file_content', path: '/tmp/report', matches: '^{{secret:key}}{2}$' },
+            },
+          ],
+        }),
+      ).success,
+    ).toBe(true);
+  });
 });
