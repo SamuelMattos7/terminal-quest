@@ -404,3 +404,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A30 found that hint copy always showed the first-tier penalty and xterm loaded with the initial page. A27 already aligned Docker connection options, but an app-level socket override was still applied only to gameplay.
 - **Decision:** Share tier penalties between hint copy, hint delivery, and scoring. Load the Play page and xterm on demand. Resolve the Docker socket once for gameplay and the probe. Keep the existing `/healthz` response because HTTP 200 serves as liveness and consumers that need Docker check the `docker` field.
 - **Consequences:** Each tier advertises its own penalty and exhausted hints show no penalty. The landing page no longer downloads xterm on initial load. The health probe checks the same configured endpoint as gameplay, including named-pipe overrides.
+
+### D-046 — Keep operational docs at the repository root
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** A31 found that the plan and contributor docs pointed to a nonexistent `docs/` directory. The deployment guide also used the default migration path before defining a different service database.
+- **Decision:** Keep `deploy.md` and `loadtest.md` at their existing root paths and correct the references, including the paths in plan §§0, 3, and 15. Use one deployment environment file for service startup, migrations, and backups. Document World 1 and the base image as the current deployment scope.
+- **Consequences:** The operational docs describe the implemented app and preserve the planned M8 and M10 work. T9.2 and T9.3 still require a measured load run and a clean-VM deployment rehearsal.

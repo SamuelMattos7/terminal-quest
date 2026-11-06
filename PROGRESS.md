@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** Audit remediation: A01–A30 fixed. A31 is the next open audit finding. M8 is the next unfinished milestone (M5 gate green).
+**Current focus:** M8 is the next unfinished milestone (M5 gate green). A01–A31 repository remediation is complete. M9 target-environment validation remains open.
 
 ---
 
@@ -66,8 +66,8 @@ Single source of truth for build status. Tick a box only when the task's accepta
 ### M9 — Hardening & deploy
 
 - [ ] T9.1 Security checklist (`plan.md §13`) walked; waivers documented
-- [ ] T9.2 Load test run; results recorded in `docs/loadtest.md`
-- [ ] T9.3 `docs/deploy.md` verified end to end on a clean VM
+- [ ] T9.2 Run the 20-session load test on the target VM and record measurements in [loadtest.md](loadtest.md)
+- [ ] T9.3 Verify [deploy.md](deploy.md) end to end on a clean VM and record the results in its verification log
 
 ### M10 — Worlds 3–5
 
@@ -215,6 +215,7 @@ Each branch records its own regression and verification evidence. The milestone 
 - [x] A27 — run the Docker integration suite in CI, reject missing worlds and incomplete level counts, and require Docker readiness in Chromium. ✅ `pnpm verify`: 442 tests passed. Local `pnpm test:docker`: 78 passed, including the full World 1 socket progression. `pnpm e2e`: 3 passed. `pnpm levels:lint`: 12 levels, zero issues. The CI World 1 gate passed all 12 levels across three seeds, and `--world 1,2` exited 1 with a missing World 2 diagnostic. actionlint 1.7.7 accepted the workflow. The World 2 gate is scheduled for M8 (D-043).
 - [x] A29 — validate world lists and sandbox overrides, skill prerequisites and regexes, and level authoring rules (D-044). ✅ `pnpm verify`: 471 tests passed, including 29 added cases. `pnpm levels:lint`: 12 levels, zero issues. Regressions cover Docker create options, missing teaching materials, distinct wrong scripts, and detectable answer leaks in both inline and referenced seeded setup files.
 - [x] A30 — show the next hint penalty, centralize remaining client copy, lazy-load Play, and probe the effective gameplay Docker socket (D-045). ✅ `pnpm verify`: 476 tests passed. Regressions cover all hint tiers and exhaustion, the Play loading fallback, and Docker probe defaults, overrides, and liveness when Docker is unavailable. The production entry is about 269 kB and Play is about 315 kB, with no Vite chunk-size warning.
+- [x] A31 — reconcile progress, deployment, and load-test docs with the repository (D-046). ✅ `pnpm verify`: 476 tests passed. All 16 local Markdown links resolved and 14 Bash snippets passed syntax checks. Ran `pnpm db:migrate` twice against a fresh absolute `DB_PATH` and inspected the resulting schema. Clean-VM deployment and target-VM load testing remain T9.3 and T9.2.
 
 ## Known gaps
 
@@ -224,7 +225,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 | ---------- | ------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
 | 2026-10-06 | skills.yaml prereqs | W1 skill edges authored in M7; W2+ skills still have empty `prereqs` | Author remaining edges during M8 |
 | 2026-10-06 | cron daemon start   | `needs_cron` field present (default true); daemon start not implemented                 | Implement in T10.1 admin polish; no admin levels exist yet |
-| 2026-11-06 | Repository audit | 31 original prioritized findings. A01–A30 fixed with regressions (see Audit remediation above). Remaining documentation gaps are detailed in [PROJECT_AUDIT.md](PROJECT_AUDIT.md). | Resolve remaining findings alongside planned milestones and complete M9 production validation. |
+| 2026-11-06 | Production validation | T9.1 security review and waivers, T9.2 capacity/latency/cleanup measurements, and T9.3 clean-VM install, rootless limits, Caddy/TLS, backup/restore, and upgrade still need evidence. | Record security decisions and complete the checklists in [loadtest.md](loadtest.md) and [deploy.md](deploy.md). |
 
 ## Blockers
 
@@ -233,7 +234,3 @@ _What is blocked, what was tried, what was done instead._
 | Date | Task | Blocker | Tried | Workaround / next |
 | ---- | ---- | ------- | ----- | ----------------- |
 | —    | —    | —       | —     | —                 |
-
-## Notes
-
-- Documents that are templates until real work is done: `docs/loadtest.md` (needs an actual run, T9.2) and `docs/deploy.md` (needs verification on a clean VM, T9.3).

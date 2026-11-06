@@ -8,7 +8,7 @@
 ## 0. How to Use This Document (Agent Instructions)
 
 ### 0.1 Operating rules
-0. **Read `AGENTS.md` first** (how to work: commands, conventions, hard rules). `PROGRESS.md` and `DECISIONS.md` already exist in the repo root; update them as you go rather than recreating them. `docs/deploy.md` and `docs/loadtest.md` exist as a draft and a template; T9.3 and T9.2 finish them.
+0. **Read `AGENTS.md` first** (how to work: commands, conventions, hard rules). `PROGRESS.md` and `DECISIONS.md` already exist in the repo root; update them as you go rather than recreating them. `deploy.md` and `loadtest.md` exist as a draft and a template; T9.3 and T9.2 finish them.
 1. **Read the whole document first**, then start at Milestone M0 (§15) and proceed in order. Do not skip ahead.
 2. **Vertical slice first.** Get ONE level playable end-to-end (browser → terminal → sandbox → validation → completion screen) before building breadth (M5). Everything before M5 exists to support that slice.
 3. **Make decisions, don't ask.** If something is ambiguous, pick the simplest option that satisfies the acceptance criteria, and record it in `DECISIONS.md` (one short entry: context, decision, reason).
@@ -87,9 +87,8 @@ terminal-quest/
 ├─ AGENTS.md                    # working instructions for coding agents (read first)
 ├─ PROGRESS.md                  # build status checklist (milestones + per-level tracker)
 ├─ DECISIONS.md                 # decision log (pre-seeded D-001..D-010)
-├─ docs/
-│  ├─ deploy.md                 # draft deploy guide; verified in T9.3
-│  └─ loadtest.md               # template; filled in by T9.2
+├─ deploy.md                    # draft deploy guide; verified in T9.3
+├─ loadtest.md                  # template; filled in by T9.2
 ├─ docker-compose.yml           # dev helpers (sidecars, optional); see §14
 ├─ .github/workflows/ci.yml
 ├─ apps/
@@ -907,8 +906,8 @@ Each task: **do** → **acceptance** (verify before ticking in `PROGRESS.md`).
 
 ### M9 — Hardening & deploy
 - **T9.1** Walk the §13 checklist; add tests where feasible (origin check, ownership, DTO whitelist, rate limits). *Accept:* all boxes ticked or explicitly waived in `DECISIONS.md`.
-- **T9.2** Load test: 20 concurrent sessions on a 4-vCPU box with MAX_CONTAINERS=20; confirm 21st gets 429 and reaper keeps memory stable. *Accept:* short report in `docs/loadtest.md`.
-- **T9.3** Deploy docs (`docs/deploy.md`): rootless Docker, systemd unit, Caddyfile, backups. *Accept:* doc is followable end to end.
+- **T9.2** Load test: 20 concurrent sessions on a 4-vCPU box with MAX_CONTAINERS=20; confirm 21st gets 429 and reaper keeps memory stable. *Accept:* short report in `loadtest.md`.
+- **T9.3** Deploy docs (`deploy.md`): rootless Docker, systemd unit, Caddyfile, backups. *Accept:* doc is followable end to end.
 
 ### M10 — Infra for Worlds 3–5 and content
 - **T10.1** `admin` profile polish (sudo allow-list, cron daemon start, capabilities mapping). *Accept:* `w3-01` passes `levels:test`.

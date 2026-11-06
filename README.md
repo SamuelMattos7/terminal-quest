@@ -2,7 +2,7 @@
  
 **Learn the Linux command line by playing.** Type real commands in a real (sandboxed) shell, right in your browser, and complete story missions that take you from `ls` to cron jobs, shell scripts, and putting out a production fire.
  
-> **Status: pre-alpha, in active development.** The specification is complete (see [`plan.md`](plan.md)); implementation progress is tracked in [`PROGRESS.md`](PROGRESS.md). Quick start below works once milestones M0–M5 land.
+> **Status: pre-alpha, in active development.** The specification is complete (see [`plan.md`](plan.md)); implementation progress is tracked in [`PROGRESS.md`](PROGRESS.md). World 1 is playable. World 2 is the next milestone.
  
 ---
  
@@ -15,7 +15,7 @@ You're the new hire at **Penguin Corp**. Your mentor, the grumpy-but-caring **Tu
 - 🎲 **Randomized levels.** Answers change per attempt, so copy-pasting solutions from the internet doesn't work.
 - 💡 **Tiered hints.** Nudge → hint → near-solution, each with a small XP cost.
 - 🏆 **Progression.** XP, ranks (S/A/B/C), player levels, a skill tree, a personal "spellbook" cheat sheet, badges, streaks, and daily challenges.
-- 📈 **Noob to pro.** Five worlds, ~68 levels, with a boss fight at the end of each.
+- 📈 **Noob to pro.** The planned curriculum spans five worlds, each with a boss fight.
 ## The curriculum
  
 | World | Tier | You'll learn | Boss |
@@ -38,7 +38,7 @@ Fastify server ── Session manager ── Docker (one sandbox per attempt)
    └─ SQLite (progress, XP, skills, badges)
 ```
  
-Levels are plain YAML files plus a reference solution, so adding content doesn't require touching engine code. Every level is tested in CI: doing nothing must fail, known-wrong attempts must fail, and the reference solution must pass, across several random seeds.
+Levels are plain YAML files plus a reference solution, so adding content doesn't require touching engine code. CI tests all 12 World 1 levels across multiple seeds. For each seed, the baseline and known-wrong attempts must fail and the reference solution must pass.
  
 ## Quick start (development)
  
@@ -48,7 +48,7 @@ Levels are plain YAML files plus a reference solution, so adding content doesn't
 git clone <your-repo-url> terminal-quest
 cd terminal-quest
 pnpm i
-pnpm images:build     # build the sandbox images
+pnpm images:build     # build the tq-base sandbox image
 pnpm db:migrate       # create the SQLite database
 pnpm dev              # web on http://localhost:5173, API on :3001
 ```
@@ -71,9 +71,9 @@ apps/server             API, WebSocket, sandbox manager, level engine
 apps/web                React client with the terminal UI
 packages/shared         Shared zod schemas and types
 packages/levels         All game content (levels, skills, badges, coach rules)
-packages/sandbox-images Dockerfiles for the player sandbox and network sidecars
+packages/sandbox-images Dockerfile and helpers for the player sandbox
 tools/level-runner      Lint and test harness for levels
-docs/                   Deployment guide and load-test report
+deploy.md, loadtest.md  Deployment guide and load-test template
 ```
  
 ## Documentation
@@ -84,8 +84,8 @@ docs/                   Deployment guide and load-test report
 | [`AGENTS.md`](AGENTS.md) | Working instructions for AI coding agents (and a good contributor primer) |
 | [`PROGRESS.md`](PROGRESS.md) | Build status and level-by-level tracker |
 | [`DECISIONS.md`](DECISIONS.md) | Architecture decision log |
-| [`docs/deploy.md`](docs/deploy.md) | Deploying to a single VM (draft, pending verification) |
-| [`docs/loadtest.md`](docs/loadtest.md) | Load test procedure and results (template until the test is run) |
+| [`deploy.md`](deploy.md) | Deploying to a single VM (draft, pending verification) |
+| [`loadtest.md`](loadtest.md) | Load test procedure and results (template until the test is run) |
  
 ## Contributing
  
@@ -101,7 +101,7 @@ Good level rules of thumb: one mission, one story beat, at most two new ideas, c
  
 Players run arbitrary commands, so sandboxing matters:
  
-- Containers drop all capabilities, have CPU/memory/PID limits, and have **no network** unless a level needs it (and then only an internal, per-attempt network with no internet access).
+- Containers drop all capabilities, have CPU/memory/PID limits, and run with **no network**. Per-attempt LANs and sidecars are planned for T10.2.
 - Check logic and answers never reach the client.
-- For production, run Docker **rootless** or on a dedicated VM. See [`docs/deploy.md`](docs/deploy.md) and the checklist in `plan.md` §13.
+- For production, run Docker **rootless** or on a dedicated VM. See [`deploy.md`](deploy.md) and the checklist in `plan.md` §13.
 - Found a vulnerability? Please report it privately (add a `SECURITY.md` with contact details before going public).
