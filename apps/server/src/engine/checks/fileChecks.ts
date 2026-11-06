@@ -89,7 +89,16 @@ export async function checkFileContent(
   }
   if (check.lines_equal_unordered !== undefined) {
     const actual = content.split('\n').sort();
-    const expected = [...check.lines_equal_unordered].sort();
+    const expected: string[] = [];
+    for (const line of check.lines_equal_unordered) {
+      const resolved = await resolveSecrets(provider, handle, line, ctx);
+      if (resolved === undefined) {
+        return false;
+      }
+      // A secret can supply a manifest with one expected entry per line.
+      expected.push(...(resolved === line ? [line] : resolved.split('\n')));
+    }
+    expected.sort();
     return actual.length === expected.length && actual.every((line, i) => line === expected[i]);
   }
   return false;

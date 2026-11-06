@@ -1,0 +1,60 @@
+id: w2-03-find-by-name
+world: 2
+order: 3
+title: Seek and Find
+kind: lesson
+difficulty: 2
+estimated_minutes: 5
+story: |
+  Tux-9000: "Audit needs a list of our configuration files. They're scattered
+  under /etc/penguin, and someone took liberties with capital letters.
+  One directory even looks like a config file. Leave the originals in place.
+  I'll file the list."
+teaches: [find]
+par_commands: 2
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  generators:
+    - { script: setup/gen.sh }
+objectives:
+  - id: list-configs
+    text: 'Write the absolute path of every regular file ending in `.conf` (any capitalization) under `/etc/penguin` to `~/confs.txt`, one path per line.'
+    check:
+      type: all
+      checks:
+        - { type: file_exists, path: /home/player/confs.txt, kind: file }
+        - type: not
+          checks:
+            - { type: file_exists, path: /home/player/confs.txt, kind: symlink }
+        - type: file_content
+          path: /home/player/confs.txt
+          lines_equal_unordered: ['{{secret:conf_paths}}']
+hints:
+  - 'Search the whole tree. Check both the filename ending and whether the entry is a regular file.'
+  - '`find` searches recursively. Use `-type f` for regular files and `-iname` to match a name pattern regardless of case.'
+  - "Try `find /etc/penguin -type f -iname '*.conf' > ~/confs.txt`. The quotes pass the pattern to find, and > saves the output."
+explain:
+  - command: "find /etc/penguin -type f -name '*.conf'"
+    parts:
+      - { token: 'find /etc/penguin', meaning: 'walk the tree from this absolute path' }
+      - { token: '-type f', meaning: 'include regular files only' }
+      - {
+          token: "-name '*.conf'",
+          meaning: 'match lowercase .conf endings and pass the quoted pattern to find',
+        }
+  - command: "find /etc/penguin -type f -iname '*.conf' > ~/confs.txt"
+    parts:
+      - { token: "-iname '*.conf'", meaning: 'match the extension regardless of capitalization' }
+      - {
+          token: '> ~/confs.txt',
+          meaning: 'save the paths in a file in your home directory, replacing previous output',
+        }
+cheatsheet:
+  - skill: find
+    syntax: "find START -type f -name 'PATTERN'"
+    note: 'Search recursively. Quote the pattern so find receives it. Use -iname for case-insensitive matching.'
+success_message: 'All configs accounted for. Even the ones that insisted on capitals.'
+solutions:
+  reference: solution.sh
+  wrong: [wrong/case-sensitive.sh, wrong/includes-directories.sh, wrong/link-to-manifest.sh]

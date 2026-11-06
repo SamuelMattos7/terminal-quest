@@ -428,3 +428,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** The curriculum calls for twelve month directories and three draft files. The exercise needs a clear workspace and fixed names to teach zero padding and comma-separated choices.
 - **Decision:** Start with an empty `drafts/` and put both groups directly inside it. Check the exact listing and each entry's type. Teach the two Bash forms and accept any commands that create the requested layout.
 - **Consequences:** Unpadded names, swapped entry types, and extra entries keep the level incomplete. The three-seed matrix exercises the same published calendar and form names in fresh sandboxes.
+
+### D-049 — Compare seeded search results against a protected manifest
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** Seek and Find requires a seed-dependent answer and an unordered comparison. The plan permits secret references in file-content values, but the unordered comparison previously treated every entry as literal.
+- **Decision:** Resolve secret references in unordered expectations and treat a multi-line manifest as one expected entry per line. Generate three to five config files under a root-owned tree with mixed-case suffixes and a directory decoy. Put the expected paths in a mode-600 manifest.
+- **Consequences:** Players can submit any ordering of the exact paths. Duplicate paths, missing paths, and directory matches fail the check. The submission must be a regular file, which prevents a direct symlink to the protected manifest from passing.

@@ -115,7 +115,7 @@
   title: 'find'
   group: searching
   world: 2
-  prereqs: []
+  prereqs: [paths, globs]
 - id: grep
   title: 'grep'
   group: searching
