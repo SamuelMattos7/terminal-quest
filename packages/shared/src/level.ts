@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CheckSchema } from './checks.js';
+import { DockerImageSchema, regexSource } from './validation.js';
 
 // Full `level.yaml` schema for plan.md §8.1. Structural rules from §12.3
 // (exactly 3 hints, story ≤ 80 words, title ≤ 40 chars, teaches ≤ 3) live
@@ -14,7 +15,7 @@ const SandboxSchema = z
     profile: z.enum(['basic', 'admin']).default('basic'),
     network: z.enum(['none', 'lan']).default('none'),
     sidecars: z.array(z.enum(['web', 'ssh', 'dns'])).default([]),
-    image: z.string().min(1).default('tq-base'),
+    image: DockerImageSchema.default('tq-base'),
     start_cwd: z.string().min(1).regex(/^\//, 'must be an absolute path').default('/home/player'),
     resources: z
       .object({
@@ -54,7 +55,11 @@ const SetupFileSchema = z
     content: z.string().optional(),
     content_file: z.string().min(1).optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (file) => (file.content === undefined) !== (file.content_file === undefined),
+    'setup file needs exactly one of content, content_file',
+  );
 
 const SetupGeneratorSchema = z
   .object({
@@ -88,7 +93,7 @@ export const CoachRuleSchema = z
     when: z
       .object({
         exit_code: z.number().int().min(0).max(255).optional(),
-        command_regex: z.string().min(1).optional(),
+        command_regex: regexSource().optional(),
       })
       .strict()
       .superRefine((v, ctx) => {
@@ -159,7 +164,7 @@ export const LevelSchema = z
     explain: z.array(ExplainCardSchema).default([]),
     cheatsheet: z.array(CheatsheetEntrySchema).default([]),
     success_message: z.string().min(1),
-    forbidden_commands: z.array(z.string().min(1)).default([]),
+    forbidden_commands: z.array(regexSource()).default([]),
     daily_eligible: z.boolean().optional(),
     solutions: SolutionsSchema,
   })

@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { DockerProvider } from './dockerProvider.js';
 import { CapacityError, SessionManager } from './sessionManager.js';
 import type { DockerClient, SandboxSpec } from './provider.js';
+import { loadConfig } from '../config.js';
 
 const spec: SandboxSpec = {
   attemptId: 'a05',
@@ -18,7 +19,7 @@ const spec: SandboxSpec = {
   env: {},
 };
 
-function setup() {
+function setup(overrides?: { image?: string | undefined; runtime?: string | undefined }) {
   const stream = new PassThrough();
   const exec = { start: vi.fn(async () => stream), resize: vi.fn(async () => undefined) };
   const container = {
@@ -33,10 +34,46 @@ function setup() {
     createContainer: vi.fn(async () => container),
     getContainer: vi.fn(() => container),
   } as unknown as DockerClient;
-  const provider = new DockerProvider({ client });
+  const provider = new DockerProvider({ client, ...overrides });
   const manager = new SessionManager({ provider, maxContainers: 1, idleTtlMs: 100, maxAgeMs: 200 });
-  return { stream, exec, container, provider, manager };
+  return { stream, exec, container, provider, manager, client };
 }
+
+describe('Docker sandbox configuration', () => {
+  it('passes validated image and runtime overrides without changing isolation', async () => {
+    const config = loadConfig({
+      SANDBOX_IMAGE: 'registry.example:5000/tq/base:release',
+      SANDBOX_RUNTIME: 'io.containerd.runsc.v1',
+    });
+    const { provider, client } = setup({
+      image: config.SANDBOX_IMAGE,
+      runtime: config.SANDBOX_RUNTIME,
+    });
+    await provider.create(spec);
+    expect(client.createContainer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        Image: config.SANDBOX_IMAGE,
+        HostConfig: expect.objectContaining({
+          Runtime: config.SANDBOX_RUNTIME,
+          CapDrop: ['ALL'],
+          NetworkMode: 'none',
+          SecurityOpt: ['no-new-privileges'],
+        }),
+      }),
+    );
+  });
+
+  it('uses the level image and Docker default runtime without overrides', async () => {
+    const { provider, client } = setup();
+    await provider.create({ ...spec, image: 'tq-custom' });
+    expect(client.createContainer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        Image: 'tq-custom',
+        HostConfig: expect.not.objectContaining({ Runtime: expect.anything() }),
+      }),
+    );
+  });
+});
 
 describe('Docker resource acquisition cleanup (A05)', () => {
   it('immediately removes a container whose start failed and preserves the start error', async () => {

@@ -4,3 +4,4 @@ export * from './level.js';
 export * from './protocol.js';
 export * from './skills.js';
 export * from './limits.js';
+export { SandboxEnvSchema } from './validation.js';

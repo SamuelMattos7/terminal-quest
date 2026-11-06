@@ -77,6 +77,29 @@ function defaultLevel(
 }
 
 describe('loadLevels', () => {
+  it('rejects duplicate skills, missing prerequisites and prerequisite cycles together', () => {
+    const skill = { title: 'Skill', group: 'navigation', world: 1 };
+    const root = makeTree({
+      skills: [
+        { ...skill, id: 'pwd', prereqs: ['ls', 'ls', 'missing'] },
+        { ...skill, id: 'ls', prereqs: ['pwd'] },
+        { ...skill, id: 'pwd' },
+      ],
+    });
+    expect(() => loadLevels(root)).toThrow(
+      /skills\.yaml:[\s\S]*duplicate skill id 'pwd'[\s\S]*duplicate prerequisites[\s\S]*cycle: pwd -> ls -> pwd[\s\S]*unknown prerequisite 'missing'/,
+    );
+  });
+
+  it('reports an invalid skill detection pattern in skills.yaml', () => {
+    const root = makeTree({
+      skills: [{ id: 'pwd', title: 'pwd', group: 'navigation', world: 1, detect: '[' }],
+    });
+    expect(() => loadLevels(root)).toThrow(
+      /skills\.yaml:[\s\S]*0\.detect: invalid regular expression/,
+    );
+  });
+
   it('loads a valid tree and builds indexes', () => {
     const loaded = loadLevels(makeTree());
     expect(loaded.levels).toHaveLength(2);

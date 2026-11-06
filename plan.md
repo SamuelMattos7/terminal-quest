@@ -797,11 +797,13 @@ Loads all `level.yaml` at server start, validates with zod, builds indexes: by i
 Turns `setup` into: (1) a list of tar entries for `putFiles` (files, `content_file`, `checks/*` into `/opt/tq/checks/<levelId>/`, generator scripts into `/opt/tq/gen/`); (2) a root-run script executed with `bash -e`: create dirs → set owners/modes → run generators (`TQ_SEED`) → run `commands` → write `rc_extra` to `/home/player/.bashrc` (create if missing; chown player) → create `/run/tq/{cmdlog,inbox}` (0622) and `/opt/tq/secret` → start cron if profile `admin` and level declares `needs_cron: true` (default true for admin).
 
 ### 12.3 `levels:lint` rules (beyond schema)
+**2026-11-06 (A29, D-044):** Require explain cards, cheatsheet entries, and distinct wrong solutions. Check both setup file sources for seeded answers.
+
 - `id` matches directory; `order` unique and contiguous within a world.
 - Exactly 3 hints; story ≤ 80 words; ≤ 4 non-bonus objectives (bosses ≤ 8); ≥1 non-optional objective.
-- Every `teaches` skill exists; every `exec.script`/`content_file`/generator path exists.
-- Every level has `solutions.reference`; boss levels have ≥ 1 `wrong` solution.
-- No check references answers in `setup.files.content` plaintext when `seeded` generators exist (answers must come from `secret`).
+- Every `teaches` skill exists. Referenced scripts and content files exist inside the level directory.
+- Every level has at least one explain card, one cheatsheet entry, a reference solution, and at least one distinct wrong solution. Bosses have at least two distinct wrong solutions.
+- For levels with generators, lint checks inline and referenced setup files for plaintext answers identifiable from objective checks. Generate seeded answers under `/opt/tq/secret`.
 - `levels:lint` must run in < 5 s for the whole content tree.
 
 ### 12.4 `levels:test` (the content test harness, `tools/level-runner`)

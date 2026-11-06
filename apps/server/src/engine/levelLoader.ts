@@ -50,6 +50,42 @@ function readYamlFile(file: string, entries: LevelLoadEntry[]): unknown | undefi
   }
 }
 
+function skillGraphIssues(skills: Map<string, Skill>): string[] {
+  const issues: string[] = [];
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+
+  function visit(skill: Skill): void {
+    if (visiting.has(skill.id)) {
+      issues.push(`skill prerequisite cycle: ${[...visiting, skill.id].join(' -> ')}`);
+      return;
+    }
+    if (visited.has(skill.id)) {
+      return;
+    }
+    visiting.add(skill.id);
+    const prereqs = new Set(skill.prereqs);
+    if (prereqs.size !== skill.prereqs.length) {
+      issues.push(`skill '${skill.id}' has duplicate prerequisites`);
+    }
+    for (const id of prereqs) {
+      const prereq = skills.get(id);
+      if (prereq === undefined) {
+        issues.push(`skill '${skill.id}' has unknown prerequisite '${id}'`);
+      } else {
+        visit(prereq);
+      }
+    }
+    visiting.delete(skill.id);
+    visited.add(skill.id);
+  }
+
+  for (const skill of skills.values()) {
+    visit(skill);
+  }
+  return issues;
+}
+
 export function loadLevels(contentRoot: string): LoadedLevels {
   const entries: LevelLoadEntry[] = [];
   const levels: Level[] = [];
@@ -64,8 +100,17 @@ export function loadLevels(contentRoot: string): LoadedLevels {
     if (!parsed.success) {
       entries.push({ file: skillsFile, issues: formatIssues(parsed.error) });
     } else {
-      for (const s of parsed.data) {
-        skills.set(s.id, s);
+      const issues: string[] = [];
+      for (const skill of parsed.data) {
+        if (skills.has(skill.id)) {
+          issues.push(`duplicate skill id '${skill.id}'`);
+        } else {
+          skills.set(skill.id, skill);
+        }
+      }
+      issues.push(...skillGraphIssues(skills));
+      if (issues.length > 0) {
+        entries.push({ file: skillsFile, issues });
       }
     }
   }
