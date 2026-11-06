@@ -1,0 +1,74 @@
+id: w2-12-umask-recursive
+world: 2
+order: 12
+title: Mask & Recurse
+kind: lesson
+difficulty: 3
+estimated_minutes: 7
+story: |
+  Tux-9000: "Set a safer default before making the new handoff note.
+  The old archive needs a separate repair. Its directories should be
+  traversable, and its documents should be readable without being
+  executable. Keep the archive entries where they are."
+teaches: [umask, chmod]
+par_commands: 4
+xp: 60
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  dirs:
+    - { path: /home/player/archive, mode: '777' }
+    - { path: /home/player/archive/reports, mode: '777' }
+    - { path: /home/player/archive/reports/2025, mode: '777' }
+  files:
+    - { path: /home/player/archive/README, mode: '666', content: "Archive index\n" }
+    - { path: /home/player/archive/reports/.index, mode: '666', content: "2025\n" }
+    - {
+        path: /home/player/archive/reports/2025/summary.txt,
+        mode: '666',
+        content: "Yearly summary\n",
+      }
+objectives:
+  - id: create-masked-file
+    text: 'Set your shell umask so a new regular file gets mode 640, then create `new.txt` in your home directory.'
+    check:
+      type: all
+      checks:
+        - { type: file_exists, path: /home/player/new.txt, kind: file }
+        - { type: file_mode, path: /home/player/new.txt, mode: '640' }
+  - id: repair-archive
+    text: 'Keep the archive entries in place and set every directory in `archive/` to mode 755 and every regular file to 644, including hidden entries.'
+    check: { type: exec, script: checks/verify-tree.sh, expect_exit: 0 }
+hints:
+  - 'A umask removes permissions during creation. Existing entries need a separate repair. Directories use execute permission to allow traversal.'
+  - 'Use `umask 027` before creating the note. In a symbolic chmod mode, uppercase `X` grants execute on directories and on files that already have an execute bit.'
+  - 'Run `umask 027`, then `touch new.txt`. With the original archive modes, `chmod -R a=rX,u+w archive` repairs the whole tree. Check with `stat -c "%a %n" new.txt archive archive/README`.'
+explain:
+  - command: 'umask 027'
+    parts:
+      - { token: '027', meaning: 'clear group write and all other-user bits on creation' }
+  - command: 'chmod -R a=rX,u+w archive'
+    parts:
+      - { token: '-R', meaning: 'apply the mode throughout the tree, including hidden entries' }
+      - {
+          token: 'a=rX,u+w',
+          meaning: 'set read access for all, add traversal to directories, keep existing executability, and add owner write',
+        }
+  - command: 'stat -c "%a %n" new.txt archive archive/README'
+    parts:
+      - { token: '%a %n', meaning: 'print the octal permission bits and entry name' }
+cheatsheet:
+  - { skill: umask, syntax: 'umask 027', note: 'Create ordinary files with mode 640.' }
+  - {
+      skill: chmod,
+      syntax: 'chmod -R a=rX,u+w DIR',
+      note: 'Set tree modes with conditional execute.',
+    }
+  - {
+      skill: chmod,
+      syntax: 'stat -c "%a %n" FILE',
+      note: 'Show the octal mode alongside the name.',
+    }
+success_message: 'The new note is restricted and the archive is traversable again.'
+solutions:
+  reference: solution.sh
+  wrong: [wrong/umask-too-late.sh, wrong/uniform-mode.sh, wrong/skip-hidden.sh]

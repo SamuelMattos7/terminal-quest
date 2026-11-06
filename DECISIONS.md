@@ -452,3 +452,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** Levels 07–09 teach deduplication, separate output streams, and numeric ranking. The checks need observable outputs that distinguish common mistakes from valid solutions.
 - **Decision:** Repeat seeded IP addresses across groups of requests so unsorted deduplication fails. Use a fixed service listing, handoff note, and failed lookup for the redirection exercise. Interleave seeded HTTP statuses with distinct counts, including a two-digit leader, and require one space between the count and code.
 - **Consequences:** The checks accept any commands that produce the requested output. The wrong scripts cover skipped grouping, overwritten output, the wrong stream, lexical ranking, and padded counts.
+
+### D-052 — Verify release links, permission bits, and archive modes
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** World 2 lessons 10–12 introduce file identification, symbolic links, permission changes, and creation masks.
+- **Decision:** Rotate three MIME types under one misleading filename and store the expected type in a mode-600 secret. Require mode 744 on the deploy script so the exercise preserves the original group and other permissions. Teach umask through the observable mode of the newly created regular file. Include a hidden file and nested directories in the archive, and check that the original paths exist and every entry has the required mode for its type.
+- **Consequences:** The Docker matrix covers all three MIME fixtures. The new-file check accepts the requested mode regardless of the commands used. A uniform recursive mode and a repair that skips hidden files both leave the archive incomplete.

@@ -114,9 +114,9 @@ Columns: **A** = authored (level.yaml, setup, solution, wrong, hints, explain) �
 | w2-07-pipes                | [x] | [x] | [x] |
 | w2-08-redirection          | [x] | [x] | [x] |
 | w2-09-text-tools           | [x] | [x] | [x] |
-| w2-10-links-and-types      | [ ] | [ ] | [ ] |
-| w2-11-permissions          | [ ] | [ ] | [ ] |
-| w2-12-umask-recursive      | [ ] | [ ] | [ ] |
+| w2-10-links-and-types      | [x] | [x] | [x] |
+| w2-11-permissions          | [x] | [x] | [x] |
+| w2-12-umask-recursive      | [x] | [x] | [x] |
 | w2-13-nano                 | [ ] | [ ] | [ ] |
 | w2-14-vim-survival         | [ ] | [ ] | [ ] |
 | w2-15-boss-log-detective   | [ ] | [ ] | [ ] |
@@ -135,6 +135,12 @@ Batch verification for w2-04 through w2-06 passed `pnpm levels:lint` (18 levels,
 - **w2-09-text-tools** ✅ `pnpm levels:test --level w2-09-text-tools --seeds 3` passed all 15 cases. The baseline, lexical ranking, skipped grouping, and padded output stayed incomplete.
 
 Batch verification for w2-07 through w2-09 passed `pnpm levels:lint` (21 levels, zero problems) and `pnpm verify` (476 tests).
+
+- **w2-10-links-and-types** ✅ `pnpm levels:test --level w2-10-links-and-types --seeds 3` passed all 12 Docker cases. The reference completed for gzip, GIF, and plain text. The baseline, copied release directory, and guessed MIME type stayed incomplete.
+- **w2-11-permissions** ✅ `pnpm levels:test --level w2-11-permissions --seeds 3` passed all 12 Docker cases. The reference completed on every seed. The baseline, execute permission for everyone, and publicly readable note stayed incomplete.
+- **w2-12-umask-recursive** ✅ `pnpm levels:test --level w2-12-umask-recursive --seeds 3` passed all 15 Docker cases. The reference completed on every seed. The baseline, late umask, uniform recursive mode, and skipped hidden file stayed incomplete.
+
+Batch verification for w2-10 through w2-12 passed `pnpm levels:lint` (24 levels, zero problems) and `pnpm verify` (476 tests).
 
 ### World 3 — The Engine Room
 
