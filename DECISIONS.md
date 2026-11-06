@@ -444,3 +444,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** Levels 04–06 teach search by file attributes, filtering text, and matching a whole line across nested files. Each needs fixtures that expose common mistakes.
 - **Decision:** Use fixed cache entries and a file aged seven days and one hour to demonstrate how `find -mtime` rounds down. Check that the retained files and directories still exist. Seed the grep exercises and keep the expected count, filtered config, and leaked filename in mode-600 files. Match the config output exactly and require a regular output file. For the key exercise, accept the filename with its extension and make recursive grep a bonus.
 - **Consequences:** Wrong scripts exercise the age boundary, accidental directory deletion, case-sensitive counts, overbroad text filters, missing regex anchors, and submitting the full path. Required checks accept solutions based on the resulting files and submitted answers.
+
+### D-051 — Use log fixtures that expose pipeline mistakes
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** Levels 07–09 teach deduplication, separate output streams, and numeric ranking. The checks need observable outputs that distinguish common mistakes from valid solutions.
+- **Decision:** Repeat seeded IP addresses across groups of requests so unsorted deduplication fails. Use a fixed service listing, handoff note, and failed lookup for the redirection exercise. Interleave seeded HTTP statuses with distinct counts, including a two-digit leader, and require one space between the count and code.
+- **Consequences:** The checks accept any commands that produce the requested output. The wrong scripts cover skipped grouping, overwritten output, the wrong stream, lexical ranking, and padded counts.

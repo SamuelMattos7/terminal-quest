@@ -1,0 +1,78 @@
+id: w2-09-text-tools
+world: 2
+order: 9
+title: Text Surgery
+kind: lesson
+difficulty: 3
+estimated_minutes: 7
+story: |
+  Tux-9000: "The gateway sent us a pile of requests. Each line contains
+  an IP address, an HTTP status code, and a path, separated by vertical
+  bars. Send Operations the three most frequent codes so they can decide
+  where to look first."
+teaches: [cut-tr, sort-uniq, head-tail]
+par_commands: 4
+xp: 60
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  generators:
+    - { script: setup/gen.sh }
+objectives:
+  - id: rank-status-codes
+    text: 'Write the three most frequent HTTP status codes from `access.log` to `top3.txt`, highest count first. Use one `count code` pair per line with a single space and no padding.'
+    check:
+      type: all
+      checks:
+        - { type: file_exists, path: /home/player/top3.txt, kind: file }
+        - type: not
+          checks:
+            - { type: file_exists, path: /home/player/top3.txt, kind: symlink }
+        - type: file_content
+          path: /home/player/top3.txt
+          trim: false
+          equals: "{{secret:top3}}\n"
+hints:
+  - 'Look at the second field. Collect the codes first, then group identical codes so you can count each group.'
+  - "Start with `cut -d '|' -f 2 access.log | sort | uniq -c`. Rank by the first field with `sort -nr -k 1,1` and take the first three rows with `head -n 3`."
+  - "The count rows are padded. After `head -n 3`, pipe through `tr -s ' ' | cut -c 2-` to squeeze spaces and remove the first space, then redirect to `top3.txt`."
+explain:
+  - command: "cut -d '|' -f 2 access.log | sort | uniq -c"
+    parts:
+      - {
+          token: "-d '|' -f 2",
+          meaning: 'select the second field using a literal vertical bar as the delimiter',
+        }
+      - { token: 'sort | uniq -c', meaning: 'group equal codes and count each group' }
+  - command: "sort -nr -k 1,1 | head -n 3 | tr -s ' ' | cut -c 2-"
+    parts:
+      - {
+          token: '-nr -k 1,1',
+          meaning: 'sort numerically from largest to smallest using only field one',
+        }
+      - { token: 'head -n 3', meaning: 'keep the first three lines' }
+      - { token: "tr -s ' '", meaning: 'collapse every run of spaces to one space' }
+      - {
+          token: 'cut -c 2-',
+          meaning: 'keep characters from position two onward to remove the leading space',
+        }
+cheatsheet:
+  - {
+      skill: cut-tr,
+      syntax: "cut -d '|' -f 2 FILE",
+      note: 'Extract field two from bar-separated lines.',
+    }
+  - {
+      skill: cut-tr,
+      syntax: "tr -s ' ' | cut -c 2-",
+      note: 'Squeeze repeated spaces and drop a known leading space.',
+    }
+  - {
+      skill: sort-uniq,
+      syntax: 'sort | uniq -c | sort -nr -k 1,1',
+      note: 'Count repeated lines and rank by numeric count.',
+    }
+  - { skill: head-tail, syntax: 'head -n 3 FILE', note: 'Print the first three lines.' }
+success_message: 'Top three received. Operations knows where to start.'
+solutions:
+  reference: solution.sh
+  wrong: [wrong/text-sort.sh, wrong/skip-grouping.sh, wrong/keep-padding.sh]

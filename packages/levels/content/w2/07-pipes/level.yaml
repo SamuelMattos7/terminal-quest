@@ -1,0 +1,41 @@
+id: w2-07-pipes
+world: 2
+order: 7
+title: Pipe Dreams
+kind: lesson
+difficulty: 2
+estimated_minutes: 5
+story: |
+  Tux-9000: "The gateway logged every request. Operations wants to know
+  how many different IP addresses reached it. Feed each tool's output
+  into the next and send me the final count."
+teaches: [pipes, sort-uniq]
+par_commands: 3
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  generators:
+    - { script: setup/gen.sh }
+objectives:
+  - id: count-unique-ips
+    text: 'Count the distinct IP addresses in the first field of `access.log` and submit the number with `tux submit`.'
+    check: { type: answer_equals, from_file: /opt/tq/secret/unique_ips }
+hints:
+  - 'Each line is one request. An address can appear on several lines, with other addresses between those lines.'
+  - "Use `cut -d ' ' -f 1 access.log` to print the first field. Pipe the addresses through `sort` so equal addresses become neighbors."
+  - "Run `cut -d ' ' -f 1 access.log | sort | uniq | wc -l`, then submit the printed number."
+explain:
+  - command: "cut -d ' ' -f 1 access.log | sort | uniq | wc -l"
+    parts:
+      - { token: "cut -d ' ' -f 1", meaning: 'extract the IP address from each request' }
+      - { token: '|', meaning: 'send standard output to the next command as standard input' }
+      - { token: sort, meaning: 'group equal addresses next to each other' }
+      - { token: uniq, meaning: 'emit one line for each adjacent group of equal addresses' }
+      - { token: 'wc -l', meaning: 'count the remaining lines' }
+cheatsheet:
+  - { skill: pipes, syntax: 'COMMAND | wc -l', note: 'Count lines emitted by another command.' }
+  - { skill: sort-uniq, syntax: 'sort | uniq', note: 'Group and remove repeated input lines.' }
+success_message: 'Distinct addresses counted. The gateway can keep its chatty log.'
+solutions:
+  reference: solution.sh
+  wrong: [wrong/count-requests.sh, wrong/skip-sort.sh]

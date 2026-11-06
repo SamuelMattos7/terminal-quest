@@ -111,9 +111,9 @@ Columns: **A** = authored (level.yaml, setup, solution, wrong, hints, explain) �
 | w2-04-find-by-attrs        | [x] | [x] | [x] |
 | w2-05-grep-basics          | [x] | [x] | [x] |
 | w2-06-grep-recursive-regex | [x] | [x] | [x] |
-| w2-07-pipes                | [ ] | [ ] | [ ] |
-| w2-08-redirection          | [ ] | [ ] | [ ] |
-| w2-09-text-tools           | [ ] | [ ] | [ ] |
+| w2-07-pipes                | [x] | [x] | [x] |
+| w2-08-redirection          | [x] | [x] | [x] |
+| w2-09-text-tools           | [x] | [x] | [x] |
 | w2-10-links-and-types      | [ ] | [ ] | [ ] |
 | w2-11-permissions          | [ ] | [ ] | [ ] |
 | w2-12-umask-recursive      | [ ] | [ ] | [ ] |
@@ -129,6 +129,12 @@ Columns: **A** = authored (level.yaml, setup, solution, wrong, hints, explain) �
 - **w2-06-grep-recursive-regex** ✅ `pnpm levels:test --level w2-06-grep-recursive-regex --seeds 3` passed all 15 cases. The reference earned the recursive grep bonus on every seed. The baseline, unanchored match, full path submission, and prefix-only match stayed incomplete.
 
 Batch verification for w2-04 through w2-06 passed `pnpm levels:lint` (18 levels, zero problems) and `pnpm verify` (476 tests).
+
+- **w2-07-pipes** ✅ `pnpm levels:test --level w2-07-pipes --seeds 3` passed all 12 cases. The baseline, request count, and deduplication without sorting stayed incomplete.
+- **w2-08-redirection** ✅ `pnpm levels:test --level w2-08-redirection --seeds 3` passed all 12 cases. The baseline, overwritten report, and stdout-only capture stayed incomplete.
+- **w2-09-text-tools** ✅ `pnpm levels:test --level w2-09-text-tools --seeds 3` passed all 15 cases. The baseline, lexical ranking, skipped grouping, and padded output stayed incomplete.
+
+Batch verification for w2-07 through w2-09 passed `pnpm levels:lint` (21 levels, zero problems) and `pnpm verify` (476 tests).
 
 ### World 3 — The Engine Room
 
