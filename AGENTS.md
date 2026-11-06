@@ -39,9 +39,9 @@ apps/server            Fastify API + WebSocket + sandbox manager + level engine
 apps/web               React + Vite client (xterm.js terminal)
 packages/shared        zod schemas & types shared by server and web (protocol, level, checks, api)
 packages/levels        ALL game content: skills.yaml, badges.yaml, coach.yaml, content/w<N>/<NN>-<slug>/
-packages/sandbox-images Dockerfiles for tq-base and sidecars (web, ssh, dns)
+packages/sandbox-images Dockerfile and helpers for tq-base
 tools/level-runner     CLI behind `levels:lint` and `levels:test`
-docs/                  deploy.md, loadtest.md
+deploy.md, loadtest.md Deployment guide and load-test template
 ```
 
 ## 5. Coding conventions
@@ -123,4 +123,4 @@ docs/                  deploy.md, loadtest.md
 | What are the sandbox security flags? | `plan.md §7.3`, §13 |
 | How is XP/rank computed? | `plan.md §10`, `apps/server/src/engine/scoring.ts` |
 | What content is needed next? | `plan.md §11.3`, `PROGRESS.md` content tables |
-| How do I deploy? | `docs/deploy.md` |
+| How do I deploy? | `deploy.md` |

@@ -1,23 +1,23 @@
 # Deploying Terminal Quest (single VM)
 
-> **Status: DRAFT.** Written from the plan; it has **not** been verified on a clean machine. Task T9.3 is complete only when someone follows this document end to end on a fresh VM and fixes every wrong step. Record corrections in the "Verification log" at the bottom.
+> **Status: DRAFT.** Reviewed against the current repository. Clean-VM verification is pending under T9.3. Record the outcome and any corrections in the verification log.
 
 ## 1. Overview
 
-One VM runs:
+The VM runs these services.
+
 - **Caddy** (TLS, reverse proxy) → public `:443`
-- **Terminal Quest server** (Node 22; serves the built web app, REST API, WebSocket) on `127.0.0.1:3001`
+- **Terminal Quest server** on `127.0.0.1:3001`. Node 24 matches CI and serves the built web app, REST API, and WebSocket.
 - **Rootless Docker** (sandbox containers for players) running under a dedicated unprivileged user
 - **SQLite** database file with nightly backups
 
-Why rootless Docker: the server controls Docker, which is otherwise root-equivalent on the host. Rootless limits the blast radius of a sandbox escape to an unprivileged user.
+The server controls Docker. Running Docker as an unprivileged user limits the host privileges available to the daemon and sandboxes.
 
 ## 2. Requirements
 
-- Debian 12 or Ubuntu 22.04/24.04, 4 vCPU / 8 GB RAM minimum for ~20 concurrent sandboxes (see `docs/loadtest.md`)
+- Debian 12 or Ubuntu 22.04/24.04 and cgroup v2. The 4 vCPU / 8 GB target for 20 concurrent sandboxes is pending measurement in T9.2. [Load test procedure](loadtest.md)
 - A DNS name pointing to the VM (e.g. `quest.example.com`)
 - Ports 80 and 443 open; nothing else needed publicly
-- cgroup v2 (default on the OSes above)
 
 ## 3. Create the service user
 
@@ -30,10 +30,9 @@ sudo loginctl enable-linger tq          # lets the user's services run without a
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y uidmap dbus-user-session slirp4netns fuse-overlayfs curl ca-certificates
+sudo apt-get install -y uidmap dbus-user-session slirp4netns fuse-overlayfs curl ca-certificates git sqlite3
 # Install Docker Engine packages per https://docs.docker.com/engine/install/ (docker-ce, docker-ce-cli, containerd.io, docker-ce-rootless-extras)
 sudo systemctl disable --now docker.service docker.socket   # stop the rootful daemon
-sudo -iu tq dockerd-rootless-setuptool.sh install
 ```
 
 Enable cgroup v2 delegation so memory/CPU/PID limits work in rootless mode:
@@ -47,32 +46,37 @@ sudo systemctl daemon-reload
 sudo systemctl restart user@$(id -u tq).service
 ```
 
-Verify as `tq` (use `sudo -iu tq`):
+Enter a login shell with `sudo -iu tq`, then install and verify rootless Docker:
 ```bash
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
+export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+dockerd-rootless-setuptool.sh install
 systemctl --user enable --now docker
+docker context use rootless
 docker info | grep -Ei 'rootless|cgroup'
-docker run --rm --memory 64m --pids-limit 32 alpine sh -c 'echo ok'
+docker run --rm --cpus 0.5 --memory 64m --pids-limit 32 alpine sh -c 'echo ok'
 ```
 The socket will be at `/run/user/<tq-uid>/docker.sock` — you'll use this as `DOCKER_SOCKET`.
 
-> Rootless caveats: some capabilities (e.g. `NET_ADMIN` in sandboxes for World 5) work only inside the user namespace; level tests in CI should run the same way the production host does. Ports below 1024 aren't needed for sandboxes.
+Confirm the security options list `rootless`, the cgroup version is 2, and Docker reports no warnings about missing CPU, memory, or PID limits. Keep the rootless context selected for image builds and operations. [Docker rootless setup](https://docs.docker.com/engine/security/rootless/) · [Resource limits](https://docs.docker.com/engine/security/rootless/tips/#limiting-resources)
 
 ## 5. Install Node and build the app
 
+Install Node 24 and pnpm 9.15.9 and make both available in the `tq` shell.
+Set `repo_url` to the Git clone URL for the repository.
+
 ```bash
-sudo -iu tq
-# Node 22 LTS via nvm or distro packages
-git clone <your repo URL> ~/terminal-quest && cd ~/terminal-quest
-corepack enable && pnpm i --frozen-lockfile
+git clone "$repo_url" ~/terminal-quest && cd ~/terminal-quest
+pnpm i --frozen-lockfile
 pnpm build
-pnpm images:build            # builds tq-base and sidecar images into the rootless daemon
-pnpm db:migrate
+pnpm images:build            # builds tq-base in the rootless daemon
 ```
 
-## 6. Configure
+The image build covers the base sandbox. LAN networks and sidecars are scheduled for T10.2.
 
-Create `~/terminal-quest/.env.production`:
+## 6. Configure and migrate
+
+Create `~/terminal-quest/.env.production` with simple shell-compatible assignments so both systemd and the migration command can read it.
 ```
 PORT=3001
 PUBLIC_ORIGIN=https://quest.example.com
@@ -82,16 +86,29 @@ SANDBOX_IMAGE=tq-base
 MAX_CONTAINERS=20
 IDLE_TTL_SECONDS=900
 MAX_AGE_SECONDS=3600
-ENABLE_WORLDS=1,2
+ENABLE_WORLDS=1
 UNLOCK_ALL=0
 LOG_LEVEL=info
-LOG_COMMANDS=0
 ```
-`mkdir -p ~/data`. Replace `<tq-uid>` with the output of `id -u tq`. Never set `UNLOCK_ALL=1` in production.
+Replace `<tq-uid>` with the output of `id -u tq`. World 1 is the authored
+release content today. Set `ENABLE_WORLDS=1,2` once M8 is complete. Keep
+`UNLOCK_ALL=0` in production.
+
+From the checkout as `tq`, run the migration before starting the service:
+
+```bash
+(set -a && . ./.env.production && pnpm db:migrate)
+```
+
+The migrator creates the parent directory and logs the database path. Confirm
+it reports `/home/tq/data/tq.sqlite`, the same path the service will open.
+The compiled server does not load `.env.production` itself. The systemd
+`EnvironmentFile` supplies its settings.
 
 ## 7. Run the server as a systemd user service
 
-`/home/tq/.config/systemd/user/terminal-quest.service`:
+As `tq`, create `~/.config/systemd/user` and save this as `terminal-quest.service`.
+
 ```ini
 [Unit]
 Description=Terminal Quest server
@@ -112,12 +129,13 @@ WantedBy=default.target
 Enable:
 ```bash
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
+export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
 systemctl --user daemon-reload
 systemctl --user enable --now terminal-quest
-journalctl --user -u terminal-quest -f
+journalctl --user -u terminal-quest -n 30 --no-pager
 curl -s http://127.0.0.1:3001/healthz     # expect {"ok":true,"docker":true}
 ```
-(Adjust the `node` path if you installed it elsewhere: `command -v node`.)
+Set `ExecStart` to the absolute Node path reported by `command -v node` in the `tq` shell if it differs from the example. HTTP 200 indicates app liveness. Confirm `docker:true` before starting a level.
 
 The compiled entry point (`node apps/server/dist/index.js`) serves `apps/web/dist/index.html`
 and the built `/assets/*` files on the same port as the API and WebSocket. Build both
@@ -138,12 +156,13 @@ The HTML uses `max-age=0` so navigations revalidate after upgrades. Unknown
 non-GET/HEAD requests and missing file paths never use the SPA fallback.
 `pnpm verify` includes Docker-free regressions that start the actual compiled
 server from another working directory and fetch the emitted HTML, JS, CSS, and
-self-hosted font bytes, plus API and WebSocket authorization checks. This local
-delivery check does not complete the clean-VM deployment verification (T9.3).
+self-hosted font bytes, plus API and WebSocket authorization checks. Clean-VM deployment verification remains part of T9.3.
 
 ## 8. Caddy (TLS + reverse proxy)
 
-Install Caddy from its official apt repo, then `/etc/caddy/Caddyfile`:
+Return to the administrator shell and install Caddy from its official apt
+repository. Save the following as `/etc/caddy/Caddyfile` with your public domain.
+
 ```
 quest.example.com {
     encode zstd gzip
@@ -156,6 +175,7 @@ quest.example.com {
 }
 ```
 ```bash
+sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 sudo systemctl reload caddy
 ```
 Caddy proxies WebSockets automatically. Keep Caddy on the same host and point it
@@ -163,42 +183,69 @@ at `127.0.0.1`. The compiled server listens on that address and uses the
 immediate client IP forwarded by Caddy for rate limits. Set `PUBLIC_ORIGIN` to
 the external HTTPS origin. The compiled server always marks guest cookies
 `Secure`, and its Content-Security-Policy allows same-origin assets and the
-WebSocket at that public origin.
+WebSocket at that public origin. [Caddy reverse proxy reference](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)
 
 ## 9. Backups
 
-Nightly SQLite backup (as `tq`), via a user timer or cron:
+Run a nightly backup as `tq` via a user timer or cron. The script reads
+`DB_PATH` from the deployment environment file.
 ```bash
 # ~/bin/tq-backup.sh
 #!/usr/bin/env bash
 set -euo pipefail
+. "$HOME/terminal-quest/.env.production"
 mkdir -p "$HOME/backups"
-sqlite3 "$HOME/data/tq.sqlite" ".backup '$HOME/backups/tq-$(date +%F).sqlite'"
+sqlite3 "$DB_PATH" ".backup '$HOME/backups/tq-$(date +%F).sqlite'"
 find "$HOME/backups" -name 'tq-*.sqlite' -mtime +14 -delete
 ```
 ```
 0 3 * * *  /home/tq/bin/tq-backup.sh
 ```
-Copy backups off the VM (rsync/object storage) — a backup on the same disk is not a backup.
+Make the script executable before scheduling it. Copy backups off the VM.
+Rehearse restoring an off-VM copy to a scratch database and check that it
+contains the expected saved progress. [SQLite CLI reference](https://sqlite.org/cli.html)
+
+```bash
+restore_dir=$(mktemp -d)
+backup=/path/to/downloaded/tq-backup.sqlite
+sqlite3 "$restore_dir/tq.sqlite" ".restore '$backup'"
+sqlite3 "$restore_dir/tq.sqlite" 'PRAGMA integrity_check;'  # expect ok
+```
 
 ## 10. Upgrades
 
+Run as `tq` from the checkout with the user-service environment from step 7
+and the rootless Docker context. Allow a maintenance window and keep the service
+stopped if any step fails.
+
 ```bash
-sudo -iu tq && cd ~/terminal-quest
-git pull
-pnpm i --frozen-lockfile && pnpm build
-pnpm images:build           # only needed if sandbox images changed
-pnpm db:migrate
-systemctl --user restart terminal-quest
+(
+  set -a &&
+  . ./.env.production &&
+  set +a &&
+  systemctl --user stop terminal-quest &&
+  mkdir -p "$HOME/backups" &&
+  backup_dir=$(mktemp -d "$HOME/backups/pre-upgrade.XXXXXX") &&
+  sqlite3 "$DB_PATH" ".backup '$backup_dir/tq.sqlite'" &&
+  git pull --ff-only &&
+  pnpm i --frozen-lockfile &&
+  pnpm build &&
+  pnpm images:build &&
+  pnpm db:migrate &&
+  systemctl --user start terminal-quest
+)
 ```
-On SIGTERM or SIGINT, the server sends active clients a `closing` message,
-marks unfinished attempts abandoned, and waits for sandbox teardown. The
-orphan sweep at boot removes leftover sandboxes.
+
+On SIGTERM or SIGINT, the
+server sends active clients a `closing` frame with reason `server_shutdown`,
+marks unfinished attempts abandoned, and waits for sandbox teardown. Boot
+cleanup sweeps leftover managed containers. After starting, check health,
+open a level through Caddy, and confirm saved progress survived.
 
 ## 11. Operations checklist
 
 - `docker ps --filter label=tq.managed=true` — live sandboxes. Count should never exceed `MAX_CONTAINERS`.
-- Cleanup stray sandboxes manually: `docker rm -f $(docker ps -aq --filter label=tq.managed=true)`
+- If the reaper cannot remove a stray container, stop the app, identify the orphan by its labels, and remove that container by ID.
 - Disk: `docker system df`; prune dangling layers monthly.
 - Logs: `journalctl --user -u terminal-quest --since "1 hour ago"`.
 - Updates: apply OS security updates regularly; rebuild `tq-base` periodically to pick up Debian security fixes.
@@ -212,7 +259,14 @@ orphan sweep at boot removes leftover sandboxes.
 | Resource limits ignored | cgroup v2 delegation not applied (step 4) |
 | Terminal connects then closes immediately | Origin mismatch: `PUBLIC_ORIGIN` must equal the browser origin exactly |
 | `sudo` fails inside `basic` levels | Expected: `no-new-privileges` is set for the basic profile |
-| Sandbox can't resolve `*.penguin.corp` | Level needs `lan` network + `dns` sidecar; check sidecar image exists |
+
+## Clean-VM verification (T9.3)
+
+- [ ] Install from a fresh checkout and migrate the systemd service's database.
+- [ ] Confirm rootless Docker resource limits and service startup after reboot.
+- [ ] Check HTTPS, SPA navigation, CSP, the secure guest cookie, and a real WebSocket level clear through Caddy.
+- [ ] Stop the service with an active attempt and verify the closing frame, abandonment, and sandbox cleanup. Verify orphan recovery on a separate abrupt restart.
+- [ ] Verify scheduled backup, off-VM retrieval and restore, and an upgrade that preserves existing progress.
 
 ## Verification log
 _Record each time this doc was followed on a clean machine, with corrections._
