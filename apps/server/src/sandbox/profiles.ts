@@ -22,6 +22,7 @@ export function buildLabels(spec: SandboxSpec): Record<string, string> {
 
 export function buildHostConfig(
   spec: SandboxSpec,
+  runtime?: string,
 ): NonNullable<ContainerCreateOptions['HostConfig']> {
   if (spec.network !== 'none') {
     throw new Error(`network '${spec.network}' is not supported until T10.2 (lan sidecars)`);
@@ -51,8 +52,7 @@ export function buildHostConfig(
     SecurityOpt: spec.profile === 'basic' ? [NO_NEW_PRIVILEGES_OPT] : [],
   };
 
-  const runtime = process.env['SANDBOX_RUNTIME'];
-  if (runtime !== undefined && runtime !== '') {
+  if (runtime !== undefined) {
     hostConfig.Runtime = runtime;
   }
   return hostConfig;

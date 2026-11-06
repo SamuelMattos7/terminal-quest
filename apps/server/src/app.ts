@@ -77,7 +77,11 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   const levels = loadLevels(contentRoot);
   const coachRules = loadCoachRules(contentRoot);
   const badgeList = loadBadges(join(dirname(contentRoot), 'badges.yaml'));
-  const provider = new DockerProvider({ socketPath: opts.socketPath ?? config.DOCKER_SOCKET });
+  const provider = new DockerProvider({
+    socketPath: opts.socketPath ?? config.DOCKER_SOCKET,
+    image: config.SANDBOX_IMAGE,
+    runtime: config.SANDBOX_RUNTIME,
+  });
   const live = new LiveSessionRegistry();
   const manager = new SessionManager({
     provider,

@@ -388,3 +388,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A27 found that the planned World 1 and 2 CI command silently skipped unbuilt World 2, CI omitted the Docker integration suite, and an HTTP 200 did not establish browser test readiness.
 - **Decision:** Reject each explicitly requested world with no levels and allow CI to assert an exact level count. Until M8, the levels job checks all 12 World 1 levels and runs the Docker integration suite using the same image build. At M8, require both worlds and 27 levels. Use the real Docker socket in integration test fixtures. Proxy the health route through Vite and require a valid health response with Docker ready. Use the gameplay Docker connection options for the health probe.
 - **Consequences:** An incomplete selection fails before Docker starts. Both live Chromium tests wait for the API and Docker using the same health contract.
+
+### D-044 — Validate release configuration and authored content before use
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** A29 found that world-list typos were silently ignored, sandbox overrides bypassed config or had no effect, and malformed level content could pass validation. Plan §12.3 previously specified one wrong solution for bosses, while the authoring checklist specifies two.
+- **Decision:** Validate each world token as a decimal ID from 1 to 5. A blank list explicitly disables every world, while an unset list defaults to Worlds 1 and 2. Deduplicate valid tokens. Pass validated sandbox overrides from server and CLI startup to the Docker provider. An explicit image override takes precedence over the level image. Validate skill references and cycles during loading and compile regex sources during schema validation. Align plan §12.3 with the authoring checklist for wrong solutions and require explain cards and cheatsheet entries in lint.
+- **Consequences:** Authors can keep static instructions and fixtures in levels with generators. Lint checks both setup file sources for answers it can identify from declarative checks. The Docker level matrix remains the behavioral check for seeded data and shell scripts.
