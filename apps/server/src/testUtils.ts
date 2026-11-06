@@ -7,7 +7,7 @@ import { stringify as stringifyYaml } from 'yaml';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from './app.js';
-import { testConfig, type AppConfig } from './config.js';
+import { loadConfig, testConfig, type AppConfig } from './config.js';
 import { closeDb, createDb, type Db } from './db/client.js';
 import { users } from './db/schema.js';
 
@@ -136,6 +136,16 @@ export async function makeTestContext(
       rmSync(dir, { recursive: true, force: true });
     },
   };
+}
+
+/** API test context for suites that require a real Docker daemon. */
+export function makeDockerTestContext(
+  fixtures?: FixtureLevel[],
+  configOverrides: Partial<AppConfig> = {},
+  contentRoot?: string,
+): Promise<TestContext> {
+  const { DOCKER_SOCKET } = loadConfig({ DOCKER_SOCKET: process.env['DOCKER_SOCKET'] });
+  return makeTestContext(fixtures, { DOCKER_SOCKET, ...configOverrides }, contentRoot);
 }
 
 /** Create a guest and return its session cookie value for subsequent calls. */

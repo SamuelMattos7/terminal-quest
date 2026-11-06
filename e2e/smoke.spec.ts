@@ -1,21 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { waitForSandbox } from './readiness.js';
 
 // M5 gate (T5.2): a new visitor starts playing, solves w1-01 in the real
 // terminal, sees the completion modal, and finds w1-02 unlocked on the map.
 test('smoke: start, solve w1-01, unlock w1-02', async ({ page }) => {
+  await waitForSandbox(page.request);
   await page.goto('/');
-  // The webServer URL only proves vite is up; the proxied API server (tsx)
-  // can lag behind, and an early guest POST proxy-500s. Gate on /healthz
-  // (which also proves Docker is reachable) before clicking anything.
-  await expect
-    .poll(
-      async () => {
-        const res = await page.request.get('/healthz').catch(() => undefined);
-        return res?.status();
-      },
-      { timeout: 90_000 },
-    )
-    .toBe(200);
   await page.getByRole('button', { name: 'Start playing' }).click();
   await expect(page).toHaveURL(/\/map/, { timeout: 30_000 });
 

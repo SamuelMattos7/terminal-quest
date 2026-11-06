@@ -46,13 +46,15 @@ if (command === 'lint' || command === undefined) {
 } else if (command === 'test') {
   await runTest();
 } else {
-  console.error(`usage: level-runner [lint|test] [--level <id>] [--world <n>] [--seeds <count>]`);
+  console.error(
+    'usage: level-runner [lint|test] [--level <id>] [--world <n,...>] [--seeds <count>] [--expect-levels <count>]',
+  );
   process.exitCode = 2;
 }
 
 function argValue(flag: string): string | undefined {
-  const i = process.argv.indexOf(flag);
-  return i >= 0 ? process.argv[i + 1] : undefined;
+  const i = process.argv.indexOf(flag, 3);
+  return i >= 0 ? (process.argv[i + 1] ?? '') : undefined;
 }
 
 async function runTest(): Promise<void> {
@@ -62,14 +64,17 @@ async function runTest(): Promise<void> {
   const worlds =
     worldsRaw === undefined ? undefined : worldsRaw.split(',').map((w) => Number(w.trim()));
   const seedCount = Number(seedsRaw);
+  const expectedRaw = argValue('--expect-levels');
+  const expectedCount = expectedRaw === undefined ? undefined : Number(expectedRaw);
   if (
     (worlds !== undefined &&
       (worlds.length === 0 || worlds.some((w) => !Number.isInteger(w) || w < 1))) ||
     !Number.isInteger(seedCount) ||
-    seedCount < 1
+    seedCount < 1 ||
+    (expectedCount !== undefined && (!Number.isInteger(expectedCount) || expectedCount < 1))
   ) {
     console.error(
-      'levels:test: --world must be a comma list of positive integers and --seeds a count >= 1',
+      'levels:test: --world must be a comma list of positive integers; --seeds and --expect-levels must be positive integers',
     );
     process.exitCode = 2;
     return;
@@ -88,6 +93,15 @@ async function runTest(): Promise<void> {
     throw err;
   }
 
+  const missingWorlds = [...new Set(worlds)].filter((world) => !loaded.byWorld.has(world));
+  if (missingWorlds.length > 0) {
+    console.error(
+      `levels:test: no levels found for requested world(s): ${missingWorlds.join(', ')}`,
+    );
+    process.exitCode = 1;
+    return;
+  }
+
   const selected = loaded.levels
     .filter(
       (l) =>
@@ -102,7 +116,13 @@ async function runTest(): Promise<void> {
     return;
   }
   if (selected.length === 0) {
-    console.log('levels:test — no levels selected, nothing to do');
+    console.error('levels:test: no levels selected');
+    process.exitCode = 1;
+    return;
+  }
+  if (expectedCount !== undefined && selected.length !== expectedCount) {
+    console.error(`levels:test: expected ${expectedCount} level(s), selected ${selected.length}`);
+    process.exitCode = 1;
     return;
   }
 

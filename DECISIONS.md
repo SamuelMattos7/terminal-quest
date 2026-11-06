@@ -380,3 +380,11 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A26 found that completion left keyboard focus on the game behind the dialog, short screens could hide actions, and the software keyboard could cover the keybar.
 - **Decision:** Open a native modal dialog, focus its heading, wrap Tab among the actions, and bound its scrolling to the viewport. Keep the existing completion actions as the way out of the dialog. Restore focus to the previous element if it still exists, or to the new terminal after replay. Dock the keybar to the visible viewport and reserve its height below the page content. Keep terminal focus on touch key presses.
 - **Consequences:** Completion content and actions remain reachable on short screens. The browser regression checks keyboard resize and pan through Chromium touch emulation with simulated viewport changes.
+
+### D-043 — Validate authored release worlds and wait for Docker in browser tests
+
+- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Context:** A27 found that the planned World 1 and 2 CI command silently skipped unbuilt World 2, CI omitted the Docker integration suite, and an HTTP 200 did not establish browser test readiness.
+- **Decision:** Reject each explicitly requested world with no levels and allow CI to assert an exact level count. Until M8, the levels job checks all 12 World 1 levels and runs the Docker integration suite using the same image build. At M8, require both worlds and 27 levels. Use the real Docker socket in integration test fixtures. Proxy the health route through Vite and require a valid health response with Docker ready. Use the gameplay Docker connection options for the health probe.
+- **Consequences:** An incomplete selection fails before Docker starts. Both live Chromium tests wait for the API and Docker using the same health contract.

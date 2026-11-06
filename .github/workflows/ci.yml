@@ -53,7 +53,9 @@ jobs:
       - run: pnpm build
       - run: pnpm images:build
       - run: pnpm levels:lint
-      - run: pnpm levels:test --world 1,2
+      # Add World 2 and raise the count when M8 is complete.
+      - run: pnpm levels:test --world 1 --expect-levels 12
+      - run: pnpm test:docker
 
   e2e:
     name: e2e (Playwright smoke)

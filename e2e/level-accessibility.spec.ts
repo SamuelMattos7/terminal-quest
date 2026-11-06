@@ -1,23 +1,16 @@
 import { expect, test } from '@playwright/test';
+import { waitForSandbox } from './readiness.js';
 
 test.use({ isMobile: true, hasTouch: true, viewport: { width: 390, height: 420 } });
 
 test('mobile keys follow the visible viewport and completion keeps keyboard focus in the dialog', async ({
   page,
 }) => {
-  await expect
-    .poll(
-      async () => {
-        const response = await page.request.get('/api/me').catch(() => undefined);
-        return response?.status();
-      },
-      { timeout: 90_000 },
-    )
-    .toBe(401);
+  await waitForSandbox(page.request);
   await page.goto('/');
   await page.getByRole('button', { name: 'Start playing' }).click();
   await page.getByRole('link', { name: /First Words/ }).click();
-  await expect(page.getByText('Connected')).toBeVisible();
+  await expect(page.getByText('Connected')).toBeVisible({ timeout: 30_000 });
 
   const terminal = page.getByTestId('terminal-container');
   const input = terminal.locator('textarea');
@@ -65,7 +58,7 @@ test('mobile keys follow the visible viewport and completion keeps keyboard focu
 
   const dialog = page.getByRole('dialog', { name: /Level complete/i });
   const heading = dialog.getByRole('heading', { name: /Level complete/i });
-  await expect(heading).toBeFocused();
+  await expect(heading).toBeFocused({ timeout: 30_000 });
   await expect(dialog).toHaveJSProperty('scrollTop', 0);
   await input.evaluate((element) => element.focus());
   await expect(heading).toBeFocused();
@@ -82,8 +75,8 @@ test('mobile keys follow the visible viewport and completion keeps keyboard focu
   await expect(replay).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(dialog).toBeHidden();
-  await expect(input).toBeFocused();
-  await expect(page.getByText('Connected')).toBeVisible();
+  await expect(input).toBeFocused({ timeout: 30_000 });
+  await expect(page.getByText('Connected')).toBeVisible({ timeout: 30_000 });
   await page.getByRole('button', { name: 'Leave level' }).click();
   await expect(page).toHaveURL(/\/map$/);
 });

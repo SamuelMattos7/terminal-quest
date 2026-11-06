@@ -848,6 +848,9 @@ LOG_LEVEL (info)          LOG_COMMANDS (0)
 ### 14.3 Prod (single VM)
 Server serves the built web via `@fastify/static` on one port behind a TLS-terminating reverse proxy (Caddy recommended). systemd unit for the server, rootless Docker for sandboxes, nightly SQLite backup (`sqlite3 .backup`).
 ### 14.4 CI (`.github/workflows/ci.yml`)
+
+**2026-11-05 (D-043):** Until M8 is complete, the levels job validates World 1 with an exact count of 12. When M8 lands, switch the gate to Worlds 1 and 2 with an exact count of 27. The job also runs the Docker integration suite after building the sandbox image.
+
 Jobs: (1) `verify` (build, lint, unit tests) (2) `levels` (build images, `levels:lint`, `levels:test --world 1,2` with Docker available on the runner) (3) `e2e` (Playwright smoke, §15 M5). Cache pnpm store and Docker layers.
 
 ---
