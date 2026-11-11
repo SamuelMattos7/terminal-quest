@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** Worlds 1 and 2 are complete. M9 hardening and target-environment validation are next.
+**Current focus:** T9.1 security review is complete with explicit D-054 waivers. Target-environment work T9.2 and T9.3 remains pending; neither was started in this review.
 
 ---
 
@@ -65,7 +65,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 ### M9 — Hardening & deploy
 
-- [ ] T9.1 Security checklist (`plan.md §13`) walked; waivers documented
+- [x] T9.1 Security checklist (`plan.md §13`) walked; waivers documented ✅ `pnpm verify`: build/lint + 500 tests; `pnpm test:docker`: 86 tests including all 27 levels in the sequential WebSocket playthrough; final targeted Docker rerun: 16 tests; `pnpm levels:lint`: 27 levels, zero problems; `pnpm e2e --workers=1`: 3 Chromium tests passed. Per-item evidence in [security-review.md](security-review.md), waivers D-054. Production host checks explicitly blocked, not passed; no public-deployment approval.
 - [ ] T9.2 Run the 20-session load test on the target VM and record measurements in [loadtest.md](loadtest.md)
 - [ ] T9.3 Verify [deploy.md](deploy.md) end to end on a clean VM and record the results in its verification log
 
@@ -250,7 +250,8 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 | ---------- | ------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
 | 2026-10-06 | skills.yaml prereqs | Worlds 1 and 2 have skill edges. Skills for Worlds 3–5 still have empty `prereqs`. | Author remaining edges as their levels land |
 | 2026-10-06 | cron daemon start   | `needs_cron` field present (default true); daemon start not implemented                 | Implement in T10.1 admin polish; no admin levels exist yet |
-| 2026-11-06 | Production validation | T9.1 security review and waivers, T9.2 capacity/latency/cleanup measurements, and T9.3 clean-VM install, rootless limits, Caddy/TLS, backup/restore, and upgrade still need evidence. | Record security decisions and complete the checklists in [loadtest.md](loadtest.md) and [deploy.md](deploy.md). |
+| 2026-11-06 | Production validation | T9.1 repository/local-Docker audit complete (D-054); actual production Docker isolation/service uid/TCP exposure/rootless limits remain unverified. T9.2 measurements and T9.3 clean-VM install, Caddy/TLS, backup/restore and upgrade remain pending. | Resolve the host blocker before public deployment; complete [loadtest.md](loadtest.md) and [deploy.md](deploy.md) under T9.2/T9.3. |
+| 2026-11-11 | Security audit scope | LAN and specialty script/login/cron execution semantics are not certified by the basic/no-network release audit. Optional `LOG_COMMANDS=1` command persistence is deliberately unimplemented; commands/answers/terminal streams are not persisted. | D-054 documents waivers; verify M10 features before enabling them. Any future command logging needs validated opt-in, writer-side 200-character truncation and privacy regressions. |
 
 ## Blockers
 
@@ -258,4 +259,4 @@ _What is blocked, what was tried, what was done instead._
 
 | Date | Task | Blocker | Tried | Workaround / next |
 | ---- | ---- | ------- | ----- | ----------------- |
-| —    | —    | —       | —     | —                 |
+| 2026-11-11 | T9.1 §13 production host | No production VM, SSH endpoint or credentials supplied; cannot inspect actual isolation, service identity, Docker TCP listeners or rootless cgroup enforcement. | Reviewed deploy.md; local `docker version` reports 29.8.1 and `docker info` reports seccomp/cgroupns, not rootless. Local named-pipe access and real-container security tests passed. | D-054 explicitly waives this only for repository-audit completion. Obtain target-host access and verify the deployment prerequisite before any public deployment; T9.2/T9.3 remain unstarted. |

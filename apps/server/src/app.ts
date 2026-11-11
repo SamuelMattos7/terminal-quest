@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import cookie from '@fastify/cookie';
-import rateLimit from '@fastify/rate-limit';
 import websocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -32,6 +31,7 @@ import { registerProgressRoutes } from './routes/progress.js';
 import { registerDailyRoute } from './routes/daily.js';
 import { registerSessionRoutes } from './routes/sessions.js';
 import { registerWebDelivery } from './webDelivery.js';
+import { registerRequestLimits } from './requestLimits.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -123,7 +123,7 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   };
 
   await app.register(cookie);
-  await app.register(rateLimit, { max: 60, timeWindow: '1 minute' });
+  await registerRequestLimits(app);
   const reaper = new Reaper(manager, logger);
   let earlyCleanup: Promise<void> | undefined;
   // Run before the WebSocket plugin closes upgraded connections so clients

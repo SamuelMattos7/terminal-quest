@@ -40,6 +40,12 @@ function setup(overrides?: { image?: string | undefined; runtime?: string | unde
 }
 
 describe('Docker sandbox configuration', () => {
+  it('rejects LAN networks and sidecars before acquiring a container (T9.1)', async () => {
+    const { provider, client } = setup();
+    await expect(provider.create({ ...spec, network: 'lan' })).rejects.toThrow('T10.2');
+    await expect(provider.create({ ...spec, sidecars: ['web'] })).rejects.toThrow('T10.2');
+    expect(client.createContainer).not.toHaveBeenCalled();
+  });
   it('passes validated image and runtime overrides without changing isolation', async () => {
     const config = loadConfig({
       SANDBOX_IMAGE: 'registry.example:5000/tq/base:release',

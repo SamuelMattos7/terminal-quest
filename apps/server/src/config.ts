@@ -5,7 +5,22 @@ import { SandboxEnvSchema } from '@terminal-quest/shared';
 // sandbox lifecycle, worlds). Later milestones extend this as they need more vars.
 const ConfigSchema = SandboxEnvSchema.extend({
   PORT: z.coerce.number().int().positive().default(3001),
-  PUBLIC_ORIGIN: z.string().url().default('http://localhost:5173'),
+  PUBLIC_ORIGIN: z
+    .string()
+    .url()
+    .default('http://localhost:5173')
+    .refine((value) => {
+      const url = new URL(value);
+      return (
+        ['http:', 'https:'].includes(url.protocol) &&
+        url.username === '' &&
+        url.password === '' &&
+        url.pathname === '/' &&
+        url.search === '' &&
+        url.hash === ''
+      );
+    }, 'expected an HTTP(S) origin without credentials, path, query, or fragment')
+    .transform((value) => new URL(value).origin),
   DOCKER_SOCKET: z.string().min(1).default('/var/run/docker.sock'),
   DB_PATH: z.string().min(1).default('./data/tq.sqlite'),
   MAX_CONTAINERS: z.coerce.number().int().positive().default(20),
