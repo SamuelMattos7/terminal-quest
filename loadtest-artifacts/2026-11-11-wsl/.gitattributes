@@ -1,0 +1,6 @@
+# Preserve captured bytes, including command-output padding and line endings.
+*.log -text -whitespace
+*.txt -text -whitespace
+*.csv -text
+*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+*.jsonl -text

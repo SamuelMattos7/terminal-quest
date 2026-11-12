@@ -1,0 +1,10 @@
+
+> terminal-quest@0.0.1 loadtest C:\Users\samym\OneDrive\Escritorio\Portfolio Samuel\Game\terminal-quest
+> pnpm --filter @terminal-quest/load-test loadtest "--base-url" "http://127.0.0.1:3301" "--origin" "https://quest.loadtest.invalid" "--mode" "idle" "--idle-ttl-seconds" "30" "--out" "C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\.t9-2-artifacts.local\\idle.json"
+
+
+> @terminal-quest/load-test@0.0.1 loadtest C:\Users\samym\OneDrive\Escritorio\Portfolio Samuel\Game\terminal-quest\tools\scripts
+> tsx loadtest.ts "--base-url" "http://127.0.0.1:3301" "--origin" "https://quest.loadtest.invalid" "--mode" "idle" "--idle-ttl-seconds" "30" "--out" "C:\\\\Users\\\\samym\\\\OneDrive\\\\Escritorio\\\\Portfolio Samuel\\\\Game\\\\terminal-quest\\\\.t9-2-artifacts.local\\\\idle.json"
+
+2026-11-12T00:47:13.966Z idle session ready; waiting without stdin
+2026-11-12T00:48:11.152Z sessions closed; waiting 60 s for host cleanup/resource sampling

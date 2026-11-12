@@ -1,0 +1,30 @@
+
+ RUN  v2.1.9 C:/Users/samym/OneDrive/Escritorio/Portfolio Samuel/Game/terminal-quest/apps/server
+
+{"level":40,"time":1794444827684,"pid":17700,"hostname":"Samuel","err":{"type":"ResourceLimitError","message":"watch line bytes limit exceeded","stack":"ResourceLimitError: watch line bytes limit exceeded\n    at C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\sandbox\\streamLimits.ts:23:49\n    at PassThrough.<anonymous> (C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\sandbox\\dockerProvider.ts:202:9)\n    at PassThrough.emit (node:events:509:28)\n    at addChunk (node:internal/streams/readable:563:12)\n    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)\n    at PassThrough.Readable.push (node:internal/streams/readable:394:5)\n    at node:internal/streams/transform:178:12\n    at PassThrough._transform (node:internal/streams/passthrough:46:3)\n    at PassThrough.Transform._write (node:internal/streams/transform:171:8)\n    at writeOrBuffer (node:internal/streams/writable:570:12)","name":"ResourceLimitError"},"attemptId":"t12-acceptance","levelId":"w1-01-first-words","path":"/tmp/a03-watch","msg":"file watcher stopped"}
+ ✓ src/sandbox/dockerProvider.docker.test.ts (9 tests) 3168ms
+   ✓ DockerProvider basic sandbox > runs exec as player (uid 1000) 340ms
+   ✓ DockerProvider basic sandbox > rejects bounded exec output overflow from the real Docker stream (A03) 508ms
+   ✓ DockerProvider basic sandbox > watchFile delivers complete lines without framing bytes 387ms
+   ✓ DockerProvider basic sandbox > destroy leaves no container behind 437ms
+ ✓ src/sandbox/security.docker.test.ts (4 tests) 3967ms
+   ✓ release sandbox security (T9.1) > gives player zero effective caps, prevents privilege escalation and socket access 582ms
+   ✓ release sandbox security (T9.1) > protects root-owned checks/helpers and seeded answers from player writes and reads 1784ms
+ ✓ src/sandbox/execTimeout.docker.test.ts (12 tests) 11022ms
+   ✓ exec process termination (A04) > terminates and reaps a direct root command on repeated timeouts 2205ms
+   ✓ exec process termination (A04) > terminates and reaps a direct player command on repeated timeouts 1873ms
+   ✓ exec process termination (A04) > terminates nested, detached and TERM-ignoring root descendants 1220ms
+   ✓ exec process termination (A04) > terminates nested, detached and TERM-ignoring player descendants 1188ms
+   ✓ exec process termination (A04) > prevents descendants from mutating state after timeout returns 1514ms
+   ✓ exec process termination (A04) > keeps the supervisor protected from player signals 697ms
+   ✓ exec process termination (A04) > leaves an intentional background service alive after successful exec and an unrelated timeout 504ms
+   ✓ exec process termination (A04) > terminates a root command that launches player-owned descendants 700ms
+ ✓ src/sandbox/processLimits.docker.test.ts (2 tests) 22520ms
+   ✓ contains root PID exhaustion to one sandbox and keeps its neighbor usable (T9.2) 11516ms
+   ✓ contains player PID exhaustion to one sandbox and keeps its neighbor usable (T9.2) 11004ms
+
+ Test Files  4 passed (4)
+      Tests  27 passed (27)
+   Start at  21:53:44
+   Duration  24.42s (transform 346ms, setup 0ms, collect 4.65s, tests 40.68s, environment 1ms, prepare 1.06s)
+

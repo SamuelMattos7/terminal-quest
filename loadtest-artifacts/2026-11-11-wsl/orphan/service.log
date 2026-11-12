@@ -1,0 +1,8 @@
+{"level":30,"time":1794444688187,"pid":14353,"hostname":"Samuel","port":3301,"msg":"server listening"}
+terminal-quest.service: Main process exited, code=killed, status=9/KILL
+terminal-quest.service: Failed with result 'signal'.
+terminal-quest.service: Consumed 1.025s CPU time, 249.6M memory peak, 0B memory swap peak.
+terminal-quest.service: Scheduled restart job, restart counter is at 1.
+Started terminal-quest.service - Terminal Quest T9.2 WSL test.
+{"level":30,"time":1794444692837,"pid":14538,"hostname":"Samuel","orphans":1,"msg":"reaper removed orphan sandboxes at boot"}
+{"level":30,"time":1794444692840,"pid":14538,"hostname":"Samuel","port":3301,"msg":"server listening"}

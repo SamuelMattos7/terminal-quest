@@ -1,0 +1,39 @@
+
+ RUN  v2.1.9 /home/tq/terminal-quest/apps/server
+
+ ❯ src/sandbox/processLimits.docker.test.ts (2 tests | 2 failed) 14770ms
+   × contains root PID exhaustion to one sandbox and keeps its neighbor usable (T9.2) 7408ms
+     → expected 2 to be 16 // Object.is equality
+   × contains player PID exhaustion to one sandbox and keeps its neighbor usable (T9.2) 7360ms
+     → expected 2 to be 16 // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/sandbox/processLimits.docker.test.ts > contains root PID exhaustion to one sandbox and keeps its neighbor usable (T9.2)
+ FAIL  src/sandbox/processLimits.docker.test.ts > contains player PID exhaustion to one sandbox and keeps its neighbor usable (T9.2)
+AssertionError: expected 2 to be 16 // Object.is equality
+
+- Expected
++ Received
+
+- 16
++ 2
+
+ ❯ Promise.allSettled.vi.waitFor.timeout src/sandbox/processLimits.docker.test.ts:63:49
+     61|             async () => {
+     62|               const stats = await docker.getContainer(full.id).stats({…
+     63|               expect(stats.pids_stats?.current).toBe(16);
+       |                                                 ^
+     64|             },
+     65|             { timeout: 7000, interval: 100 },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+   Start at  21:32:36
+   Duration  15.23s (transform 116ms, setup 0ms, collect 258ms, tests 14.77s, environment 0ms, prepare 66ms)
+
+undefined
+/home/tq/terminal-quest/apps/server:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: vitest run --config vitest.docker.config.ts src/sandbox/processLimits.docker.test.ts

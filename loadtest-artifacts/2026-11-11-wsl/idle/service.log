@@ -1,0 +1,29 @@
+Stopping terminal-quest.service - Terminal Quest T9.2 WSL test...
+{"level":30,"time":1794443779694,"pid":680,"hostname":"Samuel","signal":"SIGTERM","msg":"server shutting down"}
+{"level":30,"time":1794443779696,"pid":680,"hostname":"Samuel","msg":"server shut down"}
+Stopped terminal-quest.service - Terminal Quest T9.2 WSL test.
+terminal-quest.service: Consumed 1.585s CPU time, 320.8M memory peak, 0B memory swap peak.
+Started terminal-quest.service - Terminal Quest T9.2 WSL test.
+{"level":30,"time":1794443780389,"pid":6530,"hostname":"Samuel","port":3301,"msg":"server listening"}
+Stopping terminal-quest.service - Terminal Quest T9.2 WSL test...
+{"level":30,"time":1794444427391,"pid":6530,"hostname":"Samuel","signal":"SIGTERM","msg":"server shutting down"}
+{"level":30,"time":1794444427393,"pid":6530,"hostname":"Samuel","msg":"server shut down"}
+Stopped terminal-quest.service - Terminal Quest T9.2 WSL test.
+terminal-quest.service: Consumed 3.031s CPU time, 249.3M memory peak, 0B memory swap peak.
+Started terminal-quest.service - Terminal Quest T9.2 WSL test.
+{"level":30,"time":1794444428127,"pid":13785,"hostname":"Samuel","port":3301,"msg":"server listening"}
+{"level":30,"time":1794444490978,"pid":13785,"hostname":"Samuel","idle":1,"maxAge":0,"msg":"reaper expired sessions"}
+Stopping terminal-quest.service - Terminal Quest T9.2 WSL test...
+{"level":30,"time":1794444637981,"pid":13785,"hostname":"Samuel","signal":"SIGTERM","msg":"server shutting down"}
+{"level":30,"time":1794444637983,"pid":13785,"hostname":"Samuel","msg":"server shut down"}
+Stopped terminal-quest.service - Terminal Quest T9.2 WSL test.
+terminal-quest.service: Consumed 1.176s CPU time, 248.6M memory peak, 0B memory swap peak.
+Started terminal-quest.service - Terminal Quest T9.2 WSL test.
+{"level":30,"time":1794444638716,"pid":14027,"hostname":"Samuel","port":3301,"msg":"server listening"}
+terminal-quest.service: Main process exited, code=killed, status=9/KILL
+terminal-quest.service: Failed with result 'signal'.
+terminal-quest.service: Consumed 1.097s CPU time, 249.2M memory peak, 0B memory swap peak.
+terminal-quest.service: Scheduled restart job, restart counter is at 1.
+Started terminal-quest.service - Terminal Quest T9.2 WSL test.
+{"level":30,"time":1794444643400,"pid":14217,"hostname":"Samuel","orphans":1,"msg":"reaper removed orphan sandboxes at boot"}
+{"level":30,"time":1794444643403,"pid":14217,"hostname":"Samuel","port":3301,"msg":"server listening"}

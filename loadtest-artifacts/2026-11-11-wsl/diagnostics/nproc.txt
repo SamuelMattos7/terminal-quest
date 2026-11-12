@@ -1,0 +1,25 @@
+2026-11-12T00:30:09+00:00
+Host tasks for mapped rootless UID: your 131072x1 screen size is bogus. expect trouble
+62
+
+with-nproc: same pids.max=32, memory=64m, cpus=0.5, network=none, caps=SETUID/SETGID only
+pids.current=1
+pids.max=32
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/usr/lib/python3.11/subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/subprocess.py", line 1024, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "/usr/lib/python3.11/subprocess.py", line 1834, in _execute_child
+    self.pid = _fork_exec(
+               ^^^^^^^^^^^
+BlockingIOError: [Errno 11] Resource temporarily unavailable
+exit=1
+
+without-nproc: same pids.max=32, memory=64m, cpus=0.5, network=none, caps=SETUID/SETGID only
+pids.current=1
+pids.max=32
+child exec succeeded
+exit=0

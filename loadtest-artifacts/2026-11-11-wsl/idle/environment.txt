@@ -1,0 +1,11 @@
+PORT=3301
+PUBLIC_ORIGIN=https://quest.loadtest.invalid
+DB_PATH=/home/tq/data/loadtest.sqlite
+DOCKER_SOCKET=/run/user/1000/docker.sock
+SANDBOX_IMAGE=tq-base
+MAX_CONTAINERS=20
+IDLE_TTL_SECONDS=30
+MAX_AGE_SECONDS=3600
+ENABLE_WORLDS=1,2
+UNLOCK_ALL=0
+LOG_LEVEL=info

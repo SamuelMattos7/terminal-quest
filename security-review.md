@@ -2,6 +2,8 @@
 
 Scope: `plan.md §13`, release Worlds 1–2 (27 `basic` / `none` levels). Started from `4853602` on `codex/t9-1-security-checklist`. This is a repository and local Docker review, not production deployment approval. T9.2 and T9.3 were not started.
 
+**T9.2 follow-up (2026-11-11):** The user-selected WSL target subsequently verified an actual non-root/rootless daemon, delegated cgroup v2, effective kernel limits, no Docker TCP listener and 20-session capacity. D-057 replaced the incorrectly UID-wide nproc setting with the existing per-container PID controller (still 128); root/player exhaustion and neighbor-isolation regressions passed in both Docker modes. See [loadtest.md](loadtest.md) and its raw artifacts. This local WSL evidence does not approve a public deployment or complete T9.3; the original ledger below records the T9.1 audit scope at that time.
+
 ## Findings and fixes
 
 - **General IP limit bypass on starts.** A route-specific Fastify rate limit replaces the global configuration. The regression `counts starts toward the general IP limit` returned 200 for request 61 before the fix. `requestLimits.ts` now applies the 60/min/IP hook independently of route-level user budgets. The two plugin instances have independent per-request markers, so both limits execute. Their bounded default stores remain local to the single server process.

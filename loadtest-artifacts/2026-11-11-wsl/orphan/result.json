@@ -1,0 +1,10 @@
+{
+  "beforePid": 14353,
+  "afterPid": 14538,
+  "orphanContainer": "9ce9867c90d08d82113c95768c25e1287f7fb75dfc3435e207264e84e6b21067",
+  "crashedAt": "2026-11-12T00:51:28+00:00",
+  "recoveredAt": "2026-11-12T00:51:33+00:00",
+  "ttlSeconds": 900,
+  "orphanRemoved": true,
+  "managedRemaining": 0
+}

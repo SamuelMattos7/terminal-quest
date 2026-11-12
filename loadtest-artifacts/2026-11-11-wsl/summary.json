@@ -1,0 +1,69 @@
+{
+  "sourceCommit": "3b71d9eeeaff56ba80a1df146f91d699d1eba3ae",
+  "baselineWindowUtc": [
+    "2026-11-12T00:36:21.709000+00:00",
+    "2026-11-12T00:37:21.709000+00:00"
+  ],
+  "holdWindowUtc": [
+    "2026-11-12T00:40:04.912000+00:00",
+    "2026-11-12T00:45:07.094000+00:00"
+  ],
+  "cooldownWindowUtc": [
+    "2026-11-12T00:45:15.886000+00:00",
+    "2026-11-12T00:46:15.886000+00:00"
+  ],
+  "sampleCounts": {
+    "total": 124,
+    "baseline": 11,
+    "hold": 58,
+    "cooldown": 12
+  },
+  "holdDurationMs": 302179.40209999995,
+  "latencies": {
+    "start": {
+      "count": 20,
+      "p50Ms": 328.00650000000314,
+      "p95Ms": 353.1368000000075
+    },
+    "echo": {
+      "count": 1735,
+      "p50Ms": 1.271500000031665,
+      "p95Ms": 1.5688999999838416
+    },
+    "completion": {
+      "count": 20,
+      "p50Ms": 95.29110000003129,
+      "p95Ms": 1049.1912000000011
+    }
+  },
+  "capacity": {
+    "status": 429,
+    "retryAfter": "30",
+    "error": "sandbox capacity reached"
+  },
+  "peakHostCpuPct": 8.85885885885886,
+  "peakHostUsedMiB": 837.58203125,
+  "peakServerRssMiB": 293.01171875,
+  "peakManagedTotal": 20,
+  "largestSamplingGapSeconds": 6.576,
+  "hostUsedMiB": {
+    "baselineMedian": 831.43359375,
+    "cooldownMedian": 686.724609375,
+    "delta": -144.708984375
+  },
+  "serverRssMiB": {
+    "baselineMedian": 292.13671875,
+    "cooldownMedian": 103.08203125,
+    "delta": -189.0546875
+  },
+  "holdHostUsedMiB": {
+    "firstMinuteMedian": 818.40234375,
+    "lastMinuteMedian": 819.78515625
+  },
+  "resourceTargetsPassed": true,
+  "recovery": {
+    "idleWaitMs": 57176.81570000001,
+    "orphanRecoverySeconds": 5.0
+  },
+  "combinedChecksPassed": true
+}
