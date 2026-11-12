@@ -1,0 +1,169 @@
+From /mnt/c/Users/samym/OneDrive/Escritorio/Portfolio Samuel/Game/terminal-quest/.t93.local/upgrade.bundle
+   b3ad116..533abaf  codex/t9-3-clean-deployment -> codex/t9-3-clean-deployment
+Before upgrade: b3ad11651b74a3a06da1bfa5aef1cfedeb43adc8
+From /srv/tq-origin
+   b3ad116..533abaf  codex/t9-3-clean-deployment -> origin/codex/t9-3-clean-deployment
+Updating b3ad116..533abaf
+Fast-forward
+ DECISIONS.md                                       |    8 +
+ PROGRESS.md                                        |    4 +-
+ deploy-artifacts/2026-11-11-wsl/after-reboot.log   |   40 +
+ deploy-artifacts/2026-11-11-wsl/backup-final.log   |   26 +
+ deploy-artifacts/2026-11-11-wsl/backup-timer.log   |    6 +
+ deploy-artifacts/2026-11-11-wsl/baseline-first.log |  230 +++
+ deploy-artifacts/2026-11-11-wsl/baseline-retry.log |  246 +++
+ deploy-artifacts/2026-11-11-wsl/before-reboot.log  |   40 +
+ deploy-artifacts/2026-11-11-wsl/build-retry.log    | 1691 ++++++++++++++++++++
+ deploy-artifacts/2026-11-11-wsl/build.log          |  169 ++
+ deploy-artifacts/2026-11-11-wsl/caddy.log          |   53 +
+ .../2026-11-11-wsl/https-smoke-final.log           |    5 +
+ .../2026-11-11-wsl/https-smoke-retry.log           |   19 +
+ deploy-artifacts/2026-11-11-wsl/https-smoke.log    |   11 +
+ deploy-artifacts/2026-11-11-wsl/install.log        |  882 ++++++++++
+ .../2026-11-11-wsl/off-distro-copy.json            |    7 +
+ deploy-artifacts/2026-11-11-wsl/orphan.log         |    2 +
+ .../2026-11-11-wsl/progress-after-reboot.log       |    1 +
+ deploy-artifacts/2026-11-11-wsl/restore.log        |    4 +
+ deploy-artifacts/2026-11-11-wsl/service.log        |   79 +
+ deploy-artifacts/2026-11-11-wsl/shutdown.log       |    2 +
+ .../2026-11-11-wsl/verify-before-upgrade.log       |  232 +++
+ deploy-artifacts/2026-11-11-wsl/verify.mjs         |  276 ++++
+ deploy.md                                          |  240 ++-
+ 24 files changed, 4248 insertions(+), 25 deletions(-)
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/after-reboot.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/backup-final.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/backup-timer.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/baseline-first.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/baseline-retry.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/before-reboot.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/build-retry.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/build.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/caddy.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/https-smoke-final.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/https-smoke-retry.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/https-smoke.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/install.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/off-distro-copy.json
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/orphan.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/progress-after-reboot.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/restore.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/service.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/shutdown.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/verify-before-upgrade.log
+ create mode 100644 deploy-artifacts/2026-11-11-wsl/verify.mjs
+Scope: all 6 workspace projects
+Lockfile is up to date, resolution step is skipped
+Already up to date
+
+Done in 1.1s using pnpm v9.15.9
+
+> terminal-quest@0.0.1 build /home/tq/terminal-quest
+> pnpm -r build
+
+Scope: 5 of 6 workspace projects
+packages/shared build$ tsc -p tsconfig.json
+packages/shared build: Done
+apps/server build$ tsc -p tsconfig.json
+apps/web build$ tsc --noEmit -p tsconfig.json && vite build
+tools/scripts build$ tsc -p tsconfig.json
+tools/scripts build: Done
+apps/web build: vite v5.4.21 building for production...
+apps/web build: transforming...
+apps/server build: Done
+apps/web build: ✓ 105 modules transformed.
+apps/web build: rendering chunks...
+apps/web build: computing gzip size...
+apps/web build: dist/index.html                                                   0.40 kB │ gzip:  0.27 kB
+apps/web build: dist/assets/jetbrains-mono-greek-400-normal-C190GLew.woff2        4.23 kB
+apps/web build: dist/assets/inter-vietnamese-400-normal-DMkecbls.woff2            4.97 kB
+apps/web build: dist/assets/inter-greek-ext-400-normal-DGGRlc-M.woff2             5.26 kB
+apps/web build: dist/assets/jetbrains-mono-cyrillic-400-normal-BEIGL1Tu.woff2     5.33 kB
+apps/web build: dist/assets/jetbrains-mono-vietnamese-400-normal-CqNFfHCs.woff    5.37 kB
+apps/web build: dist/assets/jetbrains-mono-greek-400-normal-B9oWc5Lo.woff         5.66 kB
+apps/web build: dist/assets/inter-vietnamese-400-normal-Bbgyi5SW.woff             6.50 kB
+apps/web build: dist/assets/jetbrains-mono-cyrillic-400-normal-ugxPyKxw.woff      6.98 kB
+apps/web build: dist/assets/inter-greek-ext-400-normal-KugGGMne.woff              7.06 kB
+apps/web build: dist/assets/jetbrains-mono-latin-ext-400-normal-Bc8Ftmh3.woff2    7.34 kB
+apps/web build: dist/assets/inter-cyrillic-400-normal-obahsSVq.woff2              7.71 kB
+apps/web build: dist/assets/inter-greek-400-normal-B4URO6DV.woff2                 7.78 kB
+apps/web build: dist/assets/inter-cyrillic-400-normal-HOLc17fK.woff               9.78 kB
+apps/web build: dist/assets/inter-greek-400-normal-q2sYcFCs.woff                  9.92 kB
+apps/web build: dist/assets/jetbrains-mono-latin-ext-400-normal-fXTG6kC5.woff    10.13 kB
+apps/web build: dist/assets/inter-cyrillic-ext-400-normal-BQZuk6qB.woff2         10.23 kB
+apps/web build: dist/assets/inter-cyrillic-ext-400-normal-DQukG94-.woff          13.34 kB
+apps/web build: dist/assets/jetbrains-mono-latin-400-normal-V6pRDFza.woff2       21.17 kB
+apps/web build: dist/assets/inter-latin-400-normal-C38fXH4l.woff2                23.66 kB
+apps/web build: dist/assets/jetbrains-mono-latin-400-normal-6-qcROiO.woff        27.50 kB
+apps/web build: dist/assets/inter-latin-400-normal-CyCys3Eg.woff                 30.70 kB
+apps/web build: dist/assets/inter-latin-ext-400-normal-C1nco2VV.woff2            35.00 kB
+apps/web build: dist/assets/inter-latin-ext-400-normal-77YHD8bZ.woff             47.56 kB
+apps/web build: dist/assets/LevelPage-CFbL2ovg.css                                4.64 kB │ gzip:  1.73 kB
+apps/web build: dist/assets/index-Cbh29s8p.css                                   24.82 kB │ gzip: 11.31 kB
+apps/web build: dist/assets/index-C2yTQ5oM.js                                   270.13 kB │ gzip: 80.87 kB
+apps/web build: dist/assets/LevelPage-ksxWiyhW.js                               315.30 kB │ gzip: 80.32 kB
+apps/web build: ✓ built in 7.27s
+apps/web build: Done
+tools/level-runner build$ tsc -p tsconfig.json
+tools/level-runner build: Done
+
+> terminal-quest@0.0.1 images:build /home/tq/terminal-quest
+> docker build -t tq-base -f packages/sandbox-images/base/Dockerfile packages/sandbox-images/base
+
+#0 building with "rootless" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 2.29kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/debian:12-slim
+#2 DONE 1.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/6] FROM docker.io/library/debian:12-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
+#4 resolve docker.io/library/debian:12-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 802B done
+#5 DONE 0.0s
+
+#6 [4/6] COPY tq/ /opt/tq/
+#6 CACHED
+
+#7 [5/6] RUN chown -R root:root /opt/tq   && chmod 0755 /opt/tq   && chmod 0644 /opt/tq/bashrc   && chmod 0755 /opt/tq/bin/*   && chmod 0644 /opt/tq/cheats/*   && chown -R player:player /home/player
+#7 CACHED
+
+#8 [3/6] RUN rm -f /etc/dpkg/dpkg.cfg.d/excludes /etc/dpkg/dpkg.cfg.d/docker   && apt-get update && apt-get install -y --reinstall     bash coreutils findutils grep sed gawk less nano vim     man-db manpages manpages-dev     procps psmisc iproute2 iputils-ping curl netcat-openbsd dnsutils openssh-client     tar gzip bzip2 xz-utils zip unzip     jq cron rsync tmux git sudo lsof strace shellcheck bats file tree     ncurses-term locales python3 python3-croniter   && rm -rf /var/lib/apt/lists/*
+#8 CACHED
+
+#9 [2/6] RUN apt-get update && apt-get install -y --no-install-recommends     bash coreutils findutils grep sed gawk less nano vim     man-db manpages manpages-dev     procps psmisc iproute2 iputils-ping curl netcat-openbsd dnsutils openssh-client     tar gzip bzip2 xz-utils zip unzip     jq cron rsync tmux git sudo lsof strace shellcheck bats file tree     ncurses-term locales python3 python3-croniter   && rm -rf /var/lib/apt/lists/*   && useradd -m -u 1000 -s /bin/bash player   && passwd -l root   && passwd -l player   && chmod 0750 /bin/su /usr/bin/su   && mkdir -p /run/tq /opt/tq/secret   && chmod 0755 /opt/tq   && chmod 0700 /opt/tq/secret
+#9 CACHED
+
+#10 [6/6] WORKDIR /home/player
+#10 CACHED
+
+#11 exporting to image
+#11 exporting layers done
+#11 exporting manifest sha256:83f3d824c84bf3f34fcf3e7475e61dec87aabe1e70c262d8962917b1ec6312d5 done
+#11 exporting config sha256:cf7666e9ad593a39433b9bb0b115884fbd4366dc9bacdeda582fef3c9e9a9350 done
+#11 exporting attestation manifest sha256:b4508d973a7c3ca396491bd4e2bad54ac62a8dd967be308b3f44f10fdda25f1c done
+#11 exporting manifest list sha256:a9eb78ea08971af9af2c45010dfeb71dec72ddaf7cf77b93b8b0b4ae7d596504 done
+#11 naming to docker.io/library/tq-base:latest done
+#11 unpacking to docker.io/library/tq-base:latest done
+#11 DONE 0.0s
+
+> terminal-quest@0.0.1 db:migrate /home/tq/terminal-quest
+> pnpm --filter @terminal-quest/server db:migrate
+
+
+> @terminal-quest/server@0.0.1 db:migrate /home/tq/terminal-quest/apps/server
+> tsx src/db/migrate.ts
+
+{"level":30,"time":1794446894402,"pid":1027,"hostname":"Samuel","dbPath":"/home/tq/data/tq.sqlite","msg":"database migrated"}
+After upgrade: 533abaff77618e1dbbaa12d7904b65fa61f3a191
+active
+curl: (22) The requested URL returned error: 502
+{"ok":true,"docker":true}644 /home/tq/backups/pre-upgrade.geQBlX/tq.sqlite

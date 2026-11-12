@@ -1,6 +1,6 @@
 # Deploying Terminal Quest (single VM)
 
-> **Status: T9.3 verification in progress.** The verification log records the tested environment and its limits.
+> **Status: verified on a fresh Ubuntu 24.04 WSL 2 distro (2026-11-11).** Local HTTPS, rootless isolation, service recovery, backups and upgrade passed. Public DNS/ACME and the eventual production host remain separate checks. [Evidence](deploy-artifacts/2026-11-11-wsl/README.md)
 
 ## 1. Overview
 
@@ -448,22 +448,29 @@ unchanged while another WSL distro runs; use the new init/service timestamps
 as evidence of this distro's restart. Caddy can briefly return 502 while Node
 starts; wait for `/healthz` to report both `ok:true` and `docker:true`.
 Check Caddy and the lingering user's Docker/app/timer services before manually
-starting any of them. This is a distro restart, not a Windows reboot. At the end,
+starting any of them. This is a distro restart, not a Windows reboot.
+[Systemd services do not keep a WSL instance alive](https://learn.microsoft.com/en-us/windows/wsl/systemd):
+keep a WSL shell open during interactive testing. Linger does not turn WSL into
+an always-on server; a persistent timer can catch up when the distro next starts.
+At the end,
 terminate only the test distro; leave existing distros, global `.wslconfig`,
 Docker Desktop and its containers unchanged.
 
 ## Clean-VM verification (T9.3)
 
-- [ ] Install from a fresh checkout and migrate the systemd service's database.
-- [ ] Confirm rootless Docker resource limits and service startup after reboot.
-- [ ] Check HTTPS, SPA navigation, CSP, the secure guest cookie, and a real WebSocket level clear through Caddy.
-- [ ] Stop the service with an active attempt and verify the closing frame, abandonment, and sandbox cleanup. Verify orphan recovery on a separate abrupt restart.
-- [ ] Verify scheduled backup, off-VM retrieval and restore, and an upgrade that preserves existing progress.
+- [x] Install from a fresh checkout and migrate the systemd service's database (`install.log`, `build-retry.log`, `service.log`).
+- [x] Confirm rootless Docker resource limits and service startup after distro restart (`https-smoke-final.log`, `before-reboot.log`, `after-reboot.log`).
+- [x] Check local-CA HTTPS, SPA navigation, CSP, the secure guest cookie, and a real WebSocket level clear through Caddy (`https-smoke-final.log`).
+- [x] Stop the service with an active attempt and verify the closing frame, abandonment, and sandbox cleanup. Verify orphan recovery on a separate abrupt restart (`shutdown.log`, `orphan.log`).
+- [x] Verify scheduled backup, off-distro Windows retrieval and scratch restore, and an upgrade that preserves existing progress (`backup-final.log`, `restore.log`, `upgrade.log`, `progress-after-upgrade.log`).
+
+All evidence filenames above are under [the retained run directory](deploy-artifacts/2026-11-11-wsl/README.md).
+These ticks apply to the WSL/local-CA rehearsal, not public-host certification.
 
 ## Verification log
 
 _Record each time this doc was followed on a clean machine, with corrections._
 
-| Date | OS  | Result           | Corrections made |
-| ---- | --- | ---------------- | ---------------- |
-| —    | —   | not yet verified | —                |
+| Date | OS | Result | Corrections made |
+| ---- | --- | --- | --- |
+| 2026-11-11 (America/Santiago) | Fresh Ubuntu 24.04.5 x86-64, WSL 2.6.3 / kernel 6.6.87.2, systemd 255; Node 24.22.3, pnpm 9.15.9, Docker 29.9.3 rootless, Caddy 2.11.9 | **Passed for the requested WSL rehearsal.** Clean install/build/migration; effective 256-MiB / 0.5-CPU / 128-PID sandbox limits; strict-CA HTTPS and WebSocket clears; graceful and abrupt recovery; automatic distro-boot services; timer backup, Windows retrieval and restore; fast-forward `b3ad116` → `533abaf` preserved the original 55-XP completion. `pnpm verify`: 513 tests on Windows and 513 on Linux. [Raw evidence and limitations](deploy-artifacts/2026-11-11-wsl/README.md) | Added complete apt/Node/pnpm installation, correct `/usr/local/bin/node` service path, restrictive migration umask, backup units/schedule, explicit release selection, detached-release upgrade instructions and WSL/local-CA procedure. WSL's shared boot ID stays unchanged; use init/service timestamps. |

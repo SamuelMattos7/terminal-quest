@@ -1,0 +1,21 @@
+curl: (22) The requested URL returned error: 502
+curl: (22) The requested URL returned error: 502
+{"ok":true,"docker":true}Managed sandbox containers: 0
+v24.22.3
+9.15.9
+Docker version 29.9.3, build 5457199
+systemd 255 (255.4-1ubuntu8.17)
+Removed the private test-client cookie state.
+Stopped only the rehearsal app/rootless daemon; units remain enabled.
+Deleted the ignored Windows backup copy after successful restore.
+  NAME                 STATE           VERSION
+
+* docker-desktop       Running         2
+
+  TerminalQuest-T93    Stopped         2
+
+  TerminalQuest-T92    Stopped         2
+
+
+solaris-live-20261103-worker-1 Up 40 minutes
+solaris-live-20261103-sqs-1 Up 40 minutes

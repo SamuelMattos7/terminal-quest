@@ -1,0 +1,79 @@
+
+> terminal-quest@0.0.1 db:migrate /home/tq/terminal-quest
+> pnpm --filter @terminal-quest/server db:migrate
+
+
+> @terminal-quest/server@0.0.1 db:migrate /home/tq/terminal-quest/apps/server
+> tsx src/db/migrate.ts
+
+{"level":30,"time":1794446992188,"pid":778,"hostname":"Samuel","dbPath":"/tmp/tmp.NNLmtqwg7j/check.sqlite","msg":"database migrated"}
+tq 600 /tmp/tmp.NNLmtqwg7j/check.sqlite
+All 18 deploy.md Bash blocks passed bash -n.
+Systemd application/backup units verified.
+["name=seccomp,profile=builtin","name=rootless","name=cgroupns"] 2 systemd
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+Nov 11 22:23:05 Samuel systemd[241]: Stopping terminal-quest.service - Terminal Quest server...
+Nov 11 22:23:05 Samuel node[922]: {"level":30,"time":1794446585468,"pid":922,"hostname":"Samuel","signal":"SIGTERM","msg":"server shutting down"}
+Nov 11 22:23:05 Samuel node[922]: {"level":30,"time":1794446585469,"pid":922,"hostname":"Samuel","msg":"server shut down"}
+Nov 11 22:23:05 Samuel systemd[241]: Stopped terminal-quest.service - Terminal Quest server.
+Nov 11 22:23:05 Samuel systemd[241]: terminal-quest.service: Consumed 1.068s CPU time, 256.2M memory peak, 0B memory swap peak.
+Nov 11 22:23:33 Samuel systemd[235]: Started terminal-quest.service - Terminal Quest server.
+Nov 11 22:23:34 Samuel node[735]: {"level":30,"time":1794446614510,"pid":735,"hostname":"Samuel","port":3001,"msg":"server listening"}
+Nov 11 22:23:55 Samuel systemd[235]: Stopping terminal-quest.service - Terminal Quest server...
+Nov 11 22:23:55 Samuel node[735]: {"level":30,"time":1794446635728,"pid":735,"hostname":"Samuel","signal":"SIGTERM","msg":"server shutting down"}
+Nov 11 22:23:55 Samuel node[735]: {"level":30,"time":1794446635730,"pid":735,"hostname":"Samuel","msg":"server shut down"}
+Nov 11 22:23:55 Samuel systemd[235]: Stopped terminal-quest.service - Terminal Quest server.
+Nov 11 22:23:55 Samuel systemd[235]: terminal-quest.service: Consumed 1.316s CPU time.
+Nov 11 22:24:27 Samuel systemd[243]: Started terminal-quest.service - Terminal Quest server.
+Nov 11 22:24:28 Samuel node[729]: {"level":30,"time":1794446668733,"pid":729,"hostname":"Samuel","port":3001,"msg":"server listening"}
+Nov 11 22:24:41 Samuel systemd[243]: Stopping terminal-quest.service - Terminal Quest server...
+Nov 11 22:24:41 Samuel node[729]: {"level":30,"time":1794446681354,"pid":729,"hostname":"Samuel","signal":"SIGTERM","msg":"server shutting down"}
+Nov 11 22:24:41 Samuel node[729]: {"level":30,"time":1794446681355,"pid":729,"hostname":"Samuel","msg":"server shut down"}
+Nov 11 22:24:41 Samuel systemd[243]: Stopped terminal-quest.service - Terminal Quest server.
+Nov 11 22:24:41 Samuel systemd[243]: terminal-quest.service: Consumed 1.296s CPU time.
+Nov 11 22:24:51 Samuel systemd[235]: Started terminal-quest.service - Terminal Quest server.
+Nov 11 22:24:52 Samuel node[741]: {"level":30,"time":1794446692529,"pid":741,"hostname":"Samuel","port":3001,"msg":"server listening"}
+Nov 11 22:25:05 Samuel systemd[235]: Stopping terminal-quest.service - Terminal Quest server...
+Nov 11 22:25:05 Samuel node[741]: {"level":30,"time":1794446705516,"pid":741,"hostname":"Samuel","signal":"SIGTERM","msg":"server shutting down"}
+Nov 11 22:25:05 Samuel node[741]: {"level":30,"time":1794446705518,"pid":741,"hostname":"Samuel","msg":"server shut down"}
+Nov 11 22:25:05 Samuel systemd[235]: Stopped terminal-quest.service - Terminal Quest server.
+Nov 11 22:25:05 Samuel systemd[235]: terminal-quest.service: Consumed 1.333s CPU time.
+Nov 11 22:25:50 Samuel systemd[244]: Started terminal-quest.service - Terminal Quest server.
+Nov 11 22:25:51 Samuel node[746]: {"level":30,"time":1794446751845,"pid":746,"hostname":"Samuel","port":3001,"msg":"server listening"}
+Nov 11 22:26:04 Samuel systemd[244]: Stopping terminal-quest.service - Terminal Quest server...
+Nov 11 22:26:04 Samuel node[746]: {"level":30,"time":1794446764510,"pid":746,"hostname":"Samuel","signal":"SIGTERM","msg":"server shutting down"}
+Nov 11 22:26:04 Samuel node[746]: {"level":30,"time":1794446764511,"pid":746,"hostname":"Samuel","msg":"server shut down"}
+Nov 11 22:26:04 Samuel systemd[244]: Stopped terminal-quest.service - Terminal Quest server.
+Nov 11 22:26:04 Samuel systemd[244]: terminal-quest.service: Consumed 1.264s CPU time.
+Nov 11 22:26:16 Samuel systemd[235]: Started terminal-quest.service - Terminal Quest server.
+Nov 11 22:26:17 Samuel node[756]: {"level":30,"time":1794446777584,"pid":756,"hostname":"Samuel","port":3001,"msg":"server listening"}
+Nov 11 22:26:20 Samuel systemd[257]: Started terminal-quest.service - Terminal Quest server.
+Nov 11 22:26:20 Samuel node[751]: {"level":30,"time":1794446780815,"pid":751,"hostname":"Samuel","port":3001,"msg":"server listening"}
+Nov 11 22:26:36 Samuel systemd[257]: Stopping terminal-quest.service - Terminal Quest server...
+Nov 11 22:26:36 Samuel node[751]: {"level":30,"time":1794446796710,"pid":751,"hostname":"Samuel","signal":"SIGTERM","msg":"server shutting down"}
+Nov 11 22:26:36 Samuel node[751]: {"level":30,"time":1794446796711,"pid":751,"hostname":"Samuel","msg":"server shut down"}
+Nov 11 22:26:36 Samuel systemd[257]: Stopped terminal-quest.service - Terminal Quest server.
+Nov 11 22:26:36 Samuel systemd[257]: terminal-quest.service: Consumed 1.279s CPU time, 327.5M memory peak, 0B memory swap peak.
+Nov 11 22:26:50 Samuel systemd[235]: Started terminal-quest.service - Terminal Quest server.
+Nov 11 22:26:52 Samuel node[739]: {"level":30,"time":1794446812067,"pid":739,"hostname":"Samuel","port":3001,"msg":"server listening"}
+Nov 11 22:27:07 Samuel systemd[235]: Stopping terminal-quest.service - Terminal Quest server...
+Nov 11 22:27:07 Samuel node[739]: {"level":30,"time":1794446827095,"pid":739,"hostname":"Samuel","signal":"SIGTERM","msg":"server shutting down"}
+Nov 11 22:27:07 Samuel node[739]: {"level":30,"time":1794446827096,"pid":739,"hostname":"Samuel","msg":"server shut down"}
+Nov 11 22:27:07 Samuel systemd[235]: Stopped terminal-quest.service - Terminal Quest server.
+Nov 11 22:27:07 Samuel systemd[235]: terminal-quest.service: Consumed 1.297s CPU time.
+Nov 11 22:28:14 Samuel systemd[235]: Started terminal-quest.service - Terminal Quest server.
+Nov 11 22:28:15 Samuel node[1047]: {"level":30,"time":1794446895384,"pid":1047,"hostname":"Samuel","port":3001,"msg":"server listening"}
+Nov 11 22:28:29 Samuel systemd[235]: Stopping terminal-quest.service - Terminal Quest server...
+Nov 11 22:28:29 Samuel node[1047]: {"level":30,"time":1794446909966,"pid":1047,"hostname":"Samuel","signal":"SIGTERM","msg":"server shutting down"}
+Nov 11 22:28:29 Samuel node[1047]: {"level":30,"time":1794446909967,"pid":1047,"hostname":"Samuel","msg":"server shut down"}
+Nov 11 22:28:30 Samuel systemd[235]: Stopped terminal-quest.service - Terminal Quest server.
+Nov 11 22:28:30 Samuel systemd[235]: terminal-quest.service: Consumed 1.093s CPU time.
+Nov 11 22:28:45 Samuel systemd[241]: Started terminal-quest.service - Terminal Quest server.
+Nov 11 22:28:46 Samuel node[728]: {"level":30,"time":1794446926858,"pid":728,"hostname":"Samuel","port":3001,"msg":"server listening"}
+Nov 11 22:29:42 Samuel systemd[241]: Stopping terminal-quest.service - Terminal Quest server...
+Nov 11 22:29:42 Samuel node[728]: {"level":30,"time":1794446982545,"pid":728,"hostname":"Samuel","signal":"SIGTERM","msg":"server shutting down"}
+Nov 11 22:29:42 Samuel node[728]: {"level":30,"time":1794446982547,"pid":728,"hostname":"Samuel","msg":"server shut down"}
+Nov 11 22:29:42 Samuel systemd[241]: Stopped terminal-quest.service - Terminal Quest server.
+Nov 11 22:29:42 Samuel systemd[241]: terminal-quest.service: Consumed 1.367s CPU time.
+Nov 11 22:29:51 Samuel systemd[235]: Started terminal-quest.service - Terminal Quest server.
+Nov 11 22:29:52 Samuel node[749]: {"level":30,"time":1794446992451,"pid":749,"hostname":"Samuel","port":3001,"msg":"server listening"}

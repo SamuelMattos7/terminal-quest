@@ -1,0 +1,13 @@
+Global .wslconfig exists: False
+  NAME                 STATE           VERSION
+
+* docker-desktop       Running         2
+
+  TerminalQuest-T93    Running         2
+
+  TerminalQuest-T92    Stopped         2
+
+
+desktop-linux
+solaris-live-20261103-worker-1 Up 38 minutes
+solaris-live-20261103-sqs-1 Up 38 minutes
