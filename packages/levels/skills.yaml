@@ -185,7 +185,7 @@
   title: 'sudo'
   group: admin
   world: 3
-  prereqs: []
+  prereqs: [whoami, cat]
 - id: users-groups
   title: 'users and groups'
   group: admin

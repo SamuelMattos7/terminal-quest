@@ -1,0 +1,60 @@
+id: w3-01-sudo-and-id
+world: 3
+order: 1
+title: Power & Responsibility
+kind: lesson
+difficulty: 2
+estimated_minutes: 5
+story: |
+  Tux-9000: "Welcome to the Engine Room. Run `id` to see who you are,
+  then `sudo -l` to inspect your permitted commands. The access code is
+  in `/root/access-code.txt`, readable only by root. Read it with
+  `sudo cat` and submit the code. Sudo grants permission for one command;
+  it does not turn your terminal into a root shell. Use it carefully."
+teaches: [sudo]
+par_commands: 4
+xp: 100
+sandbox:
+  profile: admin
+  network: none
+  sudo_allow: [/usr/bin/cat /root/access-code.txt]
+setup:
+  generators:
+    - { script: setup/gen.sh }
+objectives:
+  - id: submit-code
+    text: 'Read `/root/access-code.txt` with sudo and submit its code using `tux submit <code>`.'
+    check: { type: answer_equals, from_file: /opt/tq/secret/access_code }
+hints:
+  - 'Check your identity with `id`. A root-owned file with mode 600 needs elevated access.'
+  - 'Run `sudo -l` to see your allow-list. Prefix the permitted `cat` command with `sudo`.'
+  - 'Run `sudo cat /root/access-code.txt`, then `tux submit <the code you read>`.'
+explain:
+  - command: id
+    parts:
+      - { token: id, meaning: 'show your user ID, primary group, and supplementary groups' }
+  - command: sudo -l
+    parts:
+      - { token: '-l', meaning: 'list the commands this user is allowed to run with sudo' }
+  - command: sudo cat /root/access-code.txt
+    parts:
+      - {
+          token: sudo,
+          meaning: 'run this permitted command as root; the interactive shell stays player',
+        }
+      - { token: cat, meaning: 'print the file; root can read its protected contents' }
+cheatsheet:
+  - {
+      skill: sudo,
+      syntax: 'id; sudo -l',
+      note: 'Inspect your identity and permitted elevated commands.',
+    }
+  - {
+      skill: sudo,
+      syntax: 'sudo COMMAND',
+      note: 'Run an allowed command as root. Elevate only when needed.',
+    }
+success_message: 'Access verified. Elevated permission, measured responsibility. Acceptable.'
+solutions:
+  reference: solution.sh
+  wrong: [wrong/without-sudo.sh, wrong/identity.sh]

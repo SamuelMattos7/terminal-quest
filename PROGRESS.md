@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** T9.3 is complete on the requested fresh Ubuntu WSL 2 environment (D-058). The corrected `deploy.md` and its verification log link retained installation, HTTPS/WebSocket, recovery, backup/restore and upgrade evidence. Public DNS/ACME and eventual production-host checks remain separate. T10.1 is next; no M10 work started.
+**Current focus:** T10.1 is complete on `codex/t10-1-admin-profile`: validated sudo allow-lists, real cron startup/opt-out, explicit admin capability mapping, and the complete seeded `w3-01-sudo-and-id` acceptance level (D-059). T10.2 is next; remaining M10 work is unstarted. Release configuration remains Worlds 1–2.
 
 ---
 
@@ -75,7 +75,7 @@ T9.2 WSL correction evidence (D-057): the first target ramp on `e7246c7` failed 
 
 ### M10 — Worlds 3–5
 
-- [ ] T10.1 `admin` profile (sudo allow-list, cron daemon, capability mapping)
+- [x] T10.1 `admin` profile (sudo allow-list, cron daemon, capability mapping) ✅ `pnpm verify`: build/lint + 531 tests; `pnpm levels:lint`: 28 levels, zero problems; `pnpm levels:test --level w3-01-sudo-and-id --seeds 3`: all 12 baseline/wrong/reference cases passed. `pnpm test:docker`: 94 tests passed (93 server + 1 runner), including six admin regressions (real player cron job, cron opt-out, sudo boundaries/default tools, kernel capability mapping), basic security and the complete 27-level progression playthrough. D-059 records policy and accepted in-container authority.
 - [ ] T10.2 Sidecars + `lan` networks (no egress verified)
 - [ ] T10.3 SPIKE S1 cron timing — outcome logged in `DECISIONS.md`
 - [ ] T10.4 SPIKE S2 systemd shim — outcome logged in `DECISIONS.md`
@@ -154,7 +154,7 @@ Batch verification for w2-10 through w2-12 passed `pnpm levels:lint` (24 levels,
 
 | ID                       | A   | L   | T   |
 | ------------------------ | --- | --- | --- |
-| w3-01-sudo-and-id        | [ ] | [ ] | [ ] |
+| w3-01-sudo-and-id        | [x] | [x] | [x] |
 | w3-02-users-groups       | [ ] | [ ] | [ ] |
 | w3-03-chown-special-bits | [ ] | [ ] | [ ] |
 | w3-04-ps-and-top         | [ ] | [ ] | [ ] |
@@ -169,6 +169,8 @@ Batch verification for w2-10 through w2-12 passed `pnpm levels:lint` (24 levels,
 | w3-13-rsync              | [ ] | [ ] | [ ] |
 | w3-14-packages           | [ ] | [ ] | [ ] |
 | w3-15-boss-server-setup  | [ ] | [ ] | [ ] |
+
+`w3-01-sudo-and-id` ✅ Complete seeded level with protected root-only code, exact-path sudo read, three hints, explain/cheatsheet, reference and two wrong scripts. Three-seed matrix: baseline and both wrong scripts stay incomplete; reference completes on all seeds. `pnpm levels:lint`: 28 levels, zero problems; `pnpm verify`: 531 tests.
 
 ### World 4 — The Automation Lab
 
@@ -252,8 +254,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 
 | Date       | Area                | Gap                                                                                     | Planned resolution                                         |
 | ---------- | ------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| 2026-10-06 | skills.yaml prereqs | Worlds 1 and 2 have skill edges. Skills for Worlds 3–5 still have empty `prereqs`. | Author remaining edges as their levels land |
-| 2026-10-06 | cron daemon start   | `needs_cron` field present (default true); daemon start not implemented                 | Implement in T10.1 admin polish; no admin levels exist yet |
+| 2026-10-06 | skills.yaml prereqs | Worlds 1 and 2 and the new sudo skill have prerequisite edges. Remaining unauthored Worlds 3–5 skills still have empty `prereqs`. | Author remaining edges as their levels land |
 | 2026-11-11 | Production validation | T9.1 repository audit, T9.2 WSL capacity and T9.3 fresh-WSL deployment rehearsal are complete. The eventual public host, public DNS/ACME, internet ingress and off-device backup transport remain unverified. WSL systemd services do not keep a distro alive. | Verify the actual production host and external services before public deployment (D-054/D-058). Local WSL evidence does not establish a future host's capacity or always-on availability. |
 | 2026-11-11 | Security audit scope | LAN and specialty script/login/cron execution semantics are not certified by the basic/no-network release audit. Optional `LOG_COMMANDS=1` command persistence is deliberately unimplemented; commands/answers/terminal streams are not persisted. | D-054 documents waivers; verify M10 features before enabling them. Any future command logging needs validated opt-in, writer-side 200-character truncation and privacy regressions. |
 

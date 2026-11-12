@@ -141,3 +141,40 @@ describe('compileSetup', () => {
     ).toThrow();
   });
 });
+
+describe('admin setup compilation (T10.1)', () => {
+  it('installs root-owned mode-440 sudoers, validates it, and starts cron last', () => {
+    const compiled = compileSetup(
+      makeLevel({
+        sandbox: {
+          profile: 'admin',
+          sudo_allow: ['/usr/bin/cat /root/access-code.txt'],
+        },
+        setup: { commands: ['echo ready'] },
+      }),
+      '.',
+      1,
+    );
+    const sudoers = compiled.files.find((f) => f.path === '/etc/sudoers.d/tq');
+    expect(sudoers).toMatchObject({ uid: 0, gid: 0, mode: 0o440 });
+    expect(sudoers?.content.toString()).toContain('/usr/bin/cat /root/access-code.txt');
+    expect(sudoers?.content.toString()).not.toContain('NOPASSWD: ALL');
+    expect(compiled.script).toContain('/usr/sbin/visudo -cf /etc/sudoers.d/tq');
+    expect(compiled.script.indexOf('/usr/sbin/cron')).toBeGreaterThan(
+      compiled.script.indexOf('echo ready'),
+    );
+    expect(compiled.script.trim()).toMatch(/pgrep -x cron > \/dev\/null$/);
+  });
+  it('respects cron opt-out and never grants sudo or cron to basic', () => {
+    const admin = compileSetup(
+      makeLevel({ sandbox: { profile: 'admin', needs_cron: false } }),
+      '.',
+      1,
+    );
+    expect(admin.script).not.toContain('/usr/sbin/cron');
+    expect(admin.files.some((f) => f.path === '/etc/sudoers.d/tq')).toBe(true);
+    const basic = compileSetup(makeLevel(), '.', 1);
+    expect(basic.files.some((f) => f.path === '/etc/sudoers.d/tq')).toBe(false);
+    expect(basic.script).not.toContain('/usr/sbin/cron');
+  });
+});

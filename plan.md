@@ -374,6 +374,8 @@ const stream = await exec.start({ hijack: true, stdin: true, Tty: true });
 Use `string_decoder.StringDecoder('utf8')` when converting chunks to `stdout` strings so multi-byte characters are not split.
 
 ### 7.3 Container security profiles
+**2026-11-11 (T10.1, D-059):** `sudo_allow` adds absolute commands with optional literal arguments to the default admin list (`id`, `apt-get`, `dpkg`, `useradd/usermod/userdel`, `groupadd/groupmod/groupdel`, `service`, `chown/chmod/chgrp`, `kill/pkill`). Sudoers directives, wildcards and line breaks are rejected. Extra capabilities are limited to explicit `NET_RAW`/`NET_ADMIN` on admin. Setup validates root-owned mode-0440 sudoers and starts cron last unless `needs_cron: false`. Admin tools retain the accepted in-container tampering limitation (D-004/D-010); basic isolation is unchanged.
+
 **2026-11-11 (T9.2, D-057):** Enforce process/thread budgets with the per-container cgroup PID controller. Do not set `RLIMIT_NPROC`: its UID-wide accounting crosses sandbox boundaries and prevented the rootless target from launching the eighth session. The cgroup limit remains 128 by default; effective enforcement must be verified on the target.
 
 Always (all profiles):

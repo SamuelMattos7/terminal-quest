@@ -72,6 +72,7 @@ function specFor(level: Level, attemptId: string): SandboxSpec {
     levelId: level.id,
     image: level.sandbox.image,
     profile: level.sandbox.profile,
+    capabilities: level.sandbox.capabilities,
     network: 'none',
     sidecars: [],
     resources: {

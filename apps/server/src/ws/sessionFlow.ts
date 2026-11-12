@@ -69,6 +69,7 @@ export async function launchLevelSession(
       levelId: level.id,
       image: level.sandbox.image,
       profile: level.sandbox.profile,
+      capabilities: level.sandbox.capabilities,
       network: level.sandbox.network,
       sidecars: level.sandbox.sidecars,
       resources: {

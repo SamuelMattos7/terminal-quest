@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, resolve, sep } from 'node:path';
 import type { Level } from '@terminal-quest/shared';
+import { adminSudoers, adminSetupCommands } from './adminSetup.js';
 import type { PutFilesEntry } from '../sandbox/provider.js';
 
 // Setup compiler for plan.md §12.2: turns a level's `setup` into tar
@@ -63,7 +64,7 @@ function mustBeAbsolute(path: string, what: string): void {
 }
 
 export function compileSetup(level: Level, levelDir: string, seed: number): CompiledSetup {
-  const files: PutFilesEntry[] = [];
+  const files: PutFilesEntry[] = adminSudoers(level);
   const lines: string[] = [];
   const setup = level.setup;
 
@@ -116,6 +117,8 @@ export function compileSetup(level: Level, levelDir: string, seed: number): Comp
     const content = readLevelFile(levelDir, `checks/${name}`);
     files.push({ path: `/opt/tq/checks/${level.id}/${name}`, content, mode: 0o755 });
   }
+
+  lines.push(...adminSetupCommands(level));
 
   return { files, script: lines.join('\n') + '\n' };
 }

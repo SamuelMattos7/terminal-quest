@@ -11,8 +11,9 @@ describe('GET /api/levels/:id', () => {
     const ctx = await makeTestContext([], {}, root);
     try {
       const cookie = await guestCookie(ctx.app);
-      expect(ctx.app.levels.byId.size).toBe(27);
-      for (const level of ctx.app.levels.byId.values()) {
+      const release = [...ctx.app.levels.byId.values()].filter((level) => level.world <= 2);
+      expect(release).toHaveLength(27);
+      for (const level of release) {
         const response = await ctx.app.inject({
           url: `/api/levels/${level.id}`,
           headers: { cookie },
@@ -27,6 +28,31 @@ describe('GET /api/levels/:id', () => {
       await ctx.cleanup();
     }
   });
+  it('keeps admin policy and seeded answers out of the enabled World 3 DTO (T10.1)', async () => {
+    const root = fileURLToPath(new URL('../../../../packages/levels/content/', import.meta.url));
+    const ctx = await makeTestContext([], { ENABLE_WORLDS: [1, 2, 3] }, root);
+    try {
+      const cookie = await guestCookie(ctx.app);
+      const response = await ctx.app.inject({
+        url: '/api/levels/w3-01-sudo-and-id',
+        headers: { cookie },
+      });
+      expect(response.statusCode).toBe(200);
+      expect(PublicLevelSchema.parse(response.json())).toEqual(response.json());
+      const body = response.json() as Record<string, unknown>;
+      for (const key of [...FORBIDDEN, 'sandbox', 'sudo_allow', 'capabilities']) {
+        expect(JSON.stringify(body)).not.toContain(`"${key}"`);
+      }
+      expect(response.body).not.toContain('/opt/tq/secret/access_code');
+      expect(response.body).not.toContain('setup/gen.sh');
+      for (const hint of ctx.app.levels.byId.get('w3-01-sudo-and-id')!.hints) {
+        expect(response.body).not.toContain(JSON.stringify(hint));
+      }
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+
   it('returns the public DTO without answers or internals', async () => {
     const ctx = await makeTestContext([makeLevel('first', 1, 1)]);
     try {
