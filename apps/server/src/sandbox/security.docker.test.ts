@@ -50,10 +50,12 @@ describe('release sandbox security (T9.1)', () => {
       Tmpfs: { '/tmp': 'size=32m,noexec,nosuid' },
       Ulimits: expect.arrayContaining([
         { Name: 'nofile', Soft: 1024, Hard: 1024 },
-        { Name: 'nproc', Soft: 128, Hard: 128 },
         { Name: 'core', Soft: 0, Hard: 0 },
       ]),
     });
+    expect(info.HostConfig.Ulimits).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ Name: 'nproc' })]),
+    );
     expect(info.Mounts).toEqual([]);
     expect(info.HostConfig.Binds ?? []).toEqual([]);
     expect(info.HostConfig.Devices ?? []).toEqual([]);

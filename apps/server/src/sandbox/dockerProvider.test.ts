@@ -40,6 +40,24 @@ function setup(overrides?: { image?: string | undefined; runtime?: string | unde
 }
 
 describe('Docker sandbox configuration', () => {
+  it.each(['basic', 'admin'] as const)(
+    'uses a per-container PID cap without a shared-UID nproc budget (%s)',
+    async (profile) => {
+      const { provider, client } = setup();
+      await provider.create({ ...spec, profile, resources: { ...spec.resources, pids: 32 } });
+      expect(client.createContainer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          HostConfig: expect.objectContaining({
+            PidsLimit: 32,
+            Ulimits: [
+              { Name: 'nofile', Soft: 1024, Hard: 1024 },
+              { Name: 'core', Soft: 0, Hard: 0 },
+            ],
+          }),
+        }),
+      );
+    },
+  );
   it('rejects LAN networks and sidecars before acquiring a container (T9.1)', async () => {
     const { provider, client } = setup();
     await expect(provider.create({ ...spec, network: 'lan' })).rejects.toThrow('T10.2');

@@ -374,10 +374,12 @@ const stream = await exec.start({ hijack: true, stdin: true, Tty: true });
 Use `string_decoder.StringDecoder('utf8')` when converting chunks to `stdout` strings so multi-byte characters are not split.
 
 ### 7.3 Container security profiles
+**2026-11-11 (T9.2, D-057):** Enforce process/thread budgets with the per-container cgroup PID controller. Do not set `RLIMIT_NPROC`: its UID-wide accounting crosses sandbox boundaries and prevented the rootless target from launching the eighth session. The cgroup limit remains 128 by default; effective enforcement must be verified on the target.
+
 Always (all profiles):
 - Labels: `tq.managed=true`, `tq.attempt=<id>`, `tq.user=<id>`, `tq.level=<id>`, `tq.created=<unix>`.
 - `--cap-drop ALL` then add back only what the profile needs.
-- `--pids-limit` (default 128), `--memory` (default 256m, swap = same), `--cpus` (default 0.5), ulimits: `nofile=1024`, `nproc` = pids, `core=0`.
+- `--pids-limit` (default 128, enforced by the cgroup PID controller), `--memory` (default 256m, swap = same), `--cpus` (default 0.5), ulimits: `nofile=1024`, `core=0`. No UID-wide `nproc` override.
 - `--network none` unless level `network: lan`.
 - No `--privileged`, no docker socket, no host mounts (except the optional read-only `/opt/tq` if not baked into the image; prefer baked in).
 - `/tmp` as tmpfs `size=32m,noexec,nosuid`. `/home/player` on the container layer (needs exec for scripts levels) — protect with pids/memory limits and a per-session TTL. If `SANDBOX_RUNTIME` env is set (e.g. `runsc`), pass `--runtime`.

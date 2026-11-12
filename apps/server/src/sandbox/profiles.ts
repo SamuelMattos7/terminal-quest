@@ -42,7 +42,8 @@ export function buildHostConfig(
     PidsLimit: spec.resources.pids,
     Ulimits: [
       { Name: 'nofile', Soft: 1024, Hard: 1024 },
-      { Name: 'nproc', Soft: spec.resources.pids, Hard: spec.resources.pids },
+      // RLIMIT_NPROC counts a shared UID across containers (and, with rootless
+      // Docker, the daemon user). PidsLimit enforces the budget per container.
       { Name: 'core', Soft: 0, Hard: 0 },
     ],
     NetworkMode: 'none',

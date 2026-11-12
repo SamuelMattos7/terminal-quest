@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** T9.2 load driver, host sampler and VM/access runbook are prepared on `codex/t9-2-load-test`, branched from the completed T9.1 review. The target VM has not been provisioned; measured acceptance remains blocked. T9.3 is unstarted.
+**Current focus:** T9.2 is running on a dedicated Ubuntu WSL 2 distribution on `codex/t9-2-load-test`, per the user's target selection (D-056). Provisioning and host-limit verification are in progress; measured acceptance remains unticked. T9.3 is unstarted.
 
 ---
 
@@ -70,6 +70,8 @@ Single source of truth for build status. Tick a box only when the task's accepta
 - [ ] T9.3 Verify [deploy.md](deploy.md) end to end on a clean VM and record the results in its verification log
 
 T9.2 preparation evidence: `pnpm verify` passed build, lint and **511 tests** (11 new driver/measurement regressions, including 20 mock sockets, split-frame echoes, capacity-vs-rate-limit rejection, unexpected guest-21 success, disconnects, idle closing and interrupted-ramp cleanup). One real local Docker session passed the driver's readiness/echo/Ctrl+U/completion smoke check; this is not a target load measurement. Both CLI help commands worked; all eight `loadtest.md` Bash snippets passed `bash -n`. Frozen offline dependency installation succeeded with only a new workspace importer and no dependency version changes. Linux host sampling and target recovery remain unverified.
+
+T9.2 WSL correction evidence (D-057): the first target ramp on `e7246c7` failed at launch 8 with setup EAGAIN and cleaned all acquired sandboxes. The two new PID-isolation Docker regressions failed against the original profile, then passed after replacing UID-wide nproc with the unchanged per-container cgroup PID limit. `pnpm verify` passed **513 tests**; **27 targeted Docker tests passed on rootless WSL**, covering PID exhaustion/neighbors, default kernel limits, privileges, provider I/O and exec-timeout cleanup. The full measured rerun and recovery checks are still pending.
 
 ### M10 — Worlds 3–5
 
