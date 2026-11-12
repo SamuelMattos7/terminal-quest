@@ -18,7 +18,9 @@
     "db:migrate": "pnpm --filter @terminal-quest/server db:migrate",
     "levels:lint": "pnpm --filter @terminal-quest/level-runner lint",
     "levels:test": "pnpm --filter @terminal-quest/level-runner levels:test",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "loadtest": "pnpm --filter @terminal-quest/load-test loadtest",
+    "loadtest:sample": "pnpm --filter @terminal-quest/load-test sample"
   },
   "devDependencies": {
     "@eslint/js": "^9.12.0",

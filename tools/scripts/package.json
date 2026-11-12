@@ -1,0 +1,22 @@
+{
+  "name": "@terminal-quest/load-test",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "loadtest": "tsx loadtest.ts",
+    "sample": "tsx sample.ts"
+  },
+  "dependencies": {
+    "@terminal-quest/shared": "workspace:*",
+    "ws": "8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "@types/ws": "8.5.13",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.3"
+  }
+}
