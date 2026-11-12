@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** T9.2 is complete on the user-selected 4-processor/8-GB Ubuntu WSL 2 target (D-056/D-057), with raw evidence and results in `loadtest.md`. Original WSL settings and the two previously running Docker Desktop containers were restored. T9.3 is next and remains unstarted.
+**Current focus:** T9.3 deployment rehearsal on branch `codex/t9-3-clean-deployment`, forked from `codex/t9-2-load-test` at `b3ad116`. A newly installed `TerminalQuest-T93` Ubuntu 24.04 WSL 2 distro follows `deploy.md`; D-058 records local HTTPS and restart scope. T9.2 evidence remains in `loadtest.md`.
 
 ---
 
@@ -67,7 +67,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 - [x] T9.1 Security checklist (`plan.md §13`) walked; waivers documented ✅ `pnpm verify`: build/lint + 500 tests; `pnpm test:docker`: 86 tests including all 27 levels in the sequential WebSocket playthrough; final targeted Docker rerun: 16 tests; `pnpm levels:lint`: 27 levels, zero problems; `pnpm e2e --workers=1`: 3 Chromium tests passed. Per-item evidence in [security-review.md](security-review.md), waivers D-054. Production host checks explicitly blocked, not passed; no public-deployment approval.
 - [x] T9.2 Run the 20-session load test on the target VM and record measurements in [loadtest.md](loadtest.md). ✅ Real rootless WSL run on `3b71d9e`: 20 sessions held 302.18 s; guest 21 received capacity 429 + Retry-After 30; 20 clears; echo p50 1.27 ms, start p95 353.14 ms; sampled peak memory 837.58 MiB, below-baseline recovery, zero leftovers, idle expiry and 5 s SIGKILL/boot-orphan recovery. Raw JSON/CSV/logs retained; analysis passed. `pnpm verify`: 513 tests; 27 targeted Docker tests passed in each of rootless WSL and rootful Desktop. Scoped to WSL, not future hosting capacity or T9.3.
-- [ ] T9.3 Verify [deploy.md](deploy.md) end to end on a clean VM and record the results in its verification log
+- [~] T9.3 Verify [deploy.md](deploy.md) end to end on a clean VM and record the results in its verification log. Fresh WSL 2 rehearsal in progress (D-058); baseline `pnpm verify` passed 513 tests on retry after one unexpected worker exit.
 
 T9.2 preparation evidence: `pnpm verify` passed build, lint and **511 tests** (11 new driver/measurement regressions, including 20 mock sockets, split-frame echoes, capacity-vs-rate-limit rejection, unexpected guest-21 success, disconnects, idle closing and interrupted-ramp cleanup). One real local Docker session passed the driver's readiness/echo/Ctrl+U/completion smoke check; this was not a target load measurement. Both CLI help commands worked; all eight `loadtest.md` Bash snippets passed `bash -n`. Frozen offline dependency installation succeeded with only a new workspace importer and no dependency version changes. Subsequent WSL measurements and recovery evidence close the original target-environment gap.
 

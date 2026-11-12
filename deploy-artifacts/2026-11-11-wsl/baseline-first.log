@@ -1,0 +1,230 @@
+
+> terminal-quest@0.0.1 verify C:\Users\samym\OneDrive\Escritorio\Portfolio Samuel\Game\terminal-quest
+> pnpm build && pnpm lint && pnpm test
+
+
+> terminal-quest@0.0.1 build C:\Users\samym\OneDrive\Escritorio\Portfolio Samuel\Game\terminal-quest
+> pnpm -r build
+
+Scope: 5 of 6 workspace projects
+packages/shared build$ tsc -p tsconfig.json
+packages/shared build: Done
+apps/server build$ tsc -p tsconfig.json
+tools/scripts build$ tsc -p tsconfig.json
+apps/web build$ tsc --noEmit -p tsconfig.json && vite build
+tools/scripts build: Done
+apps/web build: vite v5.4.21 building for production...
+apps/web build: transforming...
+apps/server build: Done
+apps/web build: ✓ 105 modules transformed.
+apps/web build: rendering chunks...
+apps/web build: computing gzip size...
+apps/web build: dist/index.html                                                   0.40 kB │ gzip:  0.27 kB
+apps/web build: dist/assets/jetbrains-mono-greek-400-normal-C190GLew.woff2        4.23 kB
+apps/web build: dist/assets/inter-vietnamese-400-normal-DMkecbls.woff2            4.97 kB
+apps/web build: dist/assets/inter-greek-ext-400-normal-DGGRlc-M.woff2             5.26 kB
+apps/web build: dist/assets/jetbrains-mono-cyrillic-400-normal-BEIGL1Tu.woff2     5.33 kB
+apps/web build: dist/assets/jetbrains-mono-vietnamese-400-normal-CqNFfHCs.woff    5.37 kB
+apps/web build: dist/assets/jetbrains-mono-greek-400-normal-B9oWc5Lo.woff         5.66 kB
+apps/web build: dist/assets/inter-vietnamese-400-normal-Bbgyi5SW.woff             6.50 kB
+apps/web build: dist/assets/jetbrains-mono-cyrillic-400-normal-ugxPyKxw.woff      6.98 kB
+apps/web build: dist/assets/inter-greek-ext-400-normal-KugGGMne.woff              7.06 kB
+apps/web build: dist/assets/jetbrains-mono-latin-ext-400-normal-Bc8Ftmh3.woff2    7.34 kB
+apps/web build: dist/assets/inter-cyrillic-400-normal-obahsSVq.woff2              7.71 kB
+apps/web build: dist/assets/inter-greek-400-normal-B4URO6DV.woff2                 7.78 kB
+apps/web build: dist/assets/inter-cyrillic-400-normal-HOLc17fK.woff               9.78 kB
+apps/web build: dist/assets/inter-greek-400-normal-q2sYcFCs.woff                  9.92 kB
+apps/web build: dist/assets/jetbrains-mono-latin-ext-400-normal-fXTG6kC5.woff    10.13 kB
+apps/web build: dist/assets/inter-cyrillic-ext-400-normal-BQZuk6qB.woff2         10.23 kB
+apps/web build: dist/assets/inter-cyrillic-ext-400-normal-DQukG94-.woff          13.34 kB
+apps/web build: dist/assets/jetbrains-mono-latin-400-normal-V6pRDFza.woff2       21.17 kB
+apps/web build: dist/assets/inter-latin-400-normal-C38fXH4l.woff2                23.66 kB
+apps/web build: dist/assets/jetbrains-mono-latin-400-normal-6-qcROiO.woff        27.50 kB
+apps/web build: dist/assets/inter-latin-400-normal-CyCys3Eg.woff                 30.70 kB
+apps/web build: dist/assets/inter-latin-ext-400-normal-C1nco2VV.woff2            35.00 kB
+apps/web build: dist/assets/inter-latin-ext-400-normal-77YHD8bZ.woff             47.56 kB
+apps/web build: dist/assets/LevelPage-CFbL2ovg.css                                4.64 kB │ gzip:  1.73 kB
+apps/web build: dist/assets/index-Cbh29s8p.css                                   24.82 kB │ gzip: 11.31 kB
+apps/web build: dist/assets/index-C2yTQ5oM.js                                   270.13 kB │ gzip: 80.87 kB
+apps/web build: dist/assets/LevelPage-ksxWiyhW.js                               315.30 kB │ gzip: 80.32 kB
+apps/web build: ✓ built in 8.62s
+apps/web build: Done
+tools/level-runner build$ tsc -p tsconfig.json
+tools/level-runner build: Done
+
+> terminal-quest@0.0.1 lint C:\Users\samym\OneDrive\Escritorio\Portfolio Samuel\Game\terminal-quest
+> eslint . && prettier --check apps packages tools *.json *.js *.ts
+
+Checking formatting...
+All matched files use Prettier code style!
+
+> terminal-quest@0.0.1 test C:\Users\samym\OneDrive\Escritorio\Portfolio Samuel\Game\terminal-quest
+> vitest run
+
+
+ RUN  v2.1.9 C:/Users/samym/OneDrive/Escritorio/Portfolio Samuel/Game/terminal-quest
+
+ ✓ |@terminal-quest/level-runner| src/lint.test.ts (10 tests) 117ms
+{"level":50,"time":1794445877627,"pid":18796,"hostname":"Samuel","err":{"type":"Error","message":"remove failed","stack":"Error: remove failed\n    at C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\sandbox\\dockerProvider.test.ts:116:48\n    at file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:146:14\n    at file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:533:11\n    at runWithTimeout (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:39:7)\n    at runTest (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1056:17)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at runSuite (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1205:15)\n    at runSuite (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1205:15)\n    at runFiles (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1262:5)\n    at startTests (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1271:3)"},"attemptId":"a05","levelId":"level","msg":"failed-start sandbox cleanup failed"}
+ ✓ |@terminal-quest/server| src/engine/scoring.test.ts (13 tests) 16ms
+{"level":40,"time":1794445877706,"pid":18796,"hostname":"Samuel","err":{"type":"Error","message":"file watcher closed unexpectedly","stack":"Error: file watcher closed unexpectedly\n    at PassThrough.ended (C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\sandbox\\dockerProvider.ts:208:36)\n    at PassThrough.emit (node:events:521:24)\n    at emitCloseNT (node:internal/streams/destroy:148:10)\n    at processTicksAndRejections (node:internal/process/task_queues:89:21)"},"attemptId":"a05","levelId":"level","path":"/run/tq/inbox","msg":"file watcher stopped"}
+ ✓ |@terminal-quest/server| src/sandbox/dockerProvider.test.ts (15 tests) 101ms
+ ✓ |@terminal-quest/load-test| scenario.test.ts (6 tests) 1939ms
+   ✓ sustains 20 cookie-owned sockets, matches split echoes, completes and deletes every session 762ms
+   ✓ fails a false capacity result (rate) and cleans all acquired sandboxes 498ms
+   ✓ fails a false capacity result (success) and cleans all acquired sandboxes 373ms
+{"level":40,"time":1794445879062,"pid":33676,"hostname":"Samuel","err":{"type":"ResourceLimitError","message":"watch line bytes limit exceeded","stack":"ResourceLimitError: watch line bytes limit exceeded\n    at C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\sandbox\\streamLimits.ts:23:49\n    at PassThrough.<anonymous> (C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\sandbox\\dockerProvider.ts:202:9)\n    at PassThrough.emit (node:events:509:28)\n    at addChunk (node:internal/streams/readable:563:12)\n    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)\n    at PassThrough.Readable.push (node:internal/streams/readable:394:5)\n    at node:internal/streams/transform:178:12\n    at PassThrough._transform (node:internal/streams/passthrough:46:3)\n    at PassThrough.Transform._write (node:internal/streams/transform:171:8)\n    at writeOrBuffer (node:internal/streams/writable:570:12)","name":"ResourceLimitError"},"attemptId":"attempt","levelId":"level","path":"/run/tq/inbox","msg":"file watcher stopped"}
+ ✓ |@terminal-quest/server| src/sandbox/streamLimits.test.ts (11 tests) 47ms
+{"level":50,"time":1794445909364,"pid":34876,"hostname":"Samuel","err":{"type":"AggregateError","message":"sandbox sweep failed","stack":"AggregateError: sandbox sweep failed\n    at SessionManager.sweepOnce (C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\sandbox\\sessionManager.ts:153:34)","aggregateErrors":[{"type":"Error","message":"Docker still down","stack":"Error: Docker still down\n    at C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\sandbox\\sessionManager.test.ts:268:32\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:533:5\n    at runTest (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1056:11)\n    at runSuite (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1205:15)\n    at runSuite (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1205:15)\n    at runFiles (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1262:5)\n    at startTests (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1271:3)\n    at file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/vitest@2.1.9_@types+node@22.20.5_jsdom@30.1.2/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:126:11\n    at withEnv (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/vitest@2.1.9_@types+node@22.20.5_jsdom@30.1.2/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:90:5)"}]},"msg":"reaper sweep failed"}
+ ✓ |@terminal-quest/server| src/sandbox/reaper.test.ts (7 tests) 25ms
+ ✓ |@terminal-quest/server| src/sandbox/sessionManager.test.ts (16 tests) 28ms
+ ✓ |@terminal-quest/server| src/engine/objectiveTracker.test.ts (7 tests) 20ms
+{"level":50,"time":1794445879824,"pid":24508,"hostname":"Samuel","err":{"type":"Error","message":"setup unavailable","stack":"Error: setup unavailable\n    at C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\ws\\launchCleanup.test.ts:52:62\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:533:5\n    at runTest (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1056:11)\n    at runSuite (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1205:15)\n    at runSuite (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1205:15)\n    at runFiles (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1262:5)\n    at startTests (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1271:3)\n    at file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/vitest@2.1.9_@types+node@22.20.5_jsdom@30.1.2/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:126:11\n    at withEnv (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/vitest@2.1.9_@types+node@22.20.5_jsdom@30.1.2/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:90:5)"},"userId":"c58507bc-b00f-4bbe-8681-28ce525325a2","levelId":"w1-01-first","attemptId":"tq-c58507bc-w1-01-first-s399765977-79822","sessionId":"5968fda4-d2ed-4175-8d50-c829e286e781","stage":"setup","msg":"session launch failed"}
+{"level":50,"time":1794445880217,"pid":14208,"hostname":"Samuel","err":{"type":"Error","message":"Docker unavailable","stack":"Error: Docker unavailable\n    at C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\routes\\sessions.test.ts:169:40\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:533:5\n    at runTest (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1056:11)\n    at runSuite (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1205:15)\n    at runSuite (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1205:15)\n    at runFiles (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1262:5)\n    at startTests (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1271:3)\n    at file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/vitest@2.1.9_@types+node@22.20.5_jsdom@30.1.2/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:126:11\n    at withEnv (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/vitest@2.1.9_@types+node@22.20.5_jsdom@30.1.2/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:90:5)"},"userId":"f0953054-4c2d-413c-8ba9-f2cbc7a7d4f7","levelId":"w1-01-a","attemptId":"tq-f0953054-w1-01-a-s1501951809-80217","msg":"sandbox creation failed"}
+{"level":40,"time":1794445885391,"pid":37924,"hostname":"Samuel","attemptId":"a04","levelId":"level","msg":"exec cleanup deadline exceeded; stopping sandbox"}
+ ✓ |@terminal-quest/server| src/routes/progress.test.ts (9 tests) 996ms
+   ✓ GET /api/progress > reports per-level progress and totals 495ms
+ ✓ |@terminal-quest/server| src/sandbox/execTimeout.test.ts (13 tests) 31ms
+ ✓ |@terminal-quest/server| src/routes/sessions.test.ts (8 tests) 1123ms
+   ✓ session lifecycle concurrency (A01) > serializes overlapping starts for the same user 524ms
+ ✓ |@terminal-quest/server| src/progression/progress.test.ts (3 tests) 162ms
+ ✓ |@terminal-quest/server| src/ws/launchCleanup.test.ts (17 tests) 1631ms
+   ✓ launch and teardown cleanup (A05) > unwinds a failed setup stage and permits the next launch 523ms
+ ✓ |@terminal-quest/server| src/engine/setupCompiler.test.ts (5 tests) 27ms
+ ✓ |@terminal-quest/server| src/ws/sessionFlow.test.ts (18 tests) 1902ms
+   ✓ handles an armed idle nudge when the player chooses to wait (A24) 516ms
+ ✓ |@terminal-quest/shared| src/checks.test.ts (17 tests) 30ms
+ ✓ |@terminal-quest/server| src/engine/levelLoader.test.ts (6 tests) 148ms
+ ✓ |@terminal-quest/server| src/progression/badges.test.ts (4 tests) 266ms
+ ✓ |@terminal-quest/shared| src/protocol.test.ts (8 tests) 18ms
+ ✓ |@terminal-quest/server| src/engine/checkRunner.test.ts (11 tests) 20ms
+ ✓ |@terminal-quest/shared| src/level.test.ts (14 tests) 48ms
+ ✓ |@terminal-quest/shared| src/api.test.ts (7 tests) 20ms
+{"level":50,"time":1794445882693,"pid":37140,"hostname":"Samuel","err":{"type":"Error","message":"network 'lan' is not supported until T10.2 (lan sidecars)","stack":"Error: network 'lan' is not supported until T10.2 (lan sidecars)\n    at Module.buildHostConfig (C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\sandbox\\profiles.ts:28:11)\n    at DockerProvider.<anonymous> (C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\routes\\sessionSecurity.test.ts:12:5)\n    at DockerProvider.mockCall (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+spy@2.1.9/node_modules/@vitest/spy/dist/index.js:61:17)\n    at DockerProvider.create (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/tinyspy@3.0.2/node_modules/tinyspy/dist/index.js:45:80)\n    at SessionManager.create (C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\sandbox\\sessionManager.ts:67:47)\n    at Module.launchLevelSession (C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\ws\\sessionFlow.ts:66:34)\n    at C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\routes\\sessions.ts:79:30\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at LiveSessionRegistry.runForUser (C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\ws\\liveSession.ts:49:14)"},"userId":"aa9d8113-a6a1-449b-85ab-3e355e04c87c","levelId":"w1-01-a","attemptId":"tq-aa9d8113-w1-01-a-s3027009388-82692","msg":"sandbox creation failed"}
+ ✓ |@terminal-quest/server| src/progression/unlock.test.ts (7 tests) 6ms
+{"level":50,"time":1794445882769,"pid":37140,"hostname":"Samuel","err":{"type":"Error","message":"sidecars are not supported until T10.2","stack":"Error: sidecars are not supported until T10.2\n    at Module.buildHostConfig (C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\sandbox\\profiles.ts:31:11)\n    at DockerProvider.<anonymous> (C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\routes\\sessionSecurity.test.ts:12:5)\n    at DockerProvider.mockCall (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+spy@2.1.9/node_modules/@vitest/spy/dist/index.js:61:17)\n    at DockerProvider.create (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/tinyspy@3.0.2/node_modules/tinyspy/dist/index.js:45:80)\n    at SessionManager.create (C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\sandbox\\sessionManager.ts:67:47)\n    at Module.launchLevelSession (C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\ws\\sessionFlow.ts:66:34)\n    at C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\routes\\sessions.ts:79:30\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at LiveSessionRegistry.runForUser (C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\apps\\server\\src\\ws\\liveSession.ts:49:14)"},"userId":"b9b8a9c1-5f6a-4035-942a-b98ee674f1ab","levelId":"w1-01-a","attemptId":"tq-b9b8a9c1-w1-01-a-s2326099850-82769","msg":"sandbox creation failed"}
+ ✓ |@terminal-quest/server| src/routes/worlds.test.ts (8 tests) 890ms
+   ✓ GET /api/worlds > requires a session 407ms
+ ✓ |@terminal-quest/server| src/routes/sessionSecurity.test.ts (6 tests) 1194ms
+   ✓ session security (T9.1) > rejects unsupported lan level configuration without silently degrading (T9.1) 433ms
+ ✓ |@terminal-quest/load-test| metrics.test.ts (5 tests) 17ms
+ ✓ |@terminal-quest/server| src/progression/completionIntegrity.test.ts (9 tests) 267ms
+ ✓ |@terminal-quest/server| src/engine/coach.test.ts (5 tests) 25ms
+ ✓ |@terminal-quest/server| src/progression/review.test.ts (4 tests) 80ms
+ ✓ |@terminal-quest/server| src/ws/socketLimits.test.ts (4 tests) 29ms
+ ✓ |@terminal-quest/server| src/routes/daily.test.ts (4 tests) 629ms
+   ✓ GET /api/daily > offers an explicitly eligible level only after it unlocks 438ms
+ ✓ |@terminal-quest/server| src/progression/daily.test.ts (3 tests) 4ms
+ ✓ |@terminal-quest/server| src/ws/sessionSecurity.test.ts (9 tests) 1163ms
+   ✓ sends only the public level in the initial socket state, with hints withheld (T9.1) 481ms
+ ✓ |@terminal-quest/server| src/db/db.test.ts (3 tests) 69ms
+ ✓ |@terminal-quest/server| src/config.test.ts (20 tests) 17ms
+ ✓ |@terminal-quest/server| src/routes/auth.test.ts (5 tests) 577ms
+   ✓ POST /api/guest > creates a guest and sets an httpOnly session cookie 373ms
+ ✓ |@terminal-quest/server| src/progression/skills.test.ts (3 tests) 104ms
+ ✓ |@terminal-quest/server| src/routes/levels.test.ts (3 tests) 819ms
+   ✓ GET /api/levels/:id > keeps all 27 release levels behind the strict nested DTO whitelist (T9.1) 683ms
+ ✓ |@terminal-quest/server| src/progression/dialogue.test.ts (5 tests) 5ms
+ ✓ |@terminal-quest/server| src/engine/hints.test.ts (1 test) 7ms
+ ✓ |@terminal-quest/server| src/ws/sessionReplay.test.ts (2 tests) 10ms
+ ✓ |@terminal-quest/server| src/webDelivery.test.ts (2 tests) 443ms
+   ✓ web delivery startup > fails clearly when the production web build is missing 381ms
+ ✓ |@terminal-quest/server| src/engine/releaseSecurity.test.ts (1 test) 291ms
+ ✓ |@terminal-quest/server| src/progression/xp.test.ts (4 tests) 5ms
+ ✓ |@terminal-quest/server| src/engine/historyLimits.test.ts (6 tests) 26ms
+ ✓ |@terminal-quest/server| src/ws/stdinLimiter.test.ts (2 tests) 4ms
+ ✓ |@terminal-quest/server| src/engine/cmdlog.test.ts (5 tests) 8ms
+ ✓ |@terminal-quest/server| src/progression/streaks.test.ts (3 tests) 7ms
+ ✓ |@terminal-quest/server| src/progression/events.test.ts (2 tests) 59ms
+ ✓ |@terminal-quest/server| src/routes/me.test.ts (3 tests) 469ms
+   ✓ PATCH /api/me > updates the display name and returns the user 392ms
+ ✓ |@terminal-quest/server| src/health.test.ts (2 tests) 683ms
+   ✓ GET /healthz > uses the gameplay socket and reports Docker readiness as false 544ms
+ ✓ |@terminal-quest/server| src/production.test.ts (11 tests) 11799ms
+   ✓ production server delivery and security (A07/A08) > delivers the emitted JavaScript, CSS, and self-hosted fonts with correct bytes and MIME 1175ms
+   ✓ production server delivery and security (A07/A08) > ignores forwarding headers from a non-loopback peer 586ms
+   ✓ drains an active production WebSocket and sandbox on SIGTERM 3362ms
+   ✓ drains an active production WebSocket and sandbox on SIGINT 3011ms
+
+warn - The `content` option in your Tailwind CSS configuration is missing or empty.
+warn - Configure your content sources or your generated CSS will be missing styles.
+warn - https://tailwindcss.com/docs/content-configuration
+stderr | src/session/socket.test.ts > SessionSocket > dispatches parsed server messages and ignores bad frames
+[tq] ignoring non-JSON socket frame
+[tq] ignoring malformed socket frame
+
+ ✓ |@terminal-quest/web| src/session/socket.test.ts (10 tests) 24ms
+ ✓ |@terminal-quest/web| src/api/client.test.ts (11 tests) 26ms
+ ✓ |@terminal-quest/web| src/stores/game.test.ts (8 tests) 9ms
+ ✓ |@terminal-quest/web| src/components/TerminalView.test.tsx (6 tests) 264ms
+stderr | src/session/useSession.test.ts > useSession > leave() still resets when abandon fails
+[tq] abandon session failed: Error: down
+    at C:\Users\samym\OneDrive\Escritorio\Portfolio Samuel\Game\terminal-quest\apps\web\src\session\useSession.test.ts:227:52
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1271:3)
+    at file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/vitest@2.1.9_@types+node@22.20.5_jsdom@30.1.2/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:126:11
+    at withEnv (file:///C:/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/vitest@2.1.9_@types+node@22.20.5_jsdom@30.1.2/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:90:5)
+
+ ✓ |@terminal-quest/web| src/session/useSession.test.ts (12 tests) 24ms
+ ✓ |@terminal-quest/web| src/components/QuestPanel.test.tsx (8 tests) 639ms
+   ✓ QuestPanel > confirms reset with a two-step button 328ms
+ ✓ |@terminal-quest/web| src/routes/routes.test.tsx (5 tests) 577ms
+ ✓ |@terminal-quest/web| src/pages/WorldMap.test.tsx (5 tests) 802ms
+   ✓ WorldMap > loads and renders worlds with locked/available/completed states 563ms
+ ✓ |@terminal-quest/level-runner| src/main.test.ts (4 tests) 6813ms
+   ✓ levels:test selection > rejects a missing world in --world 999 1720ms
+   ✓ levels:test selection > rejects a missing world in --world 1,999 1662ms
+   ✓ levels:test selection > rejects a missing --world value 1523ms
+   ✓ levels:test selection > rejects a partial release before starting Docker 1906ms
+ ✓ |@terminal-quest/web| src/pages/LevelPage.test.tsx (9 tests) 1881ms
+   ✓ LevelPage > shows an error with retry when starting fails 374ms
+   ✓ LevelPage > replays via reset and leaves via abandon 355ms
+ ✓ |@terminal-quest/web| src/pages/SpellbookPage.test.tsx (5 tests) 709ms
+   ✓ SpellbookPage > saves an edited note and shows confirmation 499ms
+ ✓ |@terminal-quest/web| src/stores/settings.test.ts (4 tests) 12ms
+ ✓ |@terminal-quest/web| src/components/SkillGraph.test.tsx (3 tests) 138ms
+ ✓ |@terminal-quest/web| src/pages/Landing.test.tsx (3 tests) 400ms
+   ✓ Landing > shows the pitch and start button 309ms
+ ✓ |@terminal-quest/web| src/components/CompleteModal.test.tsx (4 tests) 639ms
+   ✓ CompleteModal > renders rank, breakdown, skills, explain cards, badges, and all actions 382ms
+ ✓ |@terminal-quest/web| src/components/ReviewBanner.test.tsx (2 tests) 429ms
+ ✓ |@terminal-quest/web| src/pages/SettingsPage.test.tsx (3 tests) 626ms
+   ✓ SettingsPage > changes font size and toggles contrast 451ms
+ ✓ |@terminal-quest/web| src/pages/SkillsPage.test.tsx (3 tests) 342ms
+ ✓ |@terminal-quest/web| src/pages/ProfilePage.test.tsx (3 tests) 686ms
+   ✓ ProfilePage > renames via the editor 459ms
+ ✓ |@terminal-quest/web| src/components/DailyCard.test.tsx (3 tests) 316ms
+ ✓ |@terminal-quest/web| src/components/HintPanel.test.tsx (6 tests) 252ms
+ ✓ |@terminal-quest/web| src/components/ObjectiveList.test.tsx (1 test) 31ms
+ ✓ |@terminal-quest/web| src/components/Announcer.test.tsx (1 test) 35ms
+ ✓ |@terminal-quest/web| src/components/MobileKeyBar.test.tsx (2 tests) 236ms
+ ✓ |@terminal-quest/web| src/components/Toasts.test.tsx (2 tests) 132ms
+ ✓ |@terminal-quest/web| src/components/FakeTerminal.test.tsx (2 tests) 338ms
+   ✓ FakeTerminal > types the command out and then shows the output 335ms
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: Worker exited unexpectedly
+ ❯ ChildProcess.onUnexpectedExit ../../../Portfolio%20Samuel/Game/terminal-quest/node_modules/.pnpm/tinypool@1.1.1/node_modules/tinypool/dist/index.js:118:30
+ ❯ ChildProcess.emit node:events:521:24
+ ❯ ChildProcess._handle.onexit node:internal/child_process:295:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ Test Files  78 passed (79)
+      Tests  497 passed (513)
+     Errors  1 error
+   Start at  22:11:15
+   Duration  25.43s (transform 5.82s, setup 23.08s, collect 72.59s, tests 44.80s, environment 67.91s, prepare 22.99s)
+
+ ELIFECYCLE  Test failed. See above for more details.
+ ELIFECYCLE  Command failed with exit code 1.

@@ -1,0 +1,79 @@
+
+> terminal-quest@0.0.1 db:migrate /home/tq/terminal-quest
+> pnpm --filter @terminal-quest/server db:migrate
+
+
+> @terminal-quest/server@0.0.1 db:migrate /home/tq/terminal-quest/apps/server
+> tsx src/db/migrate.ts
+
+{"level":30,"time":1794446340264,"pid":767,"hostname":"Samuel","dbPath":"/home/tq/data/tq.sqlite","msg":"database migrated"}
+Created symlink /home/tq/.config/systemd/user/default.target.wants/terminal-quest.service → /home/tq/.config/systemd/user/terminal-quest.service.
+Created symlink /home/tq/.config/systemd/user/timers.target.wants/tq-backup.timer → /home/tq/.config/systemd/user/tq-backup.timer.
+curl: (7) Failed to connect to 127.0.0.1 port 3001 after 0 ms: Couldn't connect to server
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+  0   399    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+{"ok":true,"docker":true}{"ok":true,"docker":true}HTTP/1.1 200 OK
+x-ratelimit-limit: 60
+x-ratelimit-remaining: 57
+x-ratelimit-reset: 60
+content-security-policy: default-src 'self'; connect-src 'self' wss://localhost; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'
+accept-ranges: bytes
+cache-control: public, max-age=0
+last-modified: Thu, 12 Nov 2026 01:17:08 GMT
+etag: W/"18f-1a1cd547a8c"
+content-type: text/html; charset=utf-8
+content-length: 399
+Date: Thu, 12 Nov 2026 01:19:01 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+  0   399    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+HTTP/1.1 200 OK
+x-ratelimit-limit: 60
+x-ratelimit-remaining: 56
+x-ratelimit-reset: 60
+content-security-policy: default-src 'self'; connect-src 'self' wss://localhost; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'
+accept-ranges: bytes
+cache-control: public, max-age=0
+last-modified: Thu, 12 Nov 2026 01:17:08 GMT
+etag: W/"18f-1a1cd547a8c"
+content-type: text/html; charset=utf-8
+content-length: 399
+Date: Thu, 12 Nov 2026 01:19:01 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+  0    21    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+HTTP/1.1 404 Not Found
+x-ratelimit-limit: 60
+x-ratelimit-remaining: 55
+x-ratelimit-reset: 60
+content-type: application/json; charset=utf-8
+content-length: 21
+Date: Thu, 12 Nov 2026 01:19:01 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+MainPID=807
+ExecStart={ path=/usr/local/bin/node ; argv[]=/usr/local/bin/node apps/server/dist/index.js ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }
+UMask=0077
+NoNewPrivileges=yes
+ActiveState=active
+NEXT                            LEFT LAST PASSED UNIT            ACTIVATES
+Thu 2026-11-12 03:00:00 -03 4h 40min -         - tq-backup.timer tq-backup.service
+
+1 timers listed.
+Pass --all to see loaded but inactive timers, too.
+Nov 11 22:19:00 Samuel systemd[240]: Started terminal-quest.service - Terminal Quest server.
+Nov 11 22:19:01 Samuel node[807]: {"level":30,"time":1794446341778,"pid":807,"hostname":"Samuel","port":3001,"msg":"server listening"}

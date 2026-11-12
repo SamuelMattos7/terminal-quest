@@ -1,0 +1,53 @@
+{"level":"info","ts":1794446352.009595,"msg":"using config from file","file":"/etc/caddy/Caddyfile"}
+{"level":"info","ts":1794446352.0102708,"msg":"adapted config to JSON","adapter":"caddyfile"}
+{"level":"warn","ts":1794446352.0102904,"msg":"Caddyfile input is not formatted; run 'caddy fmt --overwrite' to fix inconsistencies","adapter":"caddyfile","file":"/etc/caddy/Caddyfile","line":2}
+{"level":"info","ts":1794446352.010726,"logger":"tls.cache.maintenance","msg":"started background certificate maintenance","cache":"0xd8d92b17680"}
+{"level":"info","ts":1794446352.0184915,"logger":"http.auto_https","msg":"server is listening only on the HTTPS port but has no TLS connection policies; adding one to enable TLS","server_name":"srv0","https_port":443}
+{"level":"info","ts":1794446352.0185258,"logger":"http.auto_https","msg":"enabling automatic HTTP->HTTPS redirects","server_name":"srv0"}
+{"level":"info","ts":1794446352.0187047,"logger":"http","msg":"servers shutting down with eternal grace period"}
+{"level":"info","ts":1794446352.0188358,"logger":"tls.cache.maintenance","msg":"stopped background certificate maintenance","cache":"0xd8d92b17680"}
+Valid configuration
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+  0   399    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+{"ok":true,"docker":true}HTTP/2 200 
+accept-ranges: bytes
+alt-svc: h3=":443"; ma=2592000
+cache-control: public, max-age=0
+content-security-policy: default-src 'self'; connect-src 'self' wss://localhost; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'
+content-type: text/html; charset=utf-8
+date: Thu, 12 Nov 2026 01:19:14 GMT
+etag: W/"18f-1a1cd547a8c"
+last-modified: Thu, 12 Nov 2026 01:17:08 GMT
+referrer-policy: no-referrer
+strict-transport-security: max-age=31536000
+via: 1.1 Caddy
+x-content-type-options: nosniff
+x-ratelimit-limit: 60
+x-ratelimit-remaining: 53
+x-ratelimit-reset: 48
+content-length: 399
+
+Netid State  Recv-Q Send-Q  Local Address:Port Peer Address:PortProcess                                   
+udp   UNCONN 0      0          127.0.0.54:53        0.0.0.0:*    users:(("systemd-resolve",pid=171,fd=16))
+udp   UNCONN 0      0       127.0.0.53%lo:53        0.0.0.0:*    users:(("systemd-resolve",pid=171,fd=14))
+udp   UNCONN 0      0      10.255.255.254:53        0.0.0.0:*                                             
+udp   UNCONN 0      0           127.0.0.1:323       0.0.0.0:*                                             
+udp   UNCONN 0      0           127.0.0.1:443       0.0.0.0:*    users:(("caddy",pid=178,fd=10))          
+udp   UNCONN 0      0               [::1]:323          [::]:*                                             
+tcp   LISTEN 0      511         127.0.0.1:3001      0.0.0.0:*    users:(("MainThread",pid=807,fd=23))     
+tcp   LISTEN 0      4096        127.0.0.1:80        0.0.0.0:*    users:(("caddy",pid=178,fd=11))          
+tcp   LISTEN 0      1000   10.255.255.254:53        0.0.0.0:*                                             
+tcp   LISTEN 0      4096        127.0.0.1:443       0.0.0.0:*    users:(("caddy",pid=178,fd=4))           
+tcp   LISTEN 0      4096       127.0.0.54:53        0.0.0.0:*    users:(("systemd-resolve",pid=171,fd=17))
+tcp   LISTEN 0      4096    127.0.0.53%lo:53        0.0.0.0:*    users:(("systemd-resolve",pid=171,fd=15))
+tcp   LISTEN 0      4096        127.0.0.1:2019      0.0.0.0:*    users:(("caddy",pid=178,fd=9))           
+disabled
+disabled
+Linger=yes
+939d290f-9d40-4145-9402-1fcbe8f1a364
+tq 1660 /run/user/1000/docker.sock
+tq 600 /home/tq/terminal-quest/.env.production
+tq 644 /home/tq/data/tq.sqlite

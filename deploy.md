@@ -1,6 +1,6 @@
 # Deploying Terminal Quest (single VM)
 
-> **Status: DRAFT.** Reviewed against the current repository. Clean-VM verification is pending under T9.3. Record the outcome and any corrections in the verification log.
+> **Status: T9.3 verification in progress.** The verification log records the tested environment and its limits.
 
 ## 1. Overview
 
@@ -15,9 +15,15 @@ The server controls Docker. Running Docker as an unprivileged user limits the ho
 
 ## 2. Requirements
 
-- Debian 12 or Ubuntu 22.04/24.04 and cgroup v2. The 4 vCPU / 8 GB target for 20 concurrent sandboxes is pending measurement in T9.2. [Load test procedure](loadtest.md)
+- Ubuntu 24.04 x86-64, systemd and cgroup v2. The commands below target this OS and architecture. For Debian or another architecture, adapt the package repository and Node archive using the linked upstream instructions.
+- A sudo administrator, outbound package-download access, and a Git clone URL readable by the service user. Allow disk space for dependencies, image layers and backups (40 GB is suggested headroom).
+- The 4-processor / 8 GB WSL target sustained 20 sessions in T9.2; this is not a capacity measurement for another host. [Measured results](loadtest.md)
 - A DNS name pointing to the VM (e.g. `quest.example.com`)
 - Ports 80 and 443 open; nothing else needed publicly
+
+Run administrator commands in your normal sudo shell. Blocks marked **as `tq`**
+run after `sudo -iu tq`; use `exit` to return. Do not add `tq` to the rootful
+Docker group. For a private WSL rehearsal without DNS, see section 13.
 
 ## 3. Create the service user
 
@@ -31,11 +37,24 @@ sudo loginctl enable-linger tq          # lets the user's services run without a
 ```bash
 sudo apt-get update
 sudo apt-get install -y uidmap dbus-user-session slirp4netns fuse-overlayfs curl ca-certificates git sqlite3
-# Install Docker Engine packages per https://docs.docker.com/engine/install/ (docker-ce, docker-ce-cli, containerd.io, docker-ce-rootless-extras)
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+sudo tee /etc/apt/sources.list.d/docker.sources >/dev/null <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: noble
+Components: stable
+Architectures: amd64
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-ce-rootless-extras docker-buildx-plugin
 sudo systemctl disable --now docker.service docker.socket   # stop the rootful daemon
 ```
 
 Enable cgroup v2 delegation so memory/CPU/PID limits work in rootless mode:
+
 ```bash
 sudo mkdir -p /etc/systemd/system/user@.service.d
 sudo tee /etc/systemd/system/user@.service.d/delegate.conf >/dev/null <<'EOF'
@@ -47,6 +66,7 @@ sudo systemctl restart user@$(id -u tq).service
 ```
 
 Enter a login shell with `sudo -iu tq`, then install and verify rootless Docker:
+
 ```bash
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
@@ -54,19 +74,47 @@ dockerd-rootless-setuptool.sh install
 systemctl --user enable --now docker
 docker context use rootless
 docker info | grep -Ei 'rootless|cgroup'
-docker run --rm --cpus 0.5 --memory 64m --pids-limit 32 alpine sh -c 'echo ok'
+docker run --rm --cpus 0.5 --memory 64m --pids-limit 32 alpine sh -c \
+  'cat /sys/fs/cgroup/memory.max /sys/fs/cgroup/cpu.max /sys/fs/cgroup/pids.max'
+# Expect 67108864, "50000 100000", and 32, respectively.
+grep '^tq:' /etc/subuid /etc/subgid    # each range must contain at least 65536 IDs
 ```
+
 The socket will be at `/run/user/<tq-uid>/docker.sock` — you'll use this as `DOCKER_SOCKET`.
 
 Confirm the security options list `rootless`, the cgroup version is 2, and Docker reports no warnings about missing CPU, memory, or PID limits. Keep the rootless context selected for image builds and operations. [Docker rootless setup](https://docs.docker.com/engine/security/rootless/) · [Resource limits](https://docs.docker.com/engine/security/rootless/tips/#limiting-resources)
 
 ## 5. Install Node and build the app
 
-Install Node 24 and pnpm 9.15.9 and make both available in the `tq` shell.
-Set `repo_url` to the Git clone URL for the repository.
+Return to the administrator shell. Install the current Node 24 x86-64 archive
+from Node's official distribution, checking its published SHA-256, and pin pnpm.
+Use a trusted administrator connection for these downloads. Node also publishes
+[signature-verification instructions](https://github.com/nodejs/release#verifying-binaries).
 
 ```bash
-git clone "$repo_url" ~/terminal-quest && cd ~/terminal-quest
+sudo apt-get install -y xz-utils build-essential python3
+node_tmp=$(mktemp -d)
+cd "$node_tmp"
+curl -fsSLO https://nodejs.org/dist/latest-v24.x/SHASUMS256.txt
+node_archive=$(awk '/linux-x64.tar.xz$/ {print $2}' SHASUMS256.txt)
+curl -fsSLO "https://nodejs.org/dist/latest-v24.x/$node_archive"
+grep " $node_archive\$" SHASUMS256.txt | sha256sum -c -
+sudo tar -xJf "$node_archive" --strip-components=1 -C /usr/local
+sudo /usr/local/bin/npm install --global pnpm@9.15.9
+/usr/local/bin/node --version        # v24.x
+/usr/local/bin/pnpm --version        # 9.15.9
+```
+
+**As `tq`**, set `repo_url` to your repository's clone URL and `release_ref`
+to the reviewed branch, tag or commit. The clone must include the repository
+layout, not just the compiled server directory.
+
+```bash
+repo_url=https://your-git-host/your-org/terminal-quest.git
+release_ref=your-reviewed-release
+git clone "$repo_url" ~/terminal-quest
+cd ~/terminal-quest
+git checkout "$release_ref"
 pnpm i --frozen-lockfile
 pnpm build
 pnpm images:build            # builds tq-base in the rootless daemon
@@ -77,6 +125,7 @@ The image build covers the base sandbox. LAN networks and sidecars are scheduled
 ## 6. Configure and migrate
 
 Create `~/terminal-quest/.env.production` with simple shell-compatible assignments so both systemd and the migration command can read it.
+
 ```
 PORT=3001
 PUBLIC_ORIGIN=https://quest.example.com
@@ -90,13 +139,18 @@ ENABLE_WORLDS=1,2
 UNLOCK_ALL=0
 LOG_LEVEL=info
 ```
+
 Replace `<tq-uid>` with the output of `id -u tq`. The MVP enables Worlds 1
 and 2. Keep `UNLOCK_ALL=0` in production.
+
+```bash
+chmod 600 .env.production
+```
 
 From the checkout as `tq`, run the migration before starting the service:
 
 ```bash
-(set -a && . ./.env.production && pnpm db:migrate)
+(umask 077 && set -a && . ./.env.production && pnpm db:migrate)
 ```
 
 The migrator creates the parent directory and logs the database path. Confirm
@@ -117,15 +171,19 @@ Requires=docker.service
 [Service]
 WorkingDirectory=%h/terminal-quest
 EnvironmentFile=%h/terminal-quest/.env.production
-ExecStart=/usr/bin/node apps/server/dist/index.js
+ExecStart=/usr/local/bin/node apps/server/dist/index.js
 Restart=on-failure
 RestartSec=3
 NoNewPrivileges=true
+UMask=0077
+TimeoutStopSec=60
 
 [Install]
 WantedBy=default.target
 ```
+
 Enable:
+
 ```bash
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
@@ -134,6 +192,7 @@ systemctl --user enable --now terminal-quest
 journalctl --user -u terminal-quest -n 30 --no-pager
 curl -s http://127.0.0.1:3001/healthz     # expect {"ok":true,"docker":true}
 ```
+
 Set `ExecStart` to the absolute Node path reported by `command -v node` in the `tq` shell if it differs from the example. HTTP 200 indicates app liveness. Confirm `docker:true` before starting a level.
 
 The compiled entry point (`node apps/server/dist/index.js`) serves `apps/web/dist/index.html`
@@ -145,11 +204,13 @@ server module, independently of the working directory. Startup fails with a
 continues to use Vite on port 5173.
 
 Check delivery before configuring Caddy:
+
 ```bash
 curl -I http://127.0.0.1:3001/          # 200, text/html
 curl -I http://127.0.0.1:3001/map       # 200, SPA refresh
 curl -I http://127.0.0.1:3001/assets/missing.js  # 404, never index.html
 ```
+
 The HTML uses `max-age=0` so navigations revalidate after upgrades. Unknown
 `/api`, `/ws`, and `/healthz` paths keep their normal JSON/auth errors;
 non-GET/HEAD requests and missing file paths never use the SPA fallback.
@@ -160,7 +221,18 @@ self-hosted font bytes, plus API and WebSocket authorization checks. Clean-VM de
 ## 8. Caddy (TLS + reverse proxy)
 
 Return to the administrator shell and install Caddy from its official apt
-repository. Save the following as `/etc/caddy/Caddyfile` with your public domain.
+repository ([upstream installation](https://caddyserver.com/docs/install#debian-ubuntu-raspbian)).
+
+```bash
+sudo apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl gpg
+curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null
+sudo chmod o+r /usr/share/keyrings/caddy-stable-archive-keyring.gpg /etc/apt/sources.list.d/caddy-stable.list
+sudo apt-get update
+sudo apt-get install -y caddy
+```
+
+Save the following as `/etc/caddy/Caddyfile` with your public domain.
 
 ```
 quest.example.com {
@@ -173,10 +245,13 @@ quest.example.com {
     reverse_proxy 127.0.0.1:3001
 }
 ```
+
 ```bash
 sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+sudo systemctl enable --now caddy
 sudo systemctl reload caddy
 ```
+
 Caddy proxies WebSockets automatically. Keep Caddy on the same host and point it
 at `127.0.0.1`. The compiled server listens on that address and uses the
 immediate client IP forwarded by Caddy for rate limits. Set `PUBLIC_ORIGIN` to
@@ -186,21 +261,66 @@ WebSocket at that public origin. [Caddy reverse proxy reference](https://caddyse
 
 ## 9. Backups
 
-Run a nightly backup as `tq` via a user timer or cron. The script reads
+**As `tq`**, run a nightly backup via a persistent user timer. The script reads
 `DB_PATH` from the deployment environment file.
+
 ```bash
 # ~/bin/tq-backup.sh
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 . "$HOME/terminal-quest/.env.production"
 mkdir -p "$HOME/backups"
 sqlite3 "$DB_PATH" ".backup '$HOME/backups/tq-$(date +%F).sqlite'"
 find "$HOME/backups" -name 'tq-*.sqlite' -mtime +14 -delete
 ```
+
+Create `~/bin` before saving the script and make it executable with
+`chmod 700 ~/bin/tq-backup.sh`. Save these units in `~/.config/systemd/user/`:
+
+```ini
+# tq-backup.service
+[Unit]
+Description=Back up Terminal Quest SQLite
+
+[Service]
+Type=oneshot
+ExecStart=%h/bin/tq-backup.sh
+UMask=0077
 ```
-0 3 * * *  /home/tq/bin/tq-backup.sh
+
+```ini
+# tq-backup.timer
+[Unit]
+Description=Nightly Terminal Quest backup
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
 ```
-Make the script executable before scheduling it. Copy backups off the VM.
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now tq-backup.timer
+systemctl --user start tq-backup.service
+systemctl --user list-timers tq-backup.timer --no-pager
+journalctl --user -u tq-backup.service -n 10 --no-pager
+sqlite3 "$HOME/backups/tq-$(date +%F).sqlite" 'PRAGMA integrity_check;'
+```
+
+The timer uses the VM's timezone (`timedatectl`). Linger from step 3 keeps it
+running without a login. The manual service start checks the backup immediately.
+Copy backups off the VM, for example from your administrator workstation:
+
+```bash
+scp tq@your-vm:/home/tq/backups/tq-YYYY-MM-DD.sqlite ./tq-backup.sqlite
+```
+
+Use your configured SSH key/access policy. On WSL, a Windows filesystem copy is
+off the distro, but is not protection against loss of the physical computer.
 Rehearse restoring an off-VM copy to a scratch database and check that it
 contains the expected saved progress. [SQLite CLI reference](https://sqlite.org/cli.html)
 
@@ -209,6 +329,7 @@ restore_dir=$(mktemp -d)
 backup=/path/to/downloaded/tq-backup.sqlite
 sqlite3 "$restore_dir/tq.sqlite" ".restore '$backup'"
 sqlite3 "$restore_dir/tq.sqlite" 'PRAGMA integrity_check;'  # expect ok
+sqlite3 "$restore_dir/tq.sqlite" 'SELECT level_id, completions, best_xp FROM level_progress;'
 ```
 
 ## 10. Upgrades
@@ -241,6 +362,12 @@ marks unfinished attempts abandoned, and waits for sandbox teardown. Boot
 cleanup sweeps leftover managed containers. After starting, check health,
 open a level through Caddy, and confirm saved progress survived.
 
+The upgrade block assumes a release branch with an upstream. If step 5 selected
+a detached tag/commit, replace `git pull --ff-only` with `git fetch origin &&
+git checkout <reviewed-new-release>`. Keep the backup and stopped-service failure
+behavior. Restore both the previous code/image and its matching database backup
+if rolling back an incompatible migration; do not overwrite a live database.
+
 ## 11. Operations checklist
 
 - `docker ps --filter label=tq.managed=true` — live sandboxes. Count should never exceed `MAX_CONTAINERS`.
@@ -251,13 +378,79 @@ open a level through Caddy, and confirm saved progress survived.
 
 ## 12. Troubleshooting
 
-| Symptom | Likely cause / fix |
-|---|---|
-| `/healthz` shows `docker:false` | Wrong `DOCKER_SOCKET`; docker user service not running (`systemctl --user status docker`); `XDG_RUNTIME_DIR` unset |
-| Start level returns 429 | `MAX_CONTAINERS` reached; check stuck sandboxes; reaper logs |
-| Resource limits ignored | cgroup v2 delegation not applied (step 4) |
-| Terminal connects then closes immediately | Origin mismatch: `PUBLIC_ORIGIN` must equal the browser origin exactly |
-| `sudo` fails inside `basic` levels | Expected: `no-new-privileges` is set for the basic profile |
+| Symptom                                   | Likely cause / fix                                                                                                 |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `/healthz` shows `docker:false`           | Wrong `DOCKER_SOCKET`; docker user service not running (`systemctl --user status docker`); `XDG_RUNTIME_DIR` unset |
+| Start level returns 429                   | `MAX_CONTAINERS` reached; check stuck sandboxes; reaper logs                                                       |
+| Resource limits ignored                   | cgroup v2 delegation not applied (step 4)                                                                          |
+| Terminal connects then closes immediately | Origin mismatch: `PUBLIC_ORIGIN` must equal the browser origin exactly                                             |
+| `sudo` fails inside `basic` levels        | Expected: `no-new-privileges` is set for the basic profile                                                         |
+
+## 13. Private WSL 2 rehearsal
+
+This exercises the Linux deployment with local HTTPS. It does not verify public
+DNS, ACME issuance, internet reachability, a cloud firewall, or Windows boot
+autostart. Keep the eventual production-host checks in [security-review.md](security-review.md).
+
+From Windows PowerShell, install a separate distro (do not reuse a configured
+deployment). WSL must already be installed and version 2 available:
+
+```powershell
+wsl --install Ubuntu-24.04 --name TerminalQuest-T93 --web-download --no-launch
+wsl -d TerminalQuest-T93 -u root
+```
+
+Confirm `ps -p 1 -o comm=` reports `systemd`. If necessary, enable
+`[boot] systemd=true` in `/etc/wsl.conf`, terminate only this distro with
+`wsl --terminate TerminalQuest-T93`, and relaunch. See
+[Microsoft's systemd instructions](https://learn.microsoft.com/en-us/windows/wsl/systemd).
+Run sections 3–9 inside this distro. Keep the checkout on the Linux filesystem.
+A local bare Git origin populated from a bundle is sufficient if remote Git
+credentials are unavailable; it must contain the reviewed release and upgrade.
+
+Use `PUBLIC_ORIGIN=https://localhost` and this private Caddyfile instead of the
+public-domain example:
+
+```caddyfile
+https://localhost {
+    bind 127.0.0.1
+    tls internal
+    encode zstd gzip
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "no-referrer"
+    }
+    reverse_proxy 127.0.0.1:3001
+}
+```
+
+After reloading Caddy, copy only its public root certificate for the test client:
+
+```bash
+sudo install -m 0644 -o tq -g tq \
+  /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt \
+  /home/tq/caddy-root.crt
+curl --cacert /home/tq/caddy-root.crt https://localhost/healthz
+curl --cacert /home/tq/caddy-root.crt -I https://localhost/map
+```
+
+Use that CA with the HTTPS/WebSocket test client (`NODE_EXTRA_CA_CERTS` for Node).
+Do not disable certificate verification. A browser also needs to trust the local
+CA if used for the rehearsal. Keep private keys and guest cookies out of evidence.
+Copy a test backup to Windows, then return it to a scratch Linux path and restore
+it using section 9. Compare saved progress, not just SQLite integrity.
+
+To exercise boot recovery, record `ps -p 1 -o lstart=` and the services'
+`ActiveEnterTimestamp`/`InvocationID`, run `wsl --terminate TerminalQuest-T93`
+from PowerShell, then relaunch the distro. The shared kernel's boot ID can stay
+unchanged while another WSL distro runs; use the new init/service timestamps
+as evidence of this distro's restart. Caddy can briefly return 502 while Node
+starts; wait for `/healthz` to report both `ok:true` and `docker:true`.
+Check Caddy and the lingering user's Docker/app/timer services before manually
+starting any of them. This is a distro restart, not a Windows reboot. At the end,
+terminate only the test distro; leave existing distros, global `.wslconfig`,
+Docker Desktop and its containers unchanged.
 
 ## Clean-VM verification (T9.3)
 
@@ -268,8 +461,9 @@ open a level through Caddy, and confirm saved progress survived.
 - [ ] Verify scheduled backup, off-VM retrieval and restore, and an upgrade that preserves existing progress.
 
 ## Verification log
+
 _Record each time this doc was followed on a clean machine, with corrections._
 
-| Date | OS | Result | Corrections made |
-|---|---|---|---|
-| — | — | not yet verified | — |
+| Date | OS  | Result           | Corrections made |
+| ---- | --- | ---------------- | ---------------- |
+| —    | —   | not yet verified | —                |
