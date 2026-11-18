@@ -61,6 +61,31 @@ describe('LevelSchema', () => {
   });
 
   it.each([
+    { sandbox: { sidecars: ['web'] } },
+    { sandbox: { network: 'lan', sidecars: ['dns', 'dns'] } },
+    { sandbox: { network: 'lan', sidecars: ['proxy'] } },
+    { setup: { sidecar_setup: { ssh_authorized_key: '/home/player/.ssh/bootstrap.pub' } } },
+    {
+      sandbox: { network: 'lan', sidecars: ['ssh'] },
+      setup: { sidecar_setup: { ssh_authorized_key: '/etc/shadow' } },
+    },
+    {
+      objectives: [
+        {
+          id: 'remote',
+          text: 'Deliver a file.',
+          check: {
+            type: 'all',
+            checks: [{ type: 'exec', sidecar: 'ssh', inline: 'test -f handoff' }],
+          },
+        },
+      ],
+    },
+  ])('rejects invalid LAN authoring: %j', (overrides) => {
+    expect(LevelSchema.safeParse(withOverrides(overrides)).success).toBe(false);
+  });
+
+  it.each([
     { coach: [{ when: { command_regex: '(' }, say: 'Try pwd' }] },
     { forbidden_commands: ['['] },
     {

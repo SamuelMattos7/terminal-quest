@@ -18,6 +18,7 @@ export class SetupCompileError extends Error {
 export interface CompiledSetup {
   files: PutFilesEntry[];
   script: string;
+  sshAuthorizedKey?: string;
 }
 
 /** Single-quote a string for safe embedding in the root-run script. */
@@ -120,5 +121,10 @@ export function compileSetup(level: Level, levelDir: string, seed: number): Comp
 
   lines.push(...adminSetupCommands(level));
 
-  return { files, script: lines.join('\n') + '\n' };
+  const sshAuthorizedKey = setup?.sidecar_setup?.ssh_authorized_key;
+  return {
+    files,
+    script: lines.join('\n') + '\n',
+    ...(sshAuthorizedKey === undefined ? {} : { sshAuthorizedKey }),
+  };
 }

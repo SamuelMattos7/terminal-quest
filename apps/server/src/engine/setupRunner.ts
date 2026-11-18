@@ -28,5 +28,22 @@ export async function runSetup(
   if (result.timedOut || result.code !== 0) {
     throw new SetupFailedError(result);
   }
+  if (compiled.sshAuthorizedKey !== undefined) {
+    const publicKey = await provider.exec(handle, ['cat', '--', compiled.sshAuthorizedKey], {
+      user: 'player',
+      timeoutMs,
+    });
+    if (publicKey.timedOut || publicKey.code !== 0) throw new SetupFailedError(publicKey);
+    const key = publicKey.stdout.trimEnd();
+    if (!/^ssh-ed25519 [A-Za-z0-9+/]+={0,2}(?: [^\r\n]*)?$/.test(key)) {
+      throw new Error('ssh sidecar setup requires one Ed25519 public key');
+    }
+    const installed = await provider.exec(
+      handle,
+      ['bash', '-e', '-c', 'umask 077; cat > /home/deploy/.ssh/authorized_keys'],
+      { sidecar: 'ssh', user: 'deploy', stdin: key + '\n', timeoutMs },
+    );
+    if (installed.timedOut || installed.code !== 0) throw new SetupFailedError(installed);
+  }
   return result;
 }

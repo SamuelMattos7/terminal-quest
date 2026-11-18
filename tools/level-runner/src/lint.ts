@@ -176,10 +176,12 @@ export function lintLevels(loaded: LoadedLevels): LintEntry[] {
 
   for (const [world, levels] of loaded.byWorld) {
     const orders = levels.map((l) => l.order).sort((a, b) => a - b);
+    // T10.2 authors W3 levels 10–12 before T10.5 fills orders 2–9.
+    const stagedWorld3 = world === 3 && orders.join(',') === '1,10,11,12';
     const contiguous =
       new Set(orders).size === orders.length &&
       orders[orders.length - 1]! - orders[0]! + 1 === orders.length;
-    if (!contiguous) {
+    if (!contiguous && !stagedWorld3) {
       result.push({
         levelId: `(world ${world} ordering)`,
         issues: [`orders must be unique and gap-free (got: ${orders.join(', ')})`],

@@ -5,5 +5,6 @@ export * from './protocol.js';
 export * from './skills.js';
 export * from './scoring.js';
 export * from './limits.js';
+export * from './sandboxNetwork.js';
 export * from './loadtest.js';
 export { SandboxEnvSchema } from './validation.js';

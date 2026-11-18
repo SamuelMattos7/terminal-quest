@@ -35,23 +35,37 @@ async function setup() {
 }
 
 describe('session security (T9.1)', () => {
-  it.each(['lan', 'sidecars'] as const)(
-    'rejects unsupported %s level configuration without silently degrading (T9.1)',
-    async (feature) => {
-      const ctx = await setup();
-      try {
-        const level = ctx.app.levels.byId.get('w1-01-a')!;
-        if (feature === 'lan') level.sandbox.network = 'lan';
-        else level.sandbox.sidecars = ['web'];
-        expect((await ctx.start()).statusCode).toBe(500);
-        expect(ctx.app.live.size).toBe(0);
-        expect(ctx.app.manager.size).toBe(0);
-        expect(ctx.app.provider.putFiles).not.toHaveBeenCalled();
-      } finally {
-        await ctx.cleanup();
-      }
-    },
-  );
+  it('rejects sidecars without a LAN before running level setup', async () => {
+    const ctx = await setup();
+    try {
+      ctx.app.levels.byId.get('w1-01-a')!.sandbox.sidecars = ['web'];
+      expect((await ctx.start()).statusCode).toBe(500);
+      expect(ctx.app.live.size).toBe(0);
+      expect(ctx.app.manager.size).toBe(0);
+      expect(ctx.app.provider.putFiles).not.toHaveBeenCalled();
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+
+  it('passes the declared LAN and sidecars to the provider on start', async () => {
+    const ctx = await setup();
+    try {
+      const { sandbox } = ctx.app.levels.byId.get('w1-01-a')!;
+      sandbox.network = 'lan';
+      sandbox.sidecars = ['web', 'dns'];
+      expect((await ctx.start()).statusCode).toBe(200);
+      expect(ctx.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          network: 'lan',
+          sidecars: ['web', 'dns'],
+          seed: expect.any(Number),
+        }),
+      );
+    } finally {
+      await ctx.cleanup();
+    }
+  });
   it('limits starts by authenticated user across IPs without sharing a NAT budget', async () => {
     const ctx = await setup();
     try {

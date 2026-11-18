@@ -94,6 +94,20 @@ describe('lintLevels', () => {
     }
   });
 
+  it('allows only the planned staged World 3 gaps and still rejects duplicate orders', () => {
+    const world3 = (orders: number[]) => ({
+      ...loaded([]),
+      byWorld: new Map([[3, orders.map((order) => makeLevel({ world: 3, order }))]]),
+    });
+    expect(lintLevels(world3([1, 10, 11, 12]))).toEqual([]);
+    expect(lintLevels(world3([1, 10, 12]))).toEqual([
+      expect.objectContaining({ levelId: '(world 3 ordering)' }),
+    ]);
+    expect(lintLevels(world3([1, 10, 10, 12]))).toEqual([
+      expect.objectContaining({ levelId: '(world 3 ordering)' }),
+    ]);
+  });
+
   it('flags too many non-bonus objectives and unknown skills', () => {
     const { dir, cleanup } = makeDir();
     try {

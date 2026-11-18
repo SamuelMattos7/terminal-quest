@@ -1,0 +1,61 @@
+id: w3-11-curl-and-dns
+world: 3
+order: 11
+title: Talk to the Web
+kind: lesson
+difficulty: 2
+estimated_minutes: 5
+story: |
+  Tux-9000: "The intranet has a health endpoint at
+  `http://web.penguin.corp/status`. Inspect its headers with `curl -I` and
+  save the response body as `status.json`. Our internal resolver also
+  knows `db.penguin.corp`. Look up its IPv4 address with `dig` and submit it."
+teaches: [curl, dns]
+par_commands: 4
+xp: 100
+sandbox:
+  network: lan
+  sidecars: [web, dns]
+setup:
+  generators:
+    - { script: setup/gen.sh }
+objectives:
+  - id: save-status
+    text: Save the status response body to `~/status.json`.
+    check:
+      type: file_content
+      path: /home/player/status.json
+      equals: '{{secret:status}}'
+  - id: submit-address
+    text: Submit the IPv4 address for `db.penguin.corp` with `tux submit`.
+    check: { type: answer_equals, from_file: /opt/tq/secret/db_ip }
+hints:
+  - 'HTTP headers describe a response. Save the body separately, and use DNS for the database address.'
+  - 'Use `curl -o FILE URL` for the body and `dig +short NAME A` for an IPv4 lookup.'
+  - 'Run `curl -o status.json http://web.penguin.corp/status`, then submit the output of `dig +short db.penguin.corp A`.'
+explain:
+  - command: curl -I http://web.penguin.corp/status
+    parts:
+      - { token: '-I', meaning: 'request headers with HTTP HEAD' }
+  - command: curl -o status.json http://web.penguin.corp/status
+    parts:
+      - { token: '-o status.json', meaning: 'save the response body to the named file' }
+  - command: dig +short db.penguin.corp A
+    parts:
+      - { token: '+short', meaning: 'show just the answer records' }
+      - { token: 'A', meaning: 'request IPv4 addresses' }
+cheatsheet:
+  - {
+      skill: curl,
+      syntax: 'curl -I URL; curl -o FILE URL',
+      note: 'Inspect headers, then save the body.',
+    }
+  - {
+      skill: dns,
+      syntax: 'dig +short HOST A',
+      note: 'Query the configured resolver for an IPv4 address.',
+    }
+success_message: 'Status archived and database address confirmed. The intranet is accounted for.'
+solutions:
+  reference: solution.sh
+  wrong: [wrong/headers.sh, wrong/web-address.sh]

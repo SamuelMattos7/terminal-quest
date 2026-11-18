@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** T10.1 is complete on `codex/t10-1-admin-profile`: validated sudo allow-lists, real cron startup/opt-out, explicit admin capability mapping, and the complete seeded `w3-01-sudo-and-id` acceptance level (D-059). T10.2 is next; remaining M10 work is unstarted. Release configuration remains Worlds 1–2.
+**Current focus:** T10.2 is complete. The three LAN lessons pass across three seeds, and Docker Desktop verified player-container egress isolation and cleanup (D-060). Release configuration remains Worlds 1–2.
 
 ---
 
@@ -76,7 +76,7 @@ T9.2 WSL correction evidence (D-057): the first target ramp on `e7246c7` failed 
 ### M10 — Worlds 3–5
 
 - [x] T10.1 `admin` profile (sudo allow-list, cron daemon, capability mapping) ✅ `pnpm verify`: build/lint + 531 tests; `pnpm levels:lint`: 28 levels, zero problems; `pnpm levels:test --level w3-01-sudo-and-id --seeds 3`: all 12 baseline/wrong/reference cases passed. `pnpm test:docker`: 94 tests passed (93 server + 1 runner), including six admin regressions (real player cron job, cron opt-out, sudo boundaries/default tools, kernel capability mapping), basic security and the complete 27-level progression playthrough. D-059 records policy and accepted in-container authority.
-- [ ] T10.2 Sidecars + `lan` networks (no egress verified)
+- [x] T10.2 Sidecars + `lan` networks ✅ All 33 acceptance cases for `w3-10` through `w3-12` passed across three seeds. Docker Desktop 29.8.1 verified blocked IPv4/IPv6 HTTPS, public DNS, and cross-attempt traffic from player containers. `pnpm verify`: 543 tests. `pnpm test:docker`: 101 tests. `pnpm levels:lint`: 31 levels, zero problems. Zero managed containers or networks remained.
 - [ ] T10.3 SPIKE S1 cron timing — outcome logged in `DECISIONS.md`
 - [ ] T10.4 SPIKE S2 systemd shim — outcome logged in `DECISIONS.md`
 - [ ] T10.5 Author World 3, 4, 5 content
@@ -163,9 +163,9 @@ Batch verification for w2-10 through w2-12 passed `pnpm levels:lint` (24 levels,
 | w3-07-environment        | [ ] | [ ] | [ ] |
 | w3-08-disk-usage         | [ ] | [ ] | [ ] |
 | w3-09-archives           | [ ] | [ ] | [ ] |
-| w3-10-networking-basics  | [ ] | [ ] | [ ] |
-| w3-11-curl-and-dns       | [ ] | [ ] | [ ] |
-| w3-12-ssh-keys           | [ ] | [ ] | [ ] |
+| w3-10-networking-basics  | [x] | [x] | [x] 3 seeds, 9 cases |
+| w3-11-curl-and-dns       | [x] | [x] | [x] 3 seeds, 12 cases |
+| w3-12-ssh-keys           | [x] | [x] | [x] 3 seeds, 12 cases |
 | w3-13-rsync              | [ ] | [ ] | [ ] |
 | w3-14-packages           | [ ] | [ ] | [ ] |
 | w3-15-boss-server-setup  | [ ] | [ ] | [ ] |
@@ -256,7 +256,7 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 | ---------- | ------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
 | 2026-10-06 | skills.yaml prereqs | Worlds 1 and 2 and the new sudo skill have prerequisite edges. Remaining unauthored Worlds 3–5 skills still have empty `prereqs`. | Author remaining edges as their levels land |
 | 2026-11-11 | Production validation | T9.1 repository audit, T9.2 WSL capacity and T9.3 fresh-WSL deployment rehearsal are complete. The eventual public host, public DNS/ACME, internet ingress and off-device backup transport remain unverified. WSL systemd services do not keep a distro alive. | Verify the actual production host and external services before public deployment (D-054/D-058). Local WSL evidence does not establish a future host's capacity or always-on availability. |
-| 2026-11-11 | Security audit scope | LAN and specialty script/login/cron execution semantics are not certified by the basic/no-network release audit. Optional `LOG_COMMANDS=1` command persistence is deliberately unimplemented; commands/answers/terminal streams are not persisted. | D-054 documents waivers; verify M10 features before enabling them. Any future command logging needs validated opt-in, writer-side 200-character truncation and privacy regressions. |
+| 2026-11-18 | Security audit scope | T10.2 verified LAN isolation on the local Docker engine (D-060). Specialty script/login/cron execution semantics remain outside the basic release audit. Optional `LOG_COMMANDS=1` command persistence is unimplemented. | D-054 documents the remaining waivers. Any future command logging needs validated opt-in, writer-side 200-character truncation, and privacy regressions. |
 
 ## Blockers
 

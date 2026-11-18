@@ -52,9 +52,13 @@ export async function checkExec(
   const res = await provider.exec(
     handle,
     ['env', '-i', 'PATH=/usr/bin:/bin:/opt/tq/bin', 'HOME=/root', `TQ_SEED=${ctx.seed}`, ...cmd],
-    { user: 'root', timeoutMs: 5000 },
+    {
+      user: 'root',
+      timeoutMs: 5000,
+      ...(check.sidecar === undefined ? {} : { sidecar: check.sidecar }),
+    },
   );
-  if (res.code !== (check.expect_exit ?? 0)) {
+  if (res.timedOut || res.code !== (check.expect_exit ?? 0)) {
     return false;
   }
   if (check.stdout_matches !== undefined && !new RegExp(check.stdout_matches).test(res.stdout)) {

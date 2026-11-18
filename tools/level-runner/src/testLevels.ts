@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import type { Level } from '@terminal-quest/shared';
 import { compileSetup } from '@terminal-quest/server/engine/setupCompiler';
@@ -60,21 +61,17 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function specFor(level: Level, attemptId: string): SandboxSpec {
-  if (level.sandbox.network !== 'none') {
-    throw new Error(
-      `level ${level.id} needs network '${level.sandbox.network}' (unsupported until T10.2)`,
-    );
-  }
+function specFor(level: Level, seed: number): SandboxSpec {
   return {
-    attemptId,
+    attemptId: `levels-test-${randomUUID()}`,
     userId: 'levels-test',
     levelId: level.id,
     image: level.sandbox.image,
     profile: level.sandbox.profile,
     capabilities: level.sandbox.capabilities,
-    network: 'none',
-    sidecars: [],
+    network: level.sandbox.network,
+    sidecars: level.sandbox.sidecars,
+    seed,
     resources: {
       memoryMb: level.sandbox.resources.memory_mb,
       cpus: level.sandbox.resources.cpus,
@@ -90,9 +87,8 @@ async function setupSandbox(
   level: Level,
   levelDir: string,
   seed: number,
-  tag: string,
 ): Promise<SandboxHandle> {
-  const handle = await provider.create(specFor(level, `levels-test-${level.id}-s${seed}-${tag}`));
+  const handle = await provider.create(specFor(level, seed));
   try {
     await runSetup(provider, handle, compileSetup(level, levelDir, seed), seed);
     return handle;
@@ -150,7 +146,7 @@ async function runSeed(
   seed: number,
 ): Promise<SeedReport> {
   // Baseline + reference share one pristine sandbox (baseline runs nothing).
-  const main = await setupSandbox(provider, level, levelDir, seed, 'main');
+  const main = await setupSandbox(provider, level, levelDir, seed);
   try {
     const tracker = createTracker(level);
     const baselineEval = await evaluate(provider, main, level, tracker, { seed });
@@ -181,7 +177,7 @@ async function runSeed(
 
     const wrongs: PhaseResult[] = [];
     for (const wrong of level.solutions.wrong) {
-      const handle = await setupSandbox(provider, level, levelDir, seed, `wrong-${wrongs.length}`);
+      const handle = await setupSandbox(provider, level, levelDir, seed);
       try {
         const wrongTracker = createTracker(level);
         await driveScript(provider, handle, wrongTracker, readSolution(levelDir, wrong));

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { toPublicLevel, type Level } from '@terminal-quest/shared';
 import { createCoach } from '../engine/coach.js';
 import { parseCmdlogLine } from '../engine/cmdlog.js';
@@ -60,7 +61,7 @@ export async function launchLevelSession(
   levelDir: string,
   seed: number,
 ): Promise<LiveSession> {
-  const sandboxAttemptId = `tq-${userId.slice(0, 8)}-${level.id}-s${seed}-${Date.now() % 100000}`;
+  const sandboxAttemptId = randomUUID();
   let session: Session;
   try {
     session = await deps.manager.create({
@@ -72,6 +73,7 @@ export async function launchLevelSession(
       capabilities: level.sandbox.capabilities,
       network: level.sandbox.network,
       sidecars: level.sandbox.sidecars,
+      seed,
       resources: {
         memoryMb: level.sandbox.resources.memory_mb,
         cpus: level.sandbox.resources.cpus,

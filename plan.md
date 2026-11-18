@@ -432,6 +432,8 @@ Server watches `/run/tq/inbox` via `watchFile` and handles each line (`submit` s
 - Pre-pull/build images in `images:build`; `start` must fail fast (clear error) if image missing.
 
 ### 7.7 Networked levels (`network: lan`, M10)
+**2026-11-18 (T10.2, D-060):** LAN sandboxes require Docker Engine 28+ for the isolated IPv4 bridge gateway mode. Each attempt owns one IPv4-only internal bridge. Docker DNS resolves the bridge aliases and uses the attempt's dnsmasq as its only upstream when declared. dnsmasq serves local records without forwarding. Other LANs have no DNS upstream outside the player container. Build the three local images with `pnpm images:build`. The managed labels let boot cleanup recover even when only a sidecar or bridge remains.
+
 - Per-session user-defined bridge network `tq-<attemptId>` with `Internal: true` (no internet).
 - Sidecars (each its own image/container, joined with aliases):
   - `web` → alias `web.penguin.corp` (nginx serving static pages + a small JSON API at `/status`, `/api/users`, with a fixed 404 and a custom header).
@@ -488,6 +490,8 @@ setup:                                  # all executed as root BEFORE the shell 
     - { script: setup/gen.sh }          # writes data files and may write answers to /opt/tq/secret/<name>
   commands:                             # extra root shell commands, run in order after files/generators
     - "chown -R player:player /home/player"
+  # Optional for levels declaring the ssh sidecar:
+  # sidecar_setup: { ssh_authorized_key: /home/player/.ssh/bootstrap.pub }
   rc_extra: |                           # appended to player's ~/.bashrc (optional)
     alias ls='ls --color=auto'
 
@@ -529,6 +533,7 @@ solutions:
 ```
 
 ### 8.2 Check types (discriminated union on `type`)
+**2026-11-18 (T10.2, D-060):** An inline `exec` with `sidecar: ssh` runs as root in the attempt's declared SSH sidecar, with the same fixed environment, timeout, and read-only check contract.
 All paths are absolute inside the sandbox. Checks run as **root** using `env -i PATH=/usr/bin:/bin:/opt/tq/bin HOME=/root`, with a 5 s timeout each (timeout ⇒ fail + `check_timeout` event). Every type is implemented in `apps/server/src/engine/checks/<type>.ts` with unit tests.
 
 | `type` | Fields | Semantics |
@@ -800,6 +805,8 @@ Loads all `level.yaml` at server start, validates with zod, builds indexes: by i
 Turns `setup` into: (1) a list of tar entries for `putFiles` (files, `content_file`, `checks/*` into `/opt/tq/checks/<levelId>/`, generator scripts into `/opt/tq/gen/`); (2) a root-run script executed with `bash -e`: create dirs → set owners/modes → run generators (`TQ_SEED`) → run `commands` → write `rc_extra` to `/home/player/.bashrc` (create if missing; chown player) → create `/run/tq/{cmdlog,inbox}` (0622) and `/opt/tq/secret` → start cron if profile `admin` and level declares `needs_cron: true` (default true for admin).
 
 ### 12.3 `levels:lint` rules (beyond schema)
+**2026-11-18 (T10.2, D-060):** World 3 may temporarily have exactly orders 1, 10, 11 and 12 so T10.2 can verify the three LAN lessons before T10.5 authors the remaining content. Other order sets still follow the contiguous-order rule.
+
 **2026-11-06 (A29, D-044):** Require explain cards, cheatsheet entries, and distinct wrong solutions. Check both setup file sources for seeded answers.
 
 - `id` matches directory; `order` unique and contiguous within a world.
@@ -826,7 +833,7 @@ Run time budget: whole W1+W2 suite < 10 min on CI (parallelize up to 4 container
 > 2026-11-11 (D-054): T9.1 outcomes and per-item evidence are recorded in [security-review.md](security-review.md). Ticks cover the audited Worlds 1–2 basic/no-network release. Explicit waivers below permit repository-audit completion only; production host verification remains a public-deployment prerequisite. Requirements are unchanged.
 
 - [x] Containers: caps dropped, resource limits set, `no-new-privileges` for `basic`, network `none` by default, no host mounts, no docker socket inside.
-- [ ] `lan` networks are `Internal: true` (no internet egress) and per-attempt. **D-054 waiver: inactive and rejected; implement/verify in T10.2 before enabling.**
+- [x] `lan` networks are `Internal: true` (no internet egress) and per-attempt. **T10.2 verified player-container isolation on Docker Desktop Engine 29.8.1 (D-060). Production-host verification is tracked below.**
 - [ ] The server process controls Docker → it is root-equivalent on the host. Production: run Docker **rootless** or on a dedicated VM; run the server as a non-root user in the `docker` group of that VM only. Never expose the Docker socket over TCP. **D-054 audit waiver: target VM unavailable; actual host checks blocked, not passed or waived for public deployment.**
 - [x] Secrets/answers/checks are never sent to the client. `GET /api/levels/:id` returns a whitelisted DTO only (use an explicit `toPublicLevel`).
 - [x] WebSocket auth: session must belong to cookie user; validate Origin header against `PUBLIC_ORIGIN`.

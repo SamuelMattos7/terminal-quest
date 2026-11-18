@@ -1,0 +1,9 @@
+HostKey /etc/ssh/ssh_host_ed25519_key
+AllowUsers deploy
+AuthenticationMethods publickey
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no
+DisableForwarding yes
+AuthorizedKeysFile .ssh/authorized_keys
+Subsystem sftp internal-sftp

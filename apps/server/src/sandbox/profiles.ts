@@ -1,10 +1,13 @@
-import { SandboxCapabilitySchema } from '@terminal-quest/shared';
+import {
+  SandboxCapabilitySchema,
+  SandboxNetworkSchema,
+  SandboxSidecarsSchema,
+} from '@terminal-quest/shared';
 import type { ContainerCreateOptions } from 'dockerode';
 import type { SandboxSpec } from './provider.js';
 
 // Container security profiles for plan.md §7.3. Restrictive by default;
-// loosened only per the profile table. `lan` networks and sidecars are
-// rejected until T10.2 (fail fast rather than silently degrading).
+// loosened only per the profile table.
 
 const BASIC_CAPS = ['CHOWN', 'DAC_OVERRIDE', 'FOWNER', 'SETUID', 'SETGID', 'KILL'];
 const ADMIN_EXTRA_CAPS = ['AUDIT_WRITE', 'SYS_CHROOT', 'NET_BIND_SERVICE'];
@@ -25,11 +28,10 @@ export function buildHostConfig(
   spec: SandboxSpec,
   runtime?: string,
 ): NonNullable<ContainerCreateOptions['HostConfig']> {
-  if (spec.network !== 'none') {
-    throw new Error(`network '${spec.network}' is not supported until T10.2 (lan sidecars)`);
-  }
-  if (spec.sidecars.length > 0) {
-    throw new Error('sidecars are not supported until T10.2');
+  const network = SandboxNetworkSchema.parse(spec.network);
+  const sidecars = SandboxSidecarsSchema.parse(spec.sidecars);
+  if (network !== 'lan' && sidecars.length > 0) {
+    throw new Error('sidecars require network: lan');
   }
 
   const capabilities = SandboxCapabilitySchema.array().parse(spec.capabilities ?? []);

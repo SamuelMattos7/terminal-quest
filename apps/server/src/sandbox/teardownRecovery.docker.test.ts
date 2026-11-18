@@ -39,6 +39,9 @@ describe('real-container teardown recovery (A05)', () => {
         },
         getContainer: (id: string) => docker.getContainer(id),
         listContainers: docker.listContainers.bind(docker),
+        createNetwork: docker.createNetwork.bind(docker),
+        listNetworks: docker.listNetworks.bind(docker),
+        getNetwork: docker.getNetwork.bind(docker),
       };
       const provider = new DockerProvider({ client });
       const manager = new SessionManager({
