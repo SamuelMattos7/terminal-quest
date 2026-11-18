@@ -1,0 +1,169 @@
+[104m[97m[INFO][49m[39m Creating /home/tq/.config/systemd/user/docker.service
+[104m[97m[INFO][49m[39m starting systemd service docker.service
++ systemctl --user start docker.service
++ sleep 3
++ systemctl --user --no-pager --full status docker.service
+● docker.service - Docker Application Container Engine (Rootless)
+     Loaded: loaded (/home/tq/.config/systemd/user/docker.service; disabled; preset: enabled)
+     Active: active (running) since Wed 2026-11-11 22:16:20 -03; 3s ago
+       Docs: https://docs.docker.com/go/rootless/
+   Main PID: 621 (rootlesskit)
+      Tasks: 51
+     Memory: 159.5M (peak: 160.7M)
+        CPU: 914ms
+     CGroup: /user.slice/user-1000.slice/user@1000.service/app.slice/docker.service
+             ├─621 rootlesskit --state-dir=/run/user/1000/dockerd-rootless --net=slirp4netns --mtu=65520 --slirp4netns-sandbox=auto --slirp4netns-seccomp=auto --disable-host-loopback --port-driver=builtin --copy-up=/etc --copy-up=/run --propagation=rslave --detach-netns /usr/bin/dockerd-rootless.sh
+             ├─633 /proc/self/exe --state-dir=/run/user/1000/dockerd-rootless --net=slirp4netns --mtu=65520 --slirp4netns-sandbox=auto --slirp4netns-seccomp=auto --disable-host-loopback --port-driver=builtin --copy-up=/etc --copy-up=/run --propagation=rslave --detach-netns /usr/bin/dockerd-rootless.sh
+             ├─663 slirp4netns --mtu 65520 -r 3 --disable-host-loopback --enable-seccomp --userns-path=/proc/633/ns/user --netns-type=path /proc/633/root/run/user/1000/dockerd-rootless/netns tap0
+             ├─671 dockerd
+             └─703 /usr/bin/containerd --config /run/user/1000/docker/containerd/containerd.toml
+
+Nov 11 22:16:20 Samuel dockerd-rootless.sh[671]: time="2026-11-11T22:16:20.144452899-03:00" level=info msg="Deleting nftables IPv4 rules" error="running nft: /dev/stdin:1:17-30: Error: Could not process rule: No such file or directory\ndelete table ip docker-bridges\n                ^^^^^^^^^^^^^^\n exit status 1"
+Nov 11 22:16:20 Samuel dockerd-rootless.sh[671]: time="2026-11-11T22:16:20.176305164-03:00" level=info msg="Deleting nftables IPv6 rules" error="running nft: /dev/stdin:1:18-31: Error: Could not process rule: No such file or directory\ndelete table ip6 docker-bridges\n                 ^^^^^^^^^^^^^^\n exit status 1"
+Nov 11 22:16:20 Samuel dockerd-rootless.sh[671]: time="2026-11-11T22:16:20.176363502-03:00" level=info msg="skipping firewalld management for rootless mode"
+Nov 11 22:16:20 Samuel dockerd-rootless.sh[671]: time="2026-11-11T22:16:20.536707301-03:00" level=info msg="Loading containers: done."
+Nov 11 22:16:20 Samuel dockerd-rootless.sh[671]: time="2026-11-11T22:16:20.546889130-03:00" level=info msg="Docker daemon" commit=70efc0e containerd-snapshotter=true storage-driver=overlayfs version=29.9.3
+Nov 11 22:16:20 Samuel dockerd-rootless.sh[671]: time="2026-11-11T22:16:20.547577070-03:00" level=info msg="Initializing buildkit"
+Nov 11 22:16:20 Samuel dockerd-rootless.sh[671]: time="2026-11-11T22:16:20.692592495-03:00" level=info msg="Completed buildkit initialization"
+Nov 11 22:16:20 Samuel dockerd-rootless.sh[671]: time="2026-11-11T22:16:20.696673252-03:00" level=info msg="Daemon has completed initialization"
+Nov 11 22:16:20 Samuel dockerd-rootless.sh[671]: time="2026-11-11T22:16:20.696756585-03:00" level=info msg="API listen on /run/user/1000/docker.sock"
+Nov 11 22:16:20 Samuel systemd[238]: Started docker.service - Docker Application Container Engine (Rootless).
++ DOCKER_HOST=unix:///run/user/1000/docker.sock /usr/bin/docker version
+Client: Docker Engine - Community
+ Version:           29.9.3
+ API version:       1.56
+ Go version:        go1.26.10
+ Git commit:        5457199
+ Built:             Tue Nov  3 21:41:31 2026
+ OS/Arch:           linux/amd64
+ Context:           default
+
+Server: Docker Engine - Community
+ Engine:
+  Version:          29.9.3
+  API version:      1.56 (minimum version 1.40)
+  Go version:       go1.26.10
+  Git commit:       70efc0e
+  Built:            Tue Nov  3 21:41:31 2026
+  OS/Arch:          linux/amd64
+  Experimental:     false
+ containerd:
+  Version:          v2.4.2
+  GitCommit:        b7a25261e029d68978bbf290df0a62fc819b3c51
+ runc:
+  Version:          1.5.2
+  GitCommit:        v1.5.2-0-g29dd3dc2
+ docker-init:
+  Version:          0.19.0
+  GitCommit:        de40ad0
+ rootlesskit:
+  Version:          3.3.0
+  ApiVersion:       1.1.3
+  NetworkDriver:    slirp4netns
+  PortDriver:       builtin
+  StateDir:         /run/user/1000/dockerd-rootless
+ slirp4netns:
+  Version:          1.2.1
+  GitCommit:        09e31e92fa3d2a1d3ca261adaeb012c8d75a8194
++ systemctl --user enable docker.service
+Created symlink /home/tq/.config/systemd/user/default.target.wants/docker.service → /home/tq/.config/systemd/user/docker.service.
+[104m[97m[INFO][49m[39m Installed docker.service successfully.
+[104m[97m[INFO][49m[39m To control docker.service, run: `systemctl --user (start|stop|restart) docker.service`
+[104m[97m[INFO][49m[39m To run docker.service on system startup, run: `sudo loginctl enable-linger tq`
+
+[104m[97m[INFO][49m[39m Creating CLI context "rootless"
+Successfully created context "rootless"
+[104m[97m[INFO][49m[39m Using CLI context "rootless"
+Current context is now "rootless"
+
+[104m[97m[INFO][49m[39m Make sure the following environment variable(s) are set (or add them to ~/.bashrc):
+export PATH=/usr/bin:$PATH
+
+[104m[97m[INFO][49m[39m Some applications may require the following environment variable too:
+export DOCKER_HOST=unix:///run/user/1000/docker.sock
+
+rootless
+Current context is now "rootless"
+Client: Docker Engine - Community
+ Version:    29.9.3
+ Context:    rootless
+ Debug Mode: false
+ Plugins:
+  buildx: Docker Buildx (Docker Inc.)
+    Version:  v0.38.1
+    Path:     /usr/libexec/docker/cli-plugins/docker-buildx
+  compose: Docker Compose (Docker Inc.)
+    Version:  v5.7.1
+    Path:     /usr/libexec/docker/cli-plugins/docker-compose
+
+Server:
+ Containers: 0
+  Running: 0
+  Paused: 0
+  Stopped: 0
+ Images: 0
+ Server Version: 29.9.3
+ Storage Driver: overlayfs
+  driver-type: io.containerd.snapshotter.v1
+ Logging Driver: json-file
+ Cgroup Driver: systemd
+ Cgroup Version: 2
+ Plugins:
+  Volume: local
+  Network: bridge host ipvlan macvlan null overlay
+  Log: awslogs fluentd gcplogs gelf journald json-file local splunk syslog
+ CDI spec directories:
+  /etc/cdi
+  /var/run/cdi
+  /home/tq/.config/cdi
+  /run/user/1000/cdi
+ Swarm: inactive
+ Runtimes: io.containerd.runc.v2 runc
+ Default Runtime: runc
+ Init Binary: docker-init
+ containerd version: b7a25261e029d68978bbf290df0a62fc819b3c51
+ runc version: v1.5.2-0-g29dd3dc2
+ init version: de40ad0
+ Security Options:
+  seccomp
+   Profile: builtin
+  rootless
+  cgroupns
+ Kernel Version: 6.6.87.2-microsoft-standard-WSL2
+ Operating System: Ubuntu 24.04.5 LTS
+ OSType: linux
+ Architecture: x86_64
+ CPUs: 12
+ Total Memory: 7.716GiB
+ Name: Samuel
+ ID: 2c699340-071b-47db-a610-3dbae22a919b
+ Docker Root Dir: /home/tq/.local/share/docker
+ Debug Mode: false
+ Experimental: false
+ Insecure Registries:
+  127.0.0.0/8
+  ::1/128
+ Live Restore Enabled: false
+ Firewall Backend: iptables
+  EnableUserlandProxy: true
+  UserlandProxyPath: /usr/bin/docker-proxy
+
+Unable to find image 'alpine:latest' locally
+latest: Pulling from library/alpine
+881fc932939e: Pulling fs layer
+c35a7d82b8fa: Download complete
+86ff264fe568: Download complete
+881fc932939e: Download complete
+881fc932939e: Pull complete
+Digest: sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
+Status: Downloaded newer image for alpine:latest
+ok
+Cloning into '/home/tq/terminal-quest'...
+fatal: detected dubious ownership in repository at '/srv/tq-origin.git'
+To add an exception for this directory, call:
+
+	git config --global --add safe.directory /srv/tq-origin.git
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.

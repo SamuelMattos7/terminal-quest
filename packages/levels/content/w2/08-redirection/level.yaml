@@ -1,0 +1,72 @@
+id: w2-08-redirection
+world: 2
+order: 8
+title: Redirect the Flow
+kind: lesson
+difficulty: 2
+estimated_minutes: 5
+story: |
+  Tux-9000: "Archive the service listing and attach the shift note.
+  The retired service is still in the audit checklist. Capture the
+  complaint from looking it up in a separate file."
+teaches: [redirection]
+par_commands: 3
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  files:
+    - { path: /home/player/services/api, content: '' }
+    - { path: /home/player/services/worker, content: '' }
+    - { path: /home/player/shift-note.txt, content: "Shift handoff complete\n" }
+objectives:
+  - id: build-report
+    text: 'Save the output of `ls -1 services` to `report.txt`, then append the contents of `shift-note.txt`.'
+    check:
+      type: file_content
+      path: /home/player/report.txt
+      trim: false
+      equals: "api\nworker\nShift handoff complete\n"
+  - id: capture-error
+    text: 'Run `ls retired-service` and capture its standard error in `errors.txt`.'
+    check:
+      type: file_content
+      path: /home/player/errors.txt
+      trim: false
+      equals: "ls: cannot access 'retired-service': No such file or directory\n"
+hints:
+  - 'The listing and shift note belong in the same file, in that order. The failed lookup writes to a different stream.'
+  - 'Use `>` to replace a file with stdout, `>>` to append stdout, and `2>` to redirect stderr.'
+  - 'Run `ls -1 services > report.txt`, `cat shift-note.txt >> report.txt`, and `ls retired-service 2> errors.txt`.'
+explain:
+  - command: 'ls -1 services > report.txt'
+    parts:
+      - { token: '-1', meaning: 'print one entry per line' }
+      - { token: '>', meaning: 'send stdout to a file, replacing its contents' }
+  - command: 'cat shift-note.txt >> report.txt'
+    parts:
+      - { token: '>>', meaning: 'append stdout to the file' }
+      - { token: '| tee -a report.txt', meaning: 'append piped output while also showing it' }
+  - command: 'ls retired-service 2> errors.txt'
+    parts:
+      - { token: '2>', meaning: 'save stderr to a file' }
+      - { token: '&>', meaning: 'save stdout and stderr together when both belong in one file' }
+cheatsheet:
+  - {
+      skill: redirection,
+      syntax: 'COMMAND > FILE or COMMAND >> FILE',
+      note: 'Replace or append stdout.',
+    }
+  - {
+      skill: redirection,
+      syntax: 'COMMAND 2> FILE or COMMAND &> FILE',
+      note: 'Capture stderr alone or capture both streams.',
+    }
+  - {
+      skill: redirection,
+      syntax: 'COMMAND | tee -a FILE',
+      note: 'Show stdout and append it to a file.',
+    }
+success_message: 'Report filed. The retired service has left one last complaint.'
+solutions:
+  reference: solution.sh
+  wrong: [wrong/overwrite-report.sh, wrong/capture-stdout.sh]

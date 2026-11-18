@@ -1,9 +1,7 @@
-import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import WebSocket from 'ws';
 import { MAX_CLIENT_FRAME_BYTES, ServerMessageSchema } from '@terminal-quest/shared';
-import { guestCookie, makeTestContext } from '../testUtils.js';
+import { setupSessionSocket as setup } from './sessionSocketFixture.js';
 import { attempts, events, users } from '../db/schema.js';
 import { ResourceLimitError } from '../util/resourceLimits.js';
 import { logger } from '../util/logger.js';
@@ -11,92 +9,6 @@ import * as auth from '../auth.js';
 import { SOCKET_MESSAGES_PER_SECOND } from './socketLimits.js';
 
 afterEach(() => vi.restoreAllMocks());
-
-async function setup() {
-  const ctx = await makeTestContext();
-  const { app } = ctx;
-  vi.spyOn(app.provider, 'create').mockImplementation(async (spec) => ({ id: randomUUID(), spec }));
-  vi.spyOn(app.provider, 'putFiles').mockResolvedValue();
-  const exec = vi
-    .spyOn(app.provider, 'exec')
-    .mockResolvedValue({ code: 0, stdout: '', stderr: '', timedOut: false });
-  const write = vi.fn();
-  const resize = vi.fn(async () => undefined);
-  let output!: (chunk: Buffer) => void;
-  let shellClosed!: (error?: Error) => void;
-  vi.spyOn(app.provider, 'openShell').mockImplementation(async () => ({
-    write,
-    resize,
-    close: vi.fn(),
-    onClose: (callback) => {
-      shellClosed = callback;
-    },
-    onData: (callback) => {
-      output = callback;
-    },
-  }));
-  const errors: ((err: Error) => void)[] = [];
-  const lines = new Map<string, (line: string) => void>();
-  vi.spyOn(app.provider, 'watchFile').mockImplementation(async (_h, path, onLine, onError) => {
-    lines.set(path, onLine);
-    if (onError) errors.push(onError);
-    return { stop: vi.fn() };
-  });
-  const destroy = vi.spyOn(app.provider, 'destroy').mockResolvedValue();
-  const cookie = await guestCookie(app);
-  await app.inject({ method: 'POST', url: '/api/levels/w1-01-first/start', headers: { cookie } });
-  const live = [...app.live.values()][0];
-  if (!live) throw new Error('session missing');
-  const sockets: WebSocket[] = [];
-  await app.listen({ port: 0, host: '127.0.0.1' });
-  const address = app.server.address();
-  if (address === null || typeof address !== 'object') throw new Error('server did not bind');
-  const connect = (query = '') => {
-    const socket = new WebSocket(
-      `ws://127.0.0.1:${address.port}/ws/sessions/${live.session.id}${query}`,
-      {
-        headers: { cookie },
-      },
-    );
-    sockets.push(socket);
-    return socket;
-  };
-  const attach = async (confirmWithPing = true) => {
-    const socket = connect();
-    const [state] = await once(socket, 'message');
-    expect(JSON.parse(String(state))).toMatchObject({ t: 'session_state' });
-    if (!confirmWithPing) return socket;
-    const pong = new Promise<void>((resolve) => {
-      const receive = (frame: WebSocket.RawData) => {
-        if (String(frame) !== '{"t":"pong"}') return;
-        socket.off('message', receive);
-        resolve();
-      };
-      socket.on('message', receive);
-    });
-    socket.send(JSON.stringify({ t: 'ping' }));
-    await pong;
-    return socket;
-  };
-  return {
-    ...ctx,
-    live,
-    exec,
-    write,
-    resize,
-    errors,
-    destroy,
-    lines,
-    output: (chunk: Buffer) => output(chunk),
-    shellClosed: (error?: Error) => shellClosed(error),
-    connect,
-    attach,
-    cleanup: async () => {
-      for (const socket of sockets) socket.terminate();
-      await ctx.cleanup();
-    },
-  };
-}
 
 it('replays the startup greeting and missed output, hints, and committed result on attach (A16)', async () => {
   const ctx = await setup();

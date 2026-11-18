@@ -1,0 +1,19 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+401 !== 404
+
+    at file:///mnt/c/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/deploy-artifacts/2026-11-11-wsl/verify.mjs:142:10
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 401,
+  expected: 404,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.22.3

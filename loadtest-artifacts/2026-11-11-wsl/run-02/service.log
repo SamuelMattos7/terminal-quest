@@ -1,0 +1,7 @@
+Stopping terminal-quest.service - Terminal Quest T9.2 WSL test...
+{"level":30,"time":1794443779694,"pid":680,"hostname":"Samuel","signal":"SIGTERM","msg":"server shutting down"}
+{"level":30,"time":1794443779696,"pid":680,"hostname":"Samuel","msg":"server shut down"}
+Stopped terminal-quest.service - Terminal Quest T9.2 WSL test.
+terminal-quest.service: Consumed 1.585s CPU time, 320.8M memory peak, 0B memory swap peak.
+Started terminal-quest.service - Terminal Quest T9.2 WSL test.
+{"level":30,"time":1794443780389,"pid":6530,"hostname":"Samuel","port":3301,"msg":"server listening"}

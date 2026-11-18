@@ -103,7 +103,7 @@ export async function registerSessionSocket(
       logger.warn({ err, ...logContext() }, 'session socket transport failed');
     });
     const origin = request.headers.origin;
-    if (origin !== undefined && origin !== deps.config.PUBLIC_ORIGIN) {
+    if (origin !== deps.config.PUBLIC_ORIGIN) {
       socket.close(4403, 'bad origin');
       return;
     }

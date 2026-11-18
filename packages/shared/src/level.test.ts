@@ -95,3 +95,52 @@ describe('LevelSchema', () => {
     ).toBe(true);
   });
 });
+
+describe('admin sandbox input validation (T10.1)', () => {
+  it.each(['SYS_ADMIN', 'CAP_NET_RAW', 'ALL', 'NET_RAW\nSYS_ADMIN'])(
+    'rejects an unsupported capability: %s',
+    (capability) => {
+      expect(() =>
+        LevelSchema.parse(
+          withOverrides({
+            sandbox: {
+              profile: 'admin',
+              capabilities: [capability],
+            },
+          }),
+        ),
+      ).toThrow();
+    },
+  );
+  it.each([
+    '/usr/bin/cat\nplayer ALL=(ALL) ALL',
+    '/usr/bin/cat, ALL',
+    'ALL',
+    '/usr/bin/cat *',
+    '/usr/bin/cat /root/code: ALL',
+    '/usr/bin/cat #comment',
+    '/usr/bin/cat\n',
+  ])('rejects sudoers syntax injection: %s', (command) => {
+    expect(() =>
+      LevelSchema.parse(
+        withOverrides({
+          sandbox: {
+            profile: 'admin',
+            sudo_allow: [command],
+          },
+        }),
+      ),
+    ).toThrow();
+  });
+  it('accepts literal command arguments and explicit network capabilities only for admin', () => {
+    const sandbox = {
+      profile: 'admin',
+      capabilities: ['NET_RAW', 'NET_ADMIN'],
+      sudo_allow: ['/usr/bin/cat /root/access-code.txt'],
+    };
+    expect(LevelSchema.parse(withOverrides({ sandbox })).sandbox).toMatchObject(sandbox);
+    expect(() =>
+      LevelSchema.parse(withOverrides({ sandbox: { ...sandbox, profile: 'basic' } })),
+    ).toThrow();
+  });
+});

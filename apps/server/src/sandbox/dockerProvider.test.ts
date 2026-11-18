@@ -40,6 +40,30 @@ function setup(overrides?: { image?: string | undefined; runtime?: string | unde
 }
 
 describe('Docker sandbox configuration', () => {
+  it.each(['basic', 'admin'] as const)(
+    'uses a per-container PID cap without a shared-UID nproc budget (%s)',
+    async (profile) => {
+      const { provider, client } = setup();
+      await provider.create({ ...spec, profile, resources: { ...spec.resources, pids: 32 } });
+      expect(client.createContainer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          HostConfig: expect.objectContaining({
+            PidsLimit: 32,
+            Ulimits: [
+              { Name: 'nofile', Soft: 1024, Hard: 1024 },
+              { Name: 'core', Soft: 0, Hard: 0 },
+            ],
+          }),
+        }),
+      );
+    },
+  );
+  it('rejects LAN networks and sidecars before acquiring a container (T9.1)', async () => {
+    const { provider, client } = setup();
+    await expect(provider.create({ ...spec, network: 'lan' })).rejects.toThrow('T10.2');
+    await expect(provider.create({ ...spec, sidecars: ['web'] })).rejects.toThrow('T10.2');
+    expect(client.createContainer).not.toHaveBeenCalled();
+  });
   it('passes validated image and runtime overrides without changing isolation', async () => {
     const config = loadConfig({
       SANDBOX_IMAGE: 'registry.example:5000/tq/base:release',
@@ -197,5 +221,47 @@ describe('Docker shell and watcher failures (A14)', () => {
         [expect.objectContaining({ message: 'file watcher closed unexpectedly' })],
       ]);
     } else expect(onError).not.toHaveBeenCalled();
+  });
+});
+
+describe('admin capability mapping (T10.1)', () => {
+  it('adds only declared optional capabilities, keeps resource/network isolation', async () => {
+    const { provider, client } = setup();
+    await provider.create({ ...spec, profile: 'admin', capabilities: ['NET_RAW', 'NET_RAW'] });
+    expect(client.createContainer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        HostConfig: expect.objectContaining({
+          CapDrop: ['ALL'],
+          CapAdd: [
+            'CHOWN',
+            'DAC_OVERRIDE',
+            'FOWNER',
+            'SETUID',
+            'SETGID',
+            'KILL',
+            'AUDIT_WRITE',
+            'SYS_CHROOT',
+            'NET_BIND_SERVICE',
+            'NET_RAW',
+          ],
+          SecurityOpt: [],
+          NetworkMode: 'none',
+          PidsLimit: 128,
+          Memory: 268435456,
+        }),
+      }),
+    );
+  });
+  it('rejects undeclared authority before acquiring a container', async () => {
+    const { provider, client } = setup();
+    await expect(provider.create({ ...spec, capabilities: ['NET_RAW'] })).rejects.toThrow('admin');
+    // Runtime callers outside TypeScript must also fail closed.
+    const invalid = {
+      ...spec,
+      profile: 'admin',
+      capabilities: ['SYS_ADMIN'],
+    } as unknown as SandboxSpec;
+    await expect(provider.create(invalid)).rejects.toThrow();
+    expect(client.createContainer).not.toHaveBeenCalled();
   });
 });

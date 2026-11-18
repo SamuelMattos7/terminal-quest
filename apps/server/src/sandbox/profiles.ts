@@ -1,3 +1,4 @@
+import { SandboxCapabilitySchema } from '@terminal-quest/shared';
 import type { ContainerCreateOptions } from 'dockerode';
 import type { SandboxSpec } from './provider.js';
 
@@ -31,10 +32,18 @@ export function buildHostConfig(
     throw new Error('sidecars are not supported until T10.2');
   }
 
+  const capabilities = SandboxCapabilitySchema.array().parse(spec.capabilities ?? []);
+  if (spec.profile !== 'admin' && capabilities.length) {
+    throw new Error('extra capabilities require admin profile');
+  }
+
   const memoryBytes = spec.resources.memoryMb * 1024 * 1024;
   const hostConfig: NonNullable<ContainerCreateOptions['HostConfig']> = {
     CapDrop: ['ALL'],
-    CapAdd: spec.profile === 'admin' ? [...BASIC_CAPS, ...ADMIN_EXTRA_CAPS] : [...BASIC_CAPS],
+    CapAdd:
+      spec.profile === 'admin'
+        ? [...BASIC_CAPS, ...ADMIN_EXTRA_CAPS, ...new Set(capabilities)]
+        : [...BASIC_CAPS],
     Memory: memoryBytes,
     // Swap allowance equals memory: no swap beyond the limit.
     MemorySwap: memoryBytes,
@@ -42,7 +51,8 @@ export function buildHostConfig(
     PidsLimit: spec.resources.pids,
     Ulimits: [
       { Name: 'nofile', Soft: 1024, Hard: 1024 },
-      { Name: 'nproc', Soft: spec.resources.pids, Hard: spec.resources.pids },
+      // RLIMIT_NPROC counts a shared UID across containers (and, with rootless
+      // Docker, the daemon user). PidsLimit enforces the budget per container.
       { Name: 'core', Soft: 0, Hard: 0 },
     ],
     NetworkMode: 'none',

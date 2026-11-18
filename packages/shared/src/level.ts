@@ -10,6 +10,17 @@ export function countWords(text: string): number {
   return text.split(/\s+/).filter((w) => w.length > 0).length;
 }
 
+export const SandboxCapabilitySchema = z.enum(['NET_RAW', 'NET_ADMIN']);
+// Only absolute commands and literal arguments: no sudoers directives, globs,
+// aliases, command separators, or line injection from level YAML.
+export const SudoCommandSchema = z
+  .string()
+  .regex(
+    /^\/[a-zA-Z0-9_/-]+(?: [a-zA-Z0-9_./=-]+)*$/,
+    'must be an absolute command with optional literal arguments',
+  )
+  .refine((command) => !/[\r\n]/.test(command), 'must be a single line');
+
 const SandboxSchema = z
   .object({
     profile: z.enum(['basic', 'admin']).default('basic'),
@@ -25,13 +36,20 @@ const SandboxSchema = z
       })
       .strict()
       .default({}),
-    capabilities: z.array(z.string().min(1)).default([]),
-    sudo_allow: z.array(z.string().min(1)).default([]),
-    // §12.2: start cron when profile is admin and this is true. The daemon
-    // start itself lands in T10.1 (no admin levels exist yet).
+    capabilities: z.array(SandboxCapabilitySchema).default([]),
+    sudo_allow: z.array(SudoCommandSchema).default([]),
+    // §12.2: start cron only for admin, after setup completes.
     needs_cron: z.boolean().default(true),
   })
-  .strict();
+  .strict()
+  .superRefine((v, ctx) => {
+    if (v.profile === 'basic' && (v.capabilities.length || v.sudo_allow.length)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'capabilities and sudo_allow require admin profile',
+      });
+    }
+  });
 
 const SetupDirSchema = z
   .object({

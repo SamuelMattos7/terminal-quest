@@ -1,0 +1,13 @@
+{
+  "startedAt": "2026-11-12T00:25:57.452Z",
+  "node": "v24.15.0",
+  "kernel": "6.6.87.2-microsoft-standard-WSL2",
+  "logicalCpus": 4,
+  "cpuModel": "AMD Ryzen 5 5600 6-Core Processor",
+  "memoryBytes": 8329084928,
+  "osRelease": "PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.5 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n",
+  "serverPid": 680,
+  "commit": "e7246c7a420ca3c9c13d9f090b045835f784781b",
+  "dockerVersion": "29.9.3",
+  "dockerMode": "security=[\"name=seccomp,profile=builtin\",\"name=rootless\",\"name=cgroupns\"] cgroup=2 driver=systemd warnings=null"
+}

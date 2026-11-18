@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** M8 is the next unfinished milestone (M5 gate green). A01–A31 repository remediation is complete. M9 target-environment validation remains open.
+**Current focus:** T10.1 is complete on `codex/t10-1-admin-profile`: validated sudo allow-lists, real cron startup/opt-out, explicit admin capability mapping, and the complete seeded `w3-01-sudo-and-id` acceptance level (D-059). T10.2 is next; remaining M10 work is unstarted. Release configuration remains Worlds 1–2.
 
 ---
 
@@ -61,17 +61,21 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 ### M8 — Content: World 2 (15 levels) — **MVP release config** (`ENABLE_WORLDS=1,2`)
 
-- [ ] All W2 levels authored, linted, tested (3 seeds)
+- [x] All W2 levels authored, linted, tested (3 seeds) ✅ `pnpm levels:lint`: 27 levels, zero problems; `pnpm levels:test --world 1,2 --expect-levels 27 --seeds 3`: zero failures; live WebSocket playthrough unlocked and cleared all 27 levels in order; `pnpm test:docker`: 82 tests passed; `pnpm verify`: 476 tests passed. W2 totals 90 estimated minutes.
 
 ### M9 — Hardening & deploy
 
-- [ ] T9.1 Security checklist (`plan.md §13`) walked; waivers documented
-- [ ] T9.2 Run the 20-session load test on the target VM and record measurements in [loadtest.md](loadtest.md)
-- [ ] T9.3 Verify [deploy.md](deploy.md) end to end on a clean VM and record the results in its verification log
+- [x] T9.1 Security checklist (`plan.md §13`) walked; waivers documented ✅ `pnpm verify`: build/lint + 500 tests; `pnpm test:docker`: 86 tests including all 27 levels in the sequential WebSocket playthrough; final targeted Docker rerun: 16 tests; `pnpm levels:lint`: 27 levels, zero problems; `pnpm e2e --workers=1`: 3 Chromium tests passed. Per-item evidence in [security-review.md](security-review.md), waivers D-054. Production host checks explicitly blocked, not passed; no public-deployment approval.
+- [x] T9.2 Run the 20-session load test on the target VM and record measurements in [loadtest.md](loadtest.md). ✅ Real rootless WSL run on `3b71d9e`: 20 sessions held 302.18 s; guest 21 received capacity 429 + Retry-After 30; 20 clears; echo p50 1.27 ms, start p95 353.14 ms; sampled peak memory 837.58 MiB, below-baseline recovery, zero leftovers, idle expiry and 5 s SIGKILL/boot-orphan recovery. Raw JSON/CSV/logs retained; analysis passed. `pnpm verify`: 513 tests; 27 targeted Docker tests passed in each of rootless WSL and rootful Desktop. Scoped to WSL, not future hosting capacity or T9.3.
+- [x] T9.3 Verify [deploy.md](deploy.md) end to end on a clean VM and record the results in its verification log. ✅ Fresh `TerminalQuest-T93` Ubuntu 24.04 WSL 2 install; rootless cgroup limits; strict local-CA HTTPS + real WebSocket clear (S, 55 XP); graceful/abrupt cleanup; automatic distro-boot services; scheduled backup, Windows retrieval/scratch restore; `b3ad116` → `533abaf` upgrade preserved original progress. `pnpm verify`: 513 tests on Windows and 513 on Linux. [Evidence](deploy-artifacts/2026-11-11-wsl/README.md), scope D-058; no public DNS/ACME or future-host certification.
+
+T9.2 preparation evidence: `pnpm verify` passed build, lint and **511 tests** (11 new driver/measurement regressions, including 20 mock sockets, split-frame echoes, capacity-vs-rate-limit rejection, unexpected guest-21 success, disconnects, idle closing and interrupted-ramp cleanup). One real local Docker session passed the driver's readiness/echo/Ctrl+U/completion smoke check; this was not a target load measurement. Both CLI help commands worked; all eight `loadtest.md` Bash snippets passed `bash -n`. Frozen offline dependency installation succeeded with only a new workspace importer and no dependency version changes. Subsequent WSL measurements and recovery evidence close the original target-environment gap.
+
+T9.2 WSL correction evidence (D-057): the first target ramp on `e7246c7` failed at launch 8 with setup EAGAIN and cleaned all acquired sandboxes. The two new PID-isolation Docker regressions failed against the original profile, then passed after replacing UID-wide nproc with the unchanged per-container cgroup PID limit. Final `pnpm verify` passed **513 tests**; **27 targeted Docker tests passed in each Docker mode**, covering PID exhaustion/neighbors, default kernel limits, privileges, provider I/O and exec-timeout cleanup. The corrected 20-session run, Linux sampling and both recovery checks passed; [retained evidence](loadtest-artifacts/2026-11-11-wsl/README.md) includes the failed attempt too.
 
 ### M10 — Worlds 3–5
 
-- [ ] T10.1 `admin` profile (sudo allow-list, cron daemon, capability mapping)
+- [x] T10.1 `admin` profile (sudo allow-list, cron daemon, capability mapping) ✅ `pnpm verify`: build/lint + 531 tests; `pnpm levels:lint`: 28 levels, zero problems; `pnpm levels:test --level w3-01-sudo-and-id --seeds 3`: all 12 baseline/wrong/reference cases passed. `pnpm test:docker`: 94 tests passed (93 server + 1 runner), including six admin regressions (real player cron job, cron opt-out, sudo boundaries/default tools, kernel capability mapping), basic security and the complete 27-level progression playthrough. D-059 records policy and accepted in-container authority.
 - [ ] T10.2 Sidecars + `lan` networks (no egress verified)
 - [ ] T10.3 SPIKE S1 cron timing — outcome logged in `DECISIONS.md`
 - [ ] T10.4 SPIKE S2 systemd shim — outcome logged in `DECISIONS.md`
@@ -105,27 +109,52 @@ Columns: **A** = authored (level.yaml, setup, solution, wrong, hints, explain) �
 
 | ID                         | A   | L   | T   |
 | -------------------------- | --- | --- | --- |
-| w2-01-wildcards            | [ ] | [ ] | [ ] |
-| w2-02-brace-expansion      | [ ] | [ ] | [ ] |
-| w2-03-find-by-name         | [ ] | [ ] | [ ] |
-| w2-04-find-by-attrs        | [ ] | [ ] | [ ] |
-| w2-05-grep-basics          | [ ] | [ ] | [ ] |
-| w2-06-grep-recursive-regex | [ ] | [ ] | [ ] |
-| w2-07-pipes                | [ ] | [ ] | [ ] |
-| w2-08-redirection          | [ ] | [ ] | [ ] |
-| w2-09-text-tools           | [ ] | [ ] | [ ] |
-| w2-10-links-and-types      | [ ] | [ ] | [ ] |
-| w2-11-permissions          | [ ] | [ ] | [ ] |
-| w2-12-umask-recursive      | [ ] | [ ] | [ ] |
-| w2-13-nano                 | [ ] | [ ] | [ ] |
-| w2-14-vim-survival         | [ ] | [ ] | [ ] |
-| w2-15-boss-log-detective   | [ ] | [ ] | [ ] |
+| w2-01-wildcards            | [x] | [x] | [x] |
+| w2-02-brace-expansion      | [x] | [x] | [x] |
+| w2-03-find-by-name         | [x] | [x] | [x] |
+| w2-04-find-by-attrs        | [x] | [x] | [x] |
+| w2-05-grep-basics          | [x] | [x] | [x] |
+| w2-06-grep-recursive-regex | [x] | [x] | [x] |
+| w2-07-pipes                | [x] | [x] | [x] |
+| w2-08-redirection          | [x] | [x] | [x] |
+| w2-09-text-tools           | [x] | [x] | [x] |
+| w2-10-links-and-types      | [x] | [x] | [x] |
+| w2-11-permissions          | [x] | [x] | [x] |
+| w2-12-umask-recursive      | [x] | [x] | [x] |
+| w2-13-nano                 | [x] | [x] | [x] |
+| w2-14-vim-survival         | [x] | [x] | [x] |
+| w2-15-boss-log-detective   | [x] | [x] | [x] |
+
+- **w2-01-wildcards** ✅ `pnpm levels:lint` reported 13 levels and zero problems. `pnpm levels:test --level w2-01-wildcards --seeds 3` passed all 12 cases. For seeds 1–3, the baseline, overbroad report move, and copy-only solution stayed incomplete, and the reference solution completed. `pnpm verify` passed build, lint, and all 476 tests.
+- **w2-02-brace-expansion** ✅ `pnpm levels:lint` reported 14 levels and zero problems. `pnpm levels:test --level w2-02-brace-expansion --seeds 3` passed all 12 cases. For seeds 1–3, the baseline and the unpadded-month and swapped-type solutions stayed incomplete, and the reference solution completed. `pnpm verify` passed build, lint, and all 476 tests.
+- **w2-03-find-by-name** ✅ `pnpm levels:lint` reported 15 levels and zero problems. `pnpm levels:test --level w2-03-find-by-name --seeds 3` passed all 15 cases. For each seed, the reference completed while the baseline, case-sensitive search, search including directories, and symlink to the manifest stayed incomplete. The focused Docker file-check suite passed 7 tests, and `pnpm verify` passed build, lint, and all 476 tests.
+- **w2-04-find-by-attrs** ✅ `pnpm levels:test --level w2-04-find-by-attrs --seeds 3` passed all 15 cases. The baseline, empty-files-only cleanup, deletion of an empty directory, and incorrect age cutoff stayed incomplete.
+- **w2-05-grep-basics** ✅ `pnpm levels:test --level w2-05-grep-basics --seeds 3` passed all 15 cases. The baseline, case-sensitive count, unanchored count, and removal of every line containing `#` stayed incomplete.
+- **w2-06-grep-recursive-regex** ✅ `pnpm levels:test --level w2-06-grep-recursive-regex --seeds 3` passed all 15 cases. The reference earned the recursive grep bonus on every seed. The baseline, unanchored match, full path submission, and prefix-only match stayed incomplete.
+
+Batch verification for w2-04 through w2-06 passed `pnpm levels:lint` (18 levels, zero problems) and `pnpm verify` (476 tests).
+
+- **w2-07-pipes** ✅ `pnpm levels:test --level w2-07-pipes --seeds 3` passed all 12 cases. The baseline, request count, and deduplication without sorting stayed incomplete.
+- **w2-08-redirection** ✅ `pnpm levels:test --level w2-08-redirection --seeds 3` passed all 12 cases. The baseline, overwritten report, and stdout-only capture stayed incomplete.
+- **w2-09-text-tools** ✅ `pnpm levels:test --level w2-09-text-tools --seeds 3` passed all 15 cases. The baseline, lexical ranking, skipped grouping, and padded output stayed incomplete.
+
+Batch verification for w2-07 through w2-09 passed `pnpm levels:lint` (21 levels, zero problems) and `pnpm verify` (476 tests).
+
+- **w2-10-links-and-types** ✅ `pnpm levels:test --level w2-10-links-and-types --seeds 3` passed all 12 Docker cases. The reference completed for gzip, GIF, and plain text. The baseline, copied release directory, and guessed MIME type stayed incomplete.
+- **w2-11-permissions** ✅ `pnpm levels:test --level w2-11-permissions --seeds 3` passed all 12 Docker cases. The reference completed on every seed. The baseline, execute permission for everyone, and publicly readable note stayed incomplete.
+- **w2-12-umask-recursive** ✅ `pnpm levels:test --level w2-12-umask-recursive --seeds 3` passed all 15 Docker cases. The reference completed on every seed. The baseline, late umask, uniform recursive mode, and skipped hidden file stayed incomplete.
+
+Batch verification for w2-10 through w2-12 passed `pnpm levels:lint` (24 levels, zero problems) and `pnpm verify` (476 tests).
+
+- **w2-13-nano** ✅ `pnpm levels:test --level w2-13-nano --seeds 3` passed all 12 Docker cases. Changing only the port or appending a duplicate port stayed incomplete. The live WebSocket test saved the correct file using Nano keystrokes.
+- **w2-14-vim-survival** ✅ `pnpm levels:test --level w2-14-vim-survival --seeds 3` passed all 12 Docker cases. Keeping the retired line or inserting the new line in the wrong place stayed incomplete. The live WebSocket test edited the file in Vim and earned the Vim Escape badge.
+- **w2-15-boss-log-detective** ✅ `pnpm levels:test --level w2-15-boss-log-detective --seeds 3` passed all 15 Docker cases. Taking the first row in file order, including successful logins, and reporting an incorrect count all stayed incomplete.
 
 ### World 3 — The Engine Room
 
 | ID                       | A   | L   | T   |
 | ------------------------ | --- | --- | --- |
-| w3-01-sudo-and-id        | [ ] | [ ] | [ ] |
+| w3-01-sudo-and-id        | [x] | [x] | [x] |
 | w3-02-users-groups       | [ ] | [ ] | [ ] |
 | w3-03-chown-special-bits | [ ] | [ ] | [ ] |
 | w3-04-ps-and-top         | [ ] | [ ] | [ ] |
@@ -140,6 +169,8 @@ Columns: **A** = authored (level.yaml, setup, solution, wrong, hints, explain) �
 | w3-13-rsync              | [ ] | [ ] | [ ] |
 | w3-14-packages           | [ ] | [ ] | [ ] |
 | w3-15-boss-server-setup  | [ ] | [ ] | [ ] |
+
+`w3-01-sudo-and-id` ✅ Complete seeded level with protected root-only code, exact-path sudo read, three hints, explain/cheatsheet, reference and two wrong scripts. Three-seed matrix: baseline and both wrong scripts stay incomplete; reference completes on all seeds. `pnpm levels:lint`: 28 levels, zero problems; `pnpm verify`: 531 tests.
 
 ### World 4 — The Automation Lab
 
@@ -223,9 +254,9 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 
 | Date       | Area                | Gap                                                                                     | Planned resolution                                         |
 | ---------- | ------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| 2026-10-06 | skills.yaml prereqs | W1 skill edges authored in M7; W2+ skills still have empty `prereqs` | Author remaining edges during M8 |
-| 2026-10-06 | cron daemon start   | `needs_cron` field present (default true); daemon start not implemented                 | Implement in T10.1 admin polish; no admin levels exist yet |
-| 2026-11-06 | Production validation | T9.1 security review and waivers, T9.2 capacity/latency/cleanup measurements, and T9.3 clean-VM install, rootless limits, Caddy/TLS, backup/restore, and upgrade still need evidence. | Record security decisions and complete the checklists in [loadtest.md](loadtest.md) and [deploy.md](deploy.md). |
+| 2026-10-06 | skills.yaml prereqs | Worlds 1 and 2 and the new sudo skill have prerequisite edges. Remaining unauthored Worlds 3–5 skills still have empty `prereqs`. | Author remaining edges as their levels land |
+| 2026-11-11 | Production validation | T9.1 repository audit, T9.2 WSL capacity and T9.3 fresh-WSL deployment rehearsal are complete. The eventual public host, public DNS/ACME, internet ingress and off-device backup transport remain unverified. WSL systemd services do not keep a distro alive. | Verify the actual production host and external services before public deployment (D-054/D-058). Local WSL evidence does not establish a future host's capacity or always-on availability. |
+| 2026-11-11 | Security audit scope | LAN and specialty script/login/cron execution semantics are not certified by the basic/no-network release audit. Optional `LOG_COMMANDS=1` command persistence is deliberately unimplemented; commands/answers/terminal streams are not persisted. | D-054 documents waivers; verify M10 features before enabling them. Any future command logging needs validated opt-in, writer-side 200-character truncation and privacy regressions. |
 
 ## Blockers
 
@@ -233,4 +264,5 @@ _What is blocked, what was tried, what was done instead._
 
 | Date | Task | Blocker | Tried | Workaround / next |
 | ---- | ---- | ------- | ----- | ----------------- |
-| —    | —    | —       | —     | —                 |
+| 2026-11-11 | T9.1 §13 production host | No actual public-deployment host selected. WSL testing verifies its own rootless daemon, uid, listeners and cgroups, not a future hosting environment. | Original Desktop audit, T9.2's rootless WSL measurements/security regressions, and T9.3's fresh-WSL local-TLS deployment rehearsal. | D-054's production prerequisite remains. Verify the eventual deployment host, public DNS/ACME and off-device backups before public deployment. |
+| 2026-11-11 | T9.2 measured run — resolved | Originally no configured VM/SSH endpoint. User selected local WSL 2 and approved the controlled restart (D-056). | Installed independent Ubuntu, rootless Docker and Linux checkout; fixed the measured shared-UID process-limit bug (D-057); passed the real run and idle/orphan recovery. | Resolved on the WSL target. Raw evidence retained, original settings/containers restored, T9.2 ticked. T9.3 subsequently completed on a separate fresh distro (D-058). |

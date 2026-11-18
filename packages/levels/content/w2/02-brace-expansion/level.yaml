@@ -1,0 +1,87 @@
+id: w2-02-brace-expansion
+world: 2
+order: 2
+title: Brace Yourself
+kind: lesson
+difficulty: 2
+estimated_minutes: 4
+story: |
+  Tux-9000: "Audit wants a shelf for every month of 2026 and three draft
+  forms for the cover packet. I cleared out drafts/ for both. Bash can
+  write the names in batches. My wrist thanks you in advance."
+teaches: [brace-expansion]
+par_commands: 2
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  dirs:
+    - { path: /home/player/drafts, owner: player }
+objectives:
+  - id: monthly-shelves
+    text: 'Create all twelve directories from `drafts/2026-01` through `drafts/2026-12`. Keep the leading zero for January through September.'
+    hold: true
+    check:
+      type: all
+      checks:
+        - { type: file_exists, path: /home/player/drafts/2026-01, kind: dir }
+        - { type: file_exists, path: /home/player/drafts/2026-02, kind: dir }
+        - { type: file_exists, path: /home/player/drafts/2026-03, kind: dir }
+        - { type: file_exists, path: /home/player/drafts/2026-04, kind: dir }
+        - { type: file_exists, path: /home/player/drafts/2026-05, kind: dir }
+        - { type: file_exists, path: /home/player/drafts/2026-06, kind: dir }
+        - { type: file_exists, path: /home/player/drafts/2026-07, kind: dir }
+        - { type: file_exists, path: /home/player/drafts/2026-08, kind: dir }
+        - { type: file_exists, path: /home/player/drafts/2026-09, kind: dir }
+        - { type: file_exists, path: /home/player/drafts/2026-10, kind: dir }
+        - { type: file_exists, path: /home/player/drafts/2026-11, kind: dir }
+        - { type: file_exists, path: /home/player/drafts/2026-12, kind: dir }
+  - id: draft-forms
+    text: 'Create `a.txt`, `b.txt`, and `c.txt` directly in `drafts/` and keep only the requested files and directories there.'
+    hold: true
+    check:
+      type: all
+      checks:
+        - { type: file_exists, path: /home/player/drafts/a.txt, kind: file }
+        - { type: file_exists, path: /home/player/drafts/b.txt, kind: file }
+        - { type: file_exists, path: /home/player/drafts/c.txt, kind: file }
+        - type: dir_listing
+          path: /home/player/drafts
+          equals:
+            [
+              '2026-01',
+              '2026-02',
+              '2026-03',
+              '2026-04',
+              '2026-05',
+              '2026-06',
+              '2026-07',
+              '2026-08',
+              '2026-09',
+              '2026-10',
+              '2026-11',
+              '2026-12',
+              'a.txt',
+              'b.txt',
+              'c.txt',
+            ]
+hints:
+  - 'The names follow two patterns. The months share a year and count up, and the forms share an extension but use different letters.'
+  - 'Use unquoted braces with `mkdir` and `touch`. A range such as `{01..03}` keeps the leading zero, and a list such as `{a,b}` expands each choice.'
+  - 'Try `mkdir drafts/2026-{01..12}` and `touch drafts/{a,b,c}.txt`.'
+explain:
+  - command: 'mkdir drafts/2026-{01..12}'
+    parts:
+      - { token: 'mkdir', meaning: 'create a directory for each argument' }
+      - { token: 'drafts/2026-', meaning: 'keep the same path and year prefix for every name' }
+      - { token: '{01..12}', meaning: 'generate twelve numbers with two digits each' }
+  - command: 'touch drafts/{a,b,c}.txt'
+    parts:
+      - { token: 'touch', meaning: 'create each missing file' }
+      - { token: '{a,b,c}', meaning: 'generate one argument per comma-separated choice' }
+      - { token: '.txt', meaning: 'append the same extension to every choice' }
+cheatsheet:
+  - skill: brace-expansion
+    syntax: 'PREFIX{01..12} or {a,b,c}.SUFFIX'
+    note: 'Bash expands unquoted ranges and comma-separated choices into arguments, even before the names exist. Keep leading zeros by padding an endpoint.'
+success_message: 'Twelve shelves, three forms. Audit may have to invent something else to ask for.'
+solutions: { reference: solution.sh, wrong: [wrong/unpadded-months.sh, wrong/swapped-types.sh] }

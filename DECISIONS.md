@@ -412,3 +412,119 @@ _Append below this line. Continue numbering from D-011._
 - **Context:** A31 found that the plan and contributor docs pointed to a nonexistent `docs/` directory. The deployment guide also used the default migration path before defining a different service database.
 - **Decision:** Keep `deploy.md` and `loadtest.md` at their existing root paths and correct the references, including the paths in plan §§0, 3, and 15. Use one deployment environment file for service startup, migrations, and backups. Document World 1 and the base image as the current deployment scope.
 - **Consequences:** The operational docs describe the implemented app and preserve the planned M8 and M10 work. T9.2 and T9.3 still require a measured load run and a clean-VM deployment rehearsal.
+
+### D-047 — Check wildcard sorting with directory listings
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** World 2 opens with a file-sorting exercise that introduces `*`, `?`, and character classes.
+- **Decision:** Use fixed example filenames and exact listings for the two destinations and the inbox. Include zero- and two-character report suffixes to distinguish `?` from `*`. Use a digit class in the preview and allow any commands that produce the required layout.
+- **Consequences:** The examples are consistent across attempts, and there is no seed-dependent answer to submit. The inbox check catches copying and protects the unmatched filenames.
+
+### D-048 — Check names and entry types in the brace-expansion lesson
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** The curriculum calls for twelve month directories and three draft files. The exercise needs a clear workspace and fixed names to teach zero padding and comma-separated choices.
+- **Decision:** Start with an empty `drafts/` and put both groups directly inside it. Check the exact listing and each entry's type. Teach the two Bash forms and accept any commands that create the requested layout.
+- **Consequences:** Unpadded names, swapped entry types, and extra entries keep the level incomplete. The three-seed matrix exercises the same published calendar and form names in fresh sandboxes.
+
+### D-049 — Compare seeded search results against a protected manifest
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** Seek and Find requires a seed-dependent answer and an unordered comparison. The plan permits secret references in file-content values, but the unordered comparison previously treated every entry as literal.
+- **Decision:** Resolve secret references in unordered expectations and treat a multi-line manifest as one expected entry per line. Generate three to five config files under a root-owned tree with mixed-case suffixes and a directory decoy. Put the expected paths in a mode-600 manifest.
+- **Consequences:** Players can submit any ordering of the exact paths. Duplicate paths, missing paths, and directory matches fail the check. The submission must be a regular file, which prevents a direct symlink to the protected manifest from passing.
+
+### D-050 — Check search boundaries in the World 2 find and grep lessons
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** Levels 04–06 teach search by file attributes, filtering text, and matching a whole line across nested files. Each needs fixtures that expose common mistakes.
+- **Decision:** Use fixed cache entries and a file aged seven days and one hour to demonstrate how `find -mtime` rounds down. Check that the retained files and directories still exist. Seed the grep exercises and keep the expected count, filtered config, and leaked filename in mode-600 files. Match the config output exactly and require a regular output file. For the key exercise, accept the filename with its extension and make recursive grep a bonus.
+- **Consequences:** Wrong scripts exercise the age boundary, accidental directory deletion, case-sensitive counts, overbroad text filters, missing regex anchors, and submitting the full path. Required checks accept solutions based on the resulting files and submitted answers.
+
+### D-051 — Use log fixtures that expose pipeline mistakes
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** Levels 07–09 teach deduplication, separate output streams, and numeric ranking. The checks need observable outputs that distinguish common mistakes from valid solutions.
+- **Decision:** Repeat seeded IP addresses across groups of requests so unsorted deduplication fails. Use a fixed service listing, handoff note, and failed lookup for the redirection exercise. Interleave seeded HTTP statuses with distinct counts, including a two-digit leader, and require one space between the count and code.
+- **Consequences:** The checks accept any commands that produce the requested output. The wrong scripts cover skipped grouping, overwritten output, the wrong stream, lexical ranking, and padded counts.
+
+### D-052 — Verify release links, permission bits, and archive modes
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** World 2 lessons 10–12 introduce file identification, symbolic links, permission changes, and creation masks.
+- **Decision:** Rotate three MIME types under one misleading filename and store the expected type in a mode-600 secret. Require mode 744 on the deploy script so the exercise preserves the original group and other permissions. Teach umask through the observable mode of the newly created regular file. Include a hidden file and nested directories in the archive, and check that the original paths exist and every entry has the required mode for its type.
+- **Consequences:** The Docker matrix covers all three MIME fixtures. The new-file check accepts the requested mode regardless of the commands used. A uniform recursive mode and a repair that skips hidden files both leave the archive incomplete.
+
+### D-053 — Verify editor saves and cross-check the investigation report
+
+- **Date:** 2026-11-06
+- **Status:** Accepted
+- **Context:** The editor lessons need to teach interactive keys without blocking the scripted content runner. The boss report needs to reflect the investigation, even if the four submitted answers are already correct.
+- **Decision:** Check the editor lessons against the exact saved text. Use noninteractive edits in the content runner and exercise actual Nano and Vim keystrokes through the live WebSocket test. Seed the boss with out-of-order failures, a successful login from the attacker, and a neighboring IP with the same prefix. Check both the report format and each value against protected seed data.
+- **Consequences:** Any editor or command that produces the required file can complete the lesson. The boss stays incomplete when a well-formed report disagrees with the evidence.
+
+### D-054 — Scope the T9.1 security audit and preserve deployment prerequisites
+
+- **Date:** 2026-11-11
+- **Status:** Accepted for repository audit completion; production infrastructure verification remains blocked
+- **Context:** T9.1 requires every §13 item evidenced or explicitly waived. The available environment is Windows with Docker Desktop, not the production Linux VM. Release content is limited to 27 basic/no-network levels. Full per-item evidence is in [security-review.md](security-review.md).
+- **Decision:** Fix the IP-limit override, reset churn, absent WebSocket Origin, origin configuration validation and silent LAN/sidecar fallback. Preserve the explicit public DTO, capabilities, resource limits and network isolation. Require Origin from non-browser clients too. Keep separate 10/min/user start and reset budgets under the common 60/min/IP cap; both plugin instances are needed for independent counters/markers in the installed Fastify rate-limit implementation.
+- **Waiver — §13 LAN:** Internal per-attempt LAN and no-egress verification are deferred to T10.2 because LAN/sidecars are unimplemented, rejected before acquisition, and absent from all release levels. This waiver permits no LAN deployment.
+- **Waiver — §13 production Docker authority:** Allow the repository audit to complete with this item explicitly blocked. Local inspection reports Docker Desktop 29.8.1, seccomp/cgroupns and named-pipe access, not rootless production isolation. No target VM or credentials are available to inspect service uid, rootless cgroups, dedicated-VM boundaries or daemon TCP listeners. `deploy.md` describes the required design but is not runtime evidence. Before public deployment, verify rootless Docker or dedicated-VM isolation, non-root service identity, no exposed Docker TCP socket and effective limits on the actual host. This waiver does **not** authorize public deployment, tick T9.3 or substitute for its clean-VM rehearsal.
+- **Waiver — §13 generic check semantics outside release:** D-013's player-context cwd read remains root-initiated with fixed environment and a 5 s deadline. Plan §§8.2–8.3 intentionally require specialty login shells, player scripts and cron dry runs with their own user/environment/deadlines and disposable scratch writes. Those existing M10-oriented implementations are not certified as generic read-only root/5 s probes; no release level uses those specialty types. Reassess before authoring/enabling their worlds, without weakening the basic profile or implementing T10 work here.
+- **Waiver — §13 optional command logging:** Continue recording no command text at all, including when the reserved `LOG_COMMANDS=1` environment variable is present. The opt-in feature and 200-character persistence are unimplemented deliberately; retaining less player content satisfies the privacy purpose. Any future implementation must validate that flag, enforce truncation at the writer and add leakage tests. Terminal contents and submitted answers must remain excluded.
+- **Accepted limitation — §13 admin tampering:** Retain D-004/D-010: no competitive leaderboards; future sudo-enabled players can tamper with in-container binaries. All current release levels are basic. Admin hardening remains T10.1 and is not certified by this review.
+- **Consequences:** T9.1 can be ticked once local verification and the evidence ledger pass, because its acceptance explicitly permits documented waivers. Deployment remains gated on the unresolved host checks. T9.2 and T9.3 remain unstarted. No specification requirement was removed; the §13 annotations record audit outcomes only.
+
+### D-055 — Prepare reproducible T9.2 tooling while target provisioning is blocked
+
+- **Date:** 2026-11-11
+- **Status:** Accepted for preparation; measurements completed under D-056/D-057
+- **Context:** T9.2 is the first unticked task. The user requested a new branch and exact target-VM requirements, then confirmed no VM is configured. The previous load-test template still described an unimplemented driver and a World-1-only release.
+- **Decision:** Branch `codex/t9-2-load-test` from `codex/t9-1-security-checklist`. Implement a separate `tools/scripts` workspace using existing locked dependencies, a fixed 20-session workload and a Linux host sampler. Keep all external schemas in shared. Preserve rate limits: create 21 guests, then wait 61 s before the 60 s launch ramp because socket upgrades share the IP budget. Hold five minutes with incomplete objectives; measure raw PTY input echo with split-frame marker matching and Ctrl+U, and report only full-load probes in echo percentiles. Complete and delete owned sessions even on failure. Preserve failure evidence and never persist cookies or terminal frames.
+- **Decision — environment:** Choose a dedicated Ubuntu 24.04 x86-64 VM with 4 vCPUs/8 GB RAM, rootless Docker/cgroup v2, Node 24/pnpm 9.15.9 and `ENABLE_WORLDS=1,2`. Recommend 40 GB SSD as build/log headroom, not a measured requirement. Support private SSH-forwarded API testing without DNS/Caddy; record that transport and make no HTTPS/T9.3 claim. Keep the default runtime and all sandbox restrictions. Request SSH/sudo and service control for setup, shortened-TTL expiry and deliberate server crash/recovery.
+- **Decision — evidence:** Capture independent host CSV and metadata, raw client timings, host-security preflight, cleanup listings and recovery logs. Define near-baseline recovery as post-cleanup 60 s median host used memory ≤ baseline +256 MiB and server RSS ≤ baseline +32 MiB. Investigate/repeat if noisy; report peaks and hold trends. Host evidence and actual recovery checks remain mandatory even when client checks pass.
+- **Consequences:** Local mock tests validate the driver, not VM capacity, Linux rootless enforcement or recovery. T9.2 stays unticked and result tables stay empty until a real run. T9.3 is not started. No `plan.md` requirement changes; the runbook records operational choices and D-054 remains in force.
+
+### D-056 — Use a controlled WSL 2 target for T9.2
+
+- **Date:** 2026-11-11
+- **Status:** Accepted; WSL measurements complete
+- **Context:** The user explicitly selected WSL 2 for T9.2, authorized installation/configuration and the measured test, and approved a WSL/Docker Desktop restart after being told it would interrupt the two existing Solaris containers. Initial inspection found WSL 2.6.3.0/kernel 6.6.87.2, only Docker Desktop's internal distro, 12 logical Windows processors and 17,097,650,176 physical memory bytes. No `.wslconfig` existed.
+- **Decision:** Install an independent `TerminalQuest-T92` Ubuntu 24.04 WSL 2 distro with a Linux-filesystem checkout and a rootless daemon owned by `tq`. Reuse the existing `tq-base` image by export/import. Temporarily configure four WSL processors, 8 GB memory and no VM swap; keep Docker Desktop stopped for the measurement, then restore the original global settings and previously running Desktop containers. The Windows Node client drives the WSL loopback API through localhost forwarding; no domain, Caddy, public listener or SSH server is required.
+- **Consequences:** Results characterize this WSL target on shared Windows hardware and its localhost-forwarding transport. They do not establish a cloud VM's capacity or complete T9.3/public deployment verification. Keep the original sandbox restrictions and verify effective rootless cgroups before load. Retain raw workload, sampler, preflight, cleanup and recovery evidence; tick T9.2 only after the measured acceptance passes.
+- **Outcome:** The corrected run on `3b71d9e` sustained 20 sessions for 302.18 s, passed guest-21 capacity rejection, latency/memory recovery, zero leftovers, idle expiry and 5 s abrupt-restart orphan cleanup. The measured report and raw artifacts are in `loadtest.md`. Restored the original absence of `.wslconfig`, Desktop's 12-processor allocation and both previously running Solaris containers; retained the stopped test distro. T9.2 is complete for this WSL target.
+
+### D-057 — Enforce PID budgets per container rather than per shared UID
+
+- **Date:** 2026-11-11
+- **Status:** Accepted; kernel regressions and 20-session rerun passed
+- **Context:** The first measured WSL ramp on `e7246c7` launched seven sessions; the eighth returned HTTP 500 because the setup supervisor's child exec failed with EAGAIN. The service did not restart and memory stayed low. A controlled reproduction had `pids.current=1`, `pids.max=32`, and failed a single child exec with `nproc=32`; the otherwise identical container succeeded without that ulimit. The mapped host user already had 62 tasks. Docker documents that nproc counts processes per user across containers, not per container: [Docker nproc semantics](https://docs.docker.com/reference/cli/docker/container/run/#for-nproc-usage).
+- **Decision:** Remove the `RLIMIT_NPROC` override from both sandbox profiles and keep the existing cgroup `PidsLimit` unchanged (128 by default). Preserve CPU, memory/swap, nofile/core, capabilities, no-new-privileges, network and mount restrictions. Amend plan §7.3 explicitly. Add real-kernel regressions that exhaust a small sandbox's PID cgroup for root and player and verify a neighboring sandbox remains usable, alongside configuration coverage and the default-128 kernel security assertion.
+- **Consequences:** PID containment continues to apply to every process/thread in each container; one sandbox cannot consume a shared UID's artificial budget and deny another session's setup. Effective cgroup enforcement remains a deployment prerequisite. This replaces an incorrectly scoped limit rather than raising the per-container budget. Preserve the failed run and reproduction, then rerun the unchanged 20-session scenario on the corrected source.
+- **Validation:** Both new Docker regressions failed against the original profile and passed with the correction. `pnpm verify` passed 513 tests; the 27-test targeted isolation/provider/timeout suite passed on both rootless WSL and rootful Desktop. The unchanged full workload passed on `3b71d9e`; all 20 live containers were inspected and retained the 128-PID/256-MiB/0.5-CPU restrictions. Raw first-failure and before/after evidence are retained.
+
+### D-058 — Rehearse deployment in a fresh WSL 2 distro with local TLS
+
+- **Date:** 2026-11-11
+- **Status:** Accepted; clean WSL rehearsal passed
+- **Context:** The user requested T9.3 on a new branch from the current branch and explicitly selected a fresh WSL 2 instance. `codex/t9-3-clean-deployment` starts at `b3ad116` on `codex/t9-2-load-test`. The existing T9.2 distro is configured and cannot serve as a clean install.
+- **Decision:** Install a separate Ubuntu 24.04 x86-64 distro, `TerminalQuest-T93`, from the official WSL download. Install packages and build `tq-base` afresh under an unprivileged `tq` rootless daemon. Use a local bare Git origin populated from the exact source bundle for clone and fast-forward upgrade. Exercise the compiled application behind loopback-only Caddy at `https://localhost`, validating certificates with Caddy's public local CA. Exercise service shutdown/crash cleanup, distro restart with linger, a real scheduled backup, Windows retrieval/scratch restore, and a code upgrade preserving progress.
+- **Consequences:** This can establish that the documented procedure is followable on the user-selected clean Linux environment. Local CA HTTPS does not verify public DNS/ACME, internet ingress, cloud firewall or Windows reboot/autostart. A Windows backup copy is off-distro but not off-device. D-054's eventual production-host prerequisite remains. Leave global WSL settings, the existing distro and Docker Desktop containers unchanged. Retain redacted operational evidence and explicitly record failures/corrections; never retain cookies, private keys or database files.
+- **Outcome:** Fresh package/dependency/app/image installation and the systemd database migration passed. Caddy served the SPA/assets/fonts with strict certificate verification, CSP and a secure guest cookie; real WebSocket clears earned 55 XP before and after upgrade. Verified effective cgroup limits, graceful closing/abandonment/cleanup, SIGKILL orphan sweep, automatic distro-boot services, a timer-triggered backup and Windows round-trip restore with matching progress. The exact upgrade block fast-forwarded `b3ad116` to `533abaf` and preserved the original guest's completion. `pnpm verify` passed 513 tests on Windows and 513 on Linux. Evidence and initial harness failures/corrections are indexed in `deploy-artifacts/2026-11-11-wsl/README.md`. Systemd services alone do not keep WSL alive; document that limit and the unchanged shared-kernel boot ID rather than claiming a Windows/kernel reboot.
+
+### D-059 — Apply explicit admin authority and prove it with World 3's first lesson
+
+- **Date:** 2026-11-11
+- **Status:** Accepted
+- **Context:** T10.1 requires sudo policy, cron startup, capability mapping and a passing `w3-01`. The schema already declared these settings, but setup and sandbox creation ignored them. Plan §8.1 calls `sudo_allow` extra commands; §7.3 also requires a default allow-list.
+- **Decision:** Add per-level literal absolute commands/arguments to a documented default list: id, apt-get/dpkg, user/group management, service, chown/chmod/chgrp and kill/pkill. Write `/etc/sudoers.d/tq` as root:root 0440 and validate it with visudo before launch. Exclude sudoers directives, wildcards and line injection at the shared zod boundary. Start real cron at the end of admin setup by default; respect `needs_cron: false`. Basic setup grants neither. Permit only explicit `NET_RAW`/`NET_ADMIN` extras on admin, validate again before Docker acquisition, and forward them in both production and the level runner. Preserve every existing resource/network restriction.
+- **Decision — content:** Author only `w3-01-sudo-and-id`, required for T10.1 acceptance. Generate a seed-dependent root-only access code and its protected checker copy; permit `cat` only for that visible root file. Teach identity inspection with `id`, `sudo -l` and one-command elevation; credit the existing `sudo` skill with `whoami`/`cat` prerequisites rather than adding an unplanned skill ID. Check the submitted outcome rather than exact command text. Leave the release configuration at Worlds 1–2.
+- **Consequences:** Default admin tools deliberately allow broad in-container changes (package scripts, service scripts, ownership changes); this is not an anti-cheat boundary, as accepted in D-004/D-010. Direct root shells, unrelated `sudo cat` reads, `su`, mounts and undeclared capabilities remain denied initially. The real cron test uses an `@reboot` player job, without accelerated scheduling or a T10.3 timing claim. Existing basic-profile security tests remain required; LAN and all remaining M10 work stay separate.
+- **Validation:** `pnpm verify` passed build/lint and 531 tests; `pnpm test:docker` passed 94 tests (93 server + 1 runner); `pnpm levels:lint` found 28 levels and zero problems. `w3-01` passed all 12 baseline/two-wrong/reference cases across three seeds. The full 27-level release progression passed; no managed test containers remained.

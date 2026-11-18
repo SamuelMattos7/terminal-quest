@@ -1,0 +1,6 @@
+2026-11-12T00:50:37+00:00
+IDLE_TTL_SECONDS=900
+{"ok":true,"docker":true}
+Before crash: pid=14027 container=1b531a27d6643dea70fad96b977d9796cb276bb7f8288d70712cb83d9a746f8c
+CONTAINER ID   IMAGE     COMMAND            CREATED                  STATUS                  PORTS     NAMES
+1b531a27d664   tq-base   "sleep infinity"   Less than a second ago   Up Less than a second             thirsty_diffie

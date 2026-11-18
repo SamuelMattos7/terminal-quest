@@ -1,0 +1,57 @@
+id: w2-10-links-and-types
+world: 2
+order: 10
+title: Links & Types
+kind: lesson
+difficulty: 2
+estimated_minutes: 6
+story: |
+  Tux-9000: "Operations needs a shortcut to the current release. Give them
+  a name we can point at the next release later. While you're here,
+  identify the unlabelled parcel. The courier's filename is a guess."
+teaches: [links, file-types]
+par_commands: 4
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  dirs:
+    - { path: /home/player/release-v2 }
+  files:
+    - { path: /home/player/release-v2/README, content: "Release 2\n" }
+  generators:
+    - { script: setup/gen.sh }
+objectives:
+  - id: link-release
+    text: 'Create a symbolic link named `latest` with the relative target `release-v2`.'
+    check: { type: symlink_target, path: /home/player/latest, target: release-v2 }
+  - id: identify-mystery
+    text: 'Inspect `mystery.bin` and submit its MIME type, such as `application/pdf`, using `tux submit`.'
+    check: { type: answer_equals, from_file: /opt/tq/secret/mime_type }
+hints:
+  - 'A symbolic link stores a path. The file extension is just part of the name.'
+  - 'Use `ln -s TARGET LINK` to create the shortcut and `file --mime-type` to inspect the parcel.'
+  - 'Run `ln -s release-v2 latest`, then `tux submit "$(file -b --mime-type mystery.bin)"`. The `-b` flag omits the filename.'
+explain:
+  - command: 'ln -s release-v2 latest'
+    parts:
+      - { token: '-s', meaning: 'store a path in a symbolic link' }
+      - { token: 'release-v2 latest', meaning: 'put the target first and the link name second' }
+  - command: 'ln FILE ALIAS'
+    parts:
+      - { token: 'ln', meaning: 'without -s, add a second name for the same file inode' }
+  - command: 'stat latest'
+    parts:
+      - { token: 'stat', meaning: 'show metadata for the link itself, including its target' }
+  - command: 'file -b --mime-type mystery.bin'
+    parts:
+      - { token: '-b', meaning: 'omit the filename from the output' }
+      - { token: '--mime-type', meaning: 'report the MIME type inferred from the contents' }
+cheatsheet:
+  - { skill: links, syntax: 'ln -s TARGET LINK', note: 'Create a link to a path.' }
+  - { skill: links, syntax: 'ln FILE ALIAS', note: 'Give an existing file another name.' }
+  - { skill: links, syntax: 'stat LINK', note: 'Inspect link metadata and see its target.' }
+  - { skill: file-types, syntax: 'file -b --mime-type FILE', note: 'Print only the MIME type.' }
+success_message: 'Shortcut online. Parcel identified by contents.'
+solutions:
+  reference: solution.sh
+  wrong: [wrong/copy-release.sh, wrong/guess-extension.sh]

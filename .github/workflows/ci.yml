@@ -53,8 +53,7 @@ jobs:
       - run: pnpm build
       - run: pnpm images:build
       - run: pnpm levels:lint
-      # Add World 2 and raise the count when M8 is complete.
-      - run: pnpm levels:test --world 1 --expect-levels 12
+      - run: pnpm levels:test --world 1,2 --expect-levels 27 --seeds 3
       - run: pnpm test:docker
 
   e2e:

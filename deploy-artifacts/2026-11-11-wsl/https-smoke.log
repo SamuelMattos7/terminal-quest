@@ -1,0 +1,11 @@
+file:///mnt/c/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/deploy-artifacts/2026-11-11-wsl/verify.mjs:33
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks), authorized: res.socket.authorized }));
+                                                                                                                                      ^
+
+TypeError: Cannot read properties of null (reading 'authorized')
+    at IncomingMessage.<anonymous> (file:///mnt/c/Users/samym/OneDrive/Escritorio/Portfolio%20Samuel/Game/terminal-quest/deploy-artifacts/2026-11-11-wsl/verify.mjs:33:135)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1783:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v24.22.3

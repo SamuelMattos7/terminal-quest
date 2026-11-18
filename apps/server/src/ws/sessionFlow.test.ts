@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, rmdirSync, rmSync, writeFileSync } from 'node:
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ServerMessageSchema } from '@terminal-quest/shared';
+import { LevelSchema, ServerMessageSchema } from '@terminal-quest/shared';
 import { attempts, badges, events, levelProgress, skillProgress, users } from '../db/schema.js';
 import { deferred, guestCookie, makeLevel, makeTestContext } from '../testUtils.js';
 import type { ExecResult } from '../sandbox/provider.js';
@@ -428,3 +428,33 @@ it.each([true, false])(
     }
   },
 );
+
+it('forwards admin capabilities and compiles the level sudo policy at launch (T10.1)', async () => {
+  const fixture = makeLevel('a', 1, 1);
+  fixture.level.sandbox = {
+    ...LevelSchema.parse(fixture.level).sandbox,
+    profile: 'admin',
+    capabilities: ['NET_RAW'],
+    sudo_allow: ['/usr/bin/cat /root/access-code.txt'],
+  };
+  const ctx = await setup([fixture]);
+  try {
+    expect(ctx.app.provider.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profile: 'admin',
+        capabilities: ['NET_RAW'],
+      }),
+    );
+    expect(ctx.app.provider.putFiles).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.arrayContaining([expect.objectContaining({ path: '/etc/sudoers.d/tq', mode: 0o440 })]),
+    );
+    expect(ctx.exec).toHaveBeenCalledWith(
+      expect.anything(),
+      ['bash', '-e', '-c', expect.stringContaining('/usr/sbin/cron')],
+      expect.anything(),
+    );
+  } finally {
+    await ctx.cleanup();
+  }
+});

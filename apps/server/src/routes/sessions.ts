@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { OkResponseSchema, StartSessionResponseSchema, type Level } from '@terminal-quest/shared';
 import { levelProgress } from '../db/schema.js';
 import { CapacityError } from '../sandbox/sessionManager.js';
@@ -35,16 +35,18 @@ export async function registerSessionRoutes(
   app: FastifyInstance,
   deps: SessionRouteDeps,
 ): Promise<void> {
+  const launchLimit = {
+    rateLimit: {
+      hook: 'preHandler' as const,
+      max: 10,
+      timeWindow: '1 minute',
+      keyGenerator: (request: FastifyRequest) => request.user?.id ?? request.ip,
+    },
+  };
   app.post<{ Params: { id: string } }>(
     '/api/levels/:id/start',
     {
-      config: {
-        rateLimit: {
-          max: 10,
-          timeWindow: '1 minute',
-          keyGenerator: (request) => request.user?.id ?? request.ip,
-        },
-      },
+      config: launchLimit,
     },
     async (request, reply) => {
       const user = request.user;
@@ -97,49 +99,53 @@ export async function registerSessionRoutes(
     },
   );
 
-  app.post<{ Params: { id: string } }>('/api/sessions/:id/reset', async (request, reply) => {
-    const user = request.user;
-    if (user === undefined) {
-      return reply.code(401).send({ error: 'unauthorized' });
-    }
-    return deps.live.runForUser(user.id, async () => {
-      const live = deps.live.get(request.params.id);
-      if (live === undefined) {
-        return reply.code(404).send({ error: 'unknown session' });
+  app.post<{ Params: { id: string } }>(
+    '/api/sessions/:id/reset',
+    { config: launchLimit },
+    async (request, reply) => {
+      const user = request.user;
+      if (user === undefined) {
+        return reply.code(401).send({ error: 'unauthorized' });
       }
-      if (live.userId !== user.id) {
-        return reply.code(403).send({ error: 'forbidden' });
-      }
-      if (!deps.config.ENABLE_WORLDS.includes(live.level.world)) {
-        return reply.code(404).send({ error: 'unknown level' });
-      }
-      const levelDir = deps.levelDirs.get(live.level.id);
-      if (levelDir === undefined) {
-        return reply.code(500).send({ error: 'level content missing' });
-      }
-      await closeLiveSession(deps, live, 'replaced');
-      try {
-        const fresh = await launchLevelSession(deps, user.id, live.level, levelDir, randomSeed());
-        return reply.send(
-          StartSessionResponseSchema.parse({
-            sessionId: fresh.session.id,
-            wsPath: `/ws/sessions/${fresh.session.id}`,
-          }),
-        );
-      } catch (err) {
-        if (err instanceof CapacityError) {
-          return reply
-            .header('Retry-After', '30')
-            .code(429)
-            .send({ error: 'sandbox capacity reached' });
+      return deps.live.runForUser(user.id, async () => {
+        const live = deps.live.get(request.params.id);
+        if (live === undefined) {
+          return reply.code(404).send({ error: 'unknown session' });
         }
-        if (err instanceof SetupFailedError) {
-          return reply.code(500).send({ error: 'level setup failed' });
+        if (live.userId !== user.id) {
+          return reply.code(403).send({ error: 'forbidden' });
         }
-        throw err;
-      }
-    });
-  });
+        if (!deps.config.ENABLE_WORLDS.includes(live.level.world)) {
+          return reply.code(404).send({ error: 'unknown level' });
+        }
+        const levelDir = deps.levelDirs.get(live.level.id);
+        if (levelDir === undefined) {
+          return reply.code(500).send({ error: 'level content missing' });
+        }
+        await closeLiveSession(deps, live, 'replaced');
+        try {
+          const fresh = await launchLevelSession(deps, user.id, live.level, levelDir, randomSeed());
+          return reply.send(
+            StartSessionResponseSchema.parse({
+              sessionId: fresh.session.id,
+              wsPath: `/ws/sessions/${fresh.session.id}`,
+            }),
+          );
+        } catch (err) {
+          if (err instanceof CapacityError) {
+            return reply
+              .header('Retry-After', '30')
+              .code(429)
+              .send({ error: 'sandbox capacity reached' });
+          }
+          if (err instanceof SetupFailedError) {
+            return reply.code(500).send({ error: 'level setup failed' });
+          }
+          throw err;
+        }
+      });
+    },
+  );
 
   app.delete<{ Params: { id: string } }>('/api/sessions/:id', async (request, reply) => {
     const user = request.user;

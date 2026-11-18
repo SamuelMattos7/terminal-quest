@@ -1,0 +1,67 @@
+id: w2-05-grep-basics
+world: 2
+order: 5
+title: Grep Basics
+kind: lesson
+difficulty: 2
+estimated_minutes: 5
+story: |
+  Tux-9000: "Operations wants an error count and a clean copy of the app
+  config. The logger can't settle on capital letters, and the config has
+  more commentary than settings. Keep the source files for the audit."
+teaches: [grep]
+par_commands: 3
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  generators:
+    - { script: setup/gen.sh }
+objectives:
+  - id: count-errors
+    text: 'Count the lines in `app.log` whose first word is ERROR, ignoring case, and submit the count with `tux submit`.'
+    check: { type: answer_equals, from_file: /opt/tq/secret/error_count }
+  - id: filter-config
+    text: 'Write every line of `app.conf` except full-line comments to `clean.conf`, in the same order. A comment has # as its first non-whitespace character.'
+    check:
+      type: all
+      checks:
+        - { type: file_exists, path: /home/player/clean.conf, kind: file }
+        - type: not
+          checks:
+            - { type: file_exists, path: /home/player/clean.conf, kind: symlink }
+        - type: file_content
+          path: /home/player/clean.conf
+          trim: false
+          equals: "{{secret:clean_config}}\n"
+hints:
+  - 'Look at where the severity appears in each log line and where the # appears in each comment. Some lines mention ERROR or contain # for other reasons.'
+  - 'Use `grep -in` to preview matches with line numbers and `grep -ic` to count them. Use `grep -v` to keep lines that do not match.'
+  - "Try `grep -ic '^ERROR[[:space:]]' app.log` and submit the printed number. Then run `grep -v '^[[:space:]]*#' app.conf > clean.conf`."
+explain:
+  - command: "grep -in '^ERROR[[:space:]]' app.log"
+    parts:
+      - { token: '-i', meaning: 'ignore capitalization' }
+      - {
+          token: '-n',
+          meaning: 'show the original line number; use -c instead to count matching lines',
+        }
+      - {
+          token: '^ERROR[[:space:]]',
+          meaning: 'match ERROR followed by whitespace at the start of a line',
+        }
+  - command: "grep -v '^[[:space:]]*#' app.conf > clean.conf"
+    parts:
+      - { token: '-v', meaning: 'keep lines that do not match the pattern' }
+      - {
+          token: '^[[:space:]]*#',
+          meaning: 'match a # at the start of the line after any indentation',
+        }
+      - { token: '> clean.conf', meaning: 'save the remaining lines in a separate file' }
+cheatsheet:
+  - skill: grep
+    syntax: "grep [-incv] 'PATTERN' FILE"
+    note: 'Ignore case with -i, show line numbers with -n, count matching lines with -c, or invert the selection with -v.'
+success_message: 'Count filed. Config readable. The comments will survive in the original.'
+solutions:
+  reference: solution.sh
+  wrong: [wrong/case-sensitive.sh, wrong/anywhere-in-line.sh, wrong/strip-all-hashes.sh]

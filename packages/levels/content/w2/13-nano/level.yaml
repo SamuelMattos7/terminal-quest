@@ -1,0 +1,39 @@
+id: w2-13-nano
+world: 2
+order: 13
+title: Edit with Nano
+kind: lesson
+difficulty: 2
+estimated_minutes: 4
+story: |
+  Tux-9000: "The filing service moved to port 9090. Open server.conf in Nano,
+  update the port, and turn on debugging so I can watch the next startup.
+  Leave the rest of the configuration alone."
+teaches: [nano]
+par_commands: 1
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  files:
+    - { path: /home/player/server.conf, content: "service=filing\nport=8080\n" }
+objectives:
+  - id: save-config
+    text: 'In server.conf, keep service=filing on line 1, change line 2 to port=9090, and add debug=true on line 3. Save the file.'
+    check:
+      type: file_content
+      path: /home/player/server.conf
+      trim: false
+      equals: "service=filing\nport=9090\ndebug=true\n"
+hints:
+  - 'Nano lets you type right away. The shortcuts along the bottom use ^ to mean Ctrl.'
+  - 'Run nano server.conf. Use the arrow keys to reach the port, then Ctrl+O to save and Ctrl+X to exit.'
+  - 'Replace 8080 with 9090, put debug=true on the next line, press Ctrl+O, press Enter to confirm server.conf, then press Ctrl+X.'
+explain:
+  - command: 'nano server.conf'
+    parts:
+      - { token: 'Ctrl+O', meaning: 'write the buffer to disk after confirming the filename' }
+      - { token: 'Ctrl+X', meaning: 'exit Nano' }
+cheatsheet:
+  - { skill: nano, syntax: 'nano FILE', note: 'Edit directly. Ctrl+O, Enter saves; Ctrl+X exits.' }
+success_message: 'Port updated, debugging enabled. The filing service is ready to restart.'
+solutions: { reference: solution.sh, wrong: [wrong/port-only.sh, wrong/append-port.sh] }

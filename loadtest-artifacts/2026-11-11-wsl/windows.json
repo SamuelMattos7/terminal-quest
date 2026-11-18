@@ -1,0 +1,35 @@
+{
+  "localDate": "2026-11-11",
+  "target": "TerminalQuest-T92",
+  "wslVersion": "2.6.3.0",
+  "windowsVersion": "10.0.26200.9711",
+  "physicalMemoryBytes": 17097650176,
+  "hostLogicalProcessors": 12,
+  "originalWslConfigExisted": false,
+  "temporaryWslSettings": {
+    "memory": "8GB",
+    "processors": 4,
+    "swap": 0
+  },
+  "generator": {
+    "healthRoundTripMs": [
+      35.8218,
+      4.1365,
+      1.994,
+      1.9208,
+      1.656,
+      1.7049,
+      2.2022,
+      3.0192,
+      2.2736,
+      1.8529
+    ],
+    "platform": "Windows",
+    "nodeVersion": "v24.15.0",
+    "transport": "localhost forwarding to WSL 2"
+  },
+  "desktopPreviouslyRunningContainers": [
+    "solaris-live-20261103-worker-1",
+    "solaris-live-20261103-sqs-1"
+  ]
+}

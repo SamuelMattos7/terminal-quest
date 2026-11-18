@@ -141,6 +141,25 @@ describe('file checks', () => {
     ).toBe(true);
   });
 
+  it('file_content compares secret manifest lines without losing duplicate counts', async () => {
+    await setupAsRoot(fx, "printf 'c\\na\\n' > /opt/tq/secret/t23_lines");
+    const run = (lines: string[]) =>
+      runCheck(
+        fx.provider,
+        fx.handle,
+        {
+          type: 'file_content',
+          path: `${D}/lines.txt`,
+          lines_equal_unordered: lines,
+          trim: true,
+        },
+        baseCtx(),
+      );
+    expect(await run(['{{secret:t23_lines}}', 'b'])).toBe(true);
+    expect(await run(['{{secret:t23_lines}}', 'a'])).toBe(false);
+    expect(await run(['{{secret:t23_missing}}', 'b'])).toBe(false);
+  });
+
   it('file_mode and file_owner verify bits and ownership', async () => {
     const ctx = baseCtx();
     expect(

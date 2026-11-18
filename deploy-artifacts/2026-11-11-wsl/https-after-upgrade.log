@@ -1,0 +1,5 @@
+{"at":"2026-11-12T01:28:47.654Z","event":"https-spa-assets","certificateVerified":true,"csp":true,"selfHostedFonts":true,"missingAssets":404}
+{"at":"2026-11-12T01:28:47.665Z","event":"guest-cookie","secure":true,"httpOnly":true,"sameSite":"Lax"}
+{"at":"2026-11-12T01:28:48.865Z","event":"sandbox-isolation","network":"none","capDrop":["ALL"],"noNewPrivileges":true,"mounts":0,"cgroupLimits":["268435456","50000 100000","128"]}
+{"at":"2026-11-12T01:28:49.268Z","event":"websocket-level-clear","rank":"S","xp":55}
+{"at":"2026-11-12T01:28:49.561Z","event":"saved-progress","xp":55,"completions":1}

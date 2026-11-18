@@ -1,0 +1,32 @@
+
+> terminal-quest@0.0.1 loadtest C:\Users\samym\OneDrive\Escritorio\Portfolio Samuel\Game\terminal-quest
+> pnpm --filter @terminal-quest/load-test loadtest "--base-url" "http://127.0.0.1:3301" "--origin" "https://quest.loadtest.invalid" "--out" "C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\.t9-2-artifacts.local\\run-02.json"
+
+
+> @terminal-quest/load-test@0.0.1 loadtest C:\Users\samym\OneDrive\Escritorio\Portfolio Samuel\Game\terminal-quest\tools\scripts
+> tsx loadtest.ts "--base-url" "http://127.0.0.1:3301" "--origin" "https://quest.loadtest.invalid" "--out" "C:\\\\Users\\\\samym\\\\OneDrive\\\\Escritorio\\\\Portfolio Samuel\\\\Game\\\\terminal-quest\\\\.t9-2-artifacts.local\\\\run-02.json"
+
+2026-11-12T00:38:03.564Z 21 guests created; waiting 61 s for a fresh HTTP rate-limit window
+2026-11-12T00:39:04.926Z active sessions: 1/20
+2026-11-12T00:39:08.066Z active sessions: 2/20
+2026-11-12T00:39:11.220Z active sessions: 3/20
+2026-11-12T00:39:14.366Z active sessions: 4/20
+2026-11-12T00:39:17.593Z active sessions: 5/20
+2026-11-12T00:39:20.694Z active sessions: 6/20
+2026-11-12T00:39:23.872Z active sessions: 7/20
+2026-11-12T00:39:27.003Z active sessions: 8/20
+2026-11-12T00:39:30.173Z active sessions: 9/20
+2026-11-12T00:39:33.386Z active sessions: 10/20
+2026-11-12T00:39:36.509Z active sessions: 11/20
+2026-11-12T00:39:39.634Z active sessions: 12/20
+2026-11-12T00:39:42.786Z active sessions: 13/20
+2026-11-12T00:39:45.935Z active sessions: 14/20
+2026-11-12T00:39:49.121Z active sessions: 15/20
+2026-11-12T00:39:52.297Z active sessions: 16/20
+2026-11-12T00:39:55.462Z active sessions: 17/20
+2026-11-12T00:39:58.590Z active sessions: 18/20
+2026-11-12T00:40:01.753Z active sessions: 19/20
+2026-11-12T00:40:04.912Z active sessions: 20/20
+2026-11-12T00:40:04.912Z 20 sessions active; testing guest 21 at capacity
+2026-11-12T00:45:07.094Z hold finished; completing all 20 levels
+2026-11-12T00:45:15.886Z sessions closed; waiting 60 s for host cleanup/resource sampling

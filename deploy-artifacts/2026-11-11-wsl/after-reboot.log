@@ -1,0 +1,40 @@
+Distro boot observation 2026-11-12T01:26:19+00:00
+939d290f-9d40-4145-9402-1fcbe8f1a364
+your 131072x1 screen size is bogus. expect trouble
+    PID                  STARTED COMMAND
+      1 Wed Nov 11 22:26:17 2026 /sbin/init
+curl: (22) The requested URL returned error: 502
+curl: (22) The requested URL returned error: 502
+{"ok":true,"docker":true}Id=caddy.service
+ActiveState=active
+ActiveEnterTimestamp=Wed 2026-11-11 22:26:18 -03
+InvocationID=b22cf525b39846b5912c8ef79eeef50d
+
+Id=user@1000.service
+ActiveState=active
+ActiveEnterTimestamp=Wed 2026-11-11 22:26:18 -03
+InvocationID=b4ac1f058c654342af10f96eb018c810
+Linger=yes
+Id=docker.service
+ActiveState=active
+UnitFileState=enabled
+ActiveEnterTimestamp=Wed 2026-11-11 22:26:20 -03
+
+Id=terminal-quest.service
+ActiveState=active
+UnitFileState=enabled
+ActiveEnterTimestamp=Wed 2026-11-11 22:26:20 -03
+
+Id=tq-backup.timer
+ActiveState=active
+UnitFileState=enabled
+ActiveEnterTimestamp=Wed 2026-11-11 22:26:18 -03
+{"ok":true,"docker":true}State  Recv-Q Send-Q  Local Address:Port Peer Address:PortProcess                                   
+LISTEN 0      511         127.0.0.1:3001      0.0.0.0:*    users:(("MainThread",pid=751,fd=23))     
+LISTEN 0      4096        127.0.0.1:80        0.0.0.0:*    users:(("caddy",pid=178,fd=9))           
+LISTEN 0      1000   10.255.255.254:53        0.0.0.0:*                                             
+LISTEN 0      4096        127.0.0.1:443       0.0.0.0:*    users:(("caddy",pid=178,fd=7))           
+LISTEN 0      4096       127.0.0.54:53        0.0.0.0:*    users:(("systemd-resolve",pid=168,fd=17))
+LISTEN 0      4096    127.0.0.53%lo:53        0.0.0.0:*    users:(("systemd-resolve",pid=168,fd=15))
+LISTEN 0      4096        127.0.0.1:2019      0.0.0.0:*    users:(("caddy",pid=178,fd=4))           
+tq 600 /home/tq/data/tq.sqlite

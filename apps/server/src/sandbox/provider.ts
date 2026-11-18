@@ -10,6 +10,7 @@ export interface SandboxSpec {
   levelId: string;
   image: string;
   profile: 'basic' | 'admin';
+  capabilities?: ('NET_RAW' | 'NET_ADMIN')[];
   network: 'none' | 'lan';
   sidecars: string[];
   resources: { memoryMb: number; cpus: number; pids: number };

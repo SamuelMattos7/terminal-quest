@@ -2,6 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { loadConfig } from './config.js';
 
 describe('loadConfig', () => {
+  it('canonicalizes the public HTTP(S) origin for socket and CSP checks', () => {
+    expect(loadConfig({ PUBLIC_ORIGIN: 'https://QUEST.example:443/' }).PUBLIC_ORIGIN).toBe(
+      'https://quest.example',
+    );
+  });
+
+  it.each([
+    'ftp://quest.example',
+    'https://user:pass@quest.example',
+    'https://quest.example/game',
+    'https://quest.example/?q=x',
+    'https://quest.example/#x',
+  ])('rejects a PUBLIC_ORIGIN that is not an HTTP(S) origin: %s', (value) => {
+    expect(() => loadConfig({ PUBLIC_ORIGIN: value })).toThrow('PUBLIC_ORIGIN');
+  });
   it('defaults to worlds 1 and 2 and leaves sandbox overrides unset', () => {
     const config = loadConfig({});
     expect(config.ENABLE_WORLDS).toEqual([1, 2]);

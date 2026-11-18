@@ -1,0 +1,38 @@
+Nov 11 22:21:24 Samuel systemd[236]: Started terminal-quest.service - Terminal Quest server.
+Nov 11 22:21:25 Samuel node[739]: {"level":30,"time":1794446485581,"pid":739,"hostname":"Samuel","port":3001,"msg":"server listening"}
+Nov 11 22:21:38 Samuel systemd[236]: Stopping terminal-quest.service - Terminal Quest server...
+Nov 11 22:21:38 Samuel node[739]: {"level":30,"time":1794446498875,"pid":739,"hostname":"Samuel","signal":"SIGTERM","msg":"server shutting down"}
+Nov 11 22:21:38 Samuel node[739]: {"level":30,"time":1794446498876,"pid":739,"hostname":"Samuel","msg":"server shut down"}
+Nov 11 22:21:38 Samuel systemd[236]: Stopped terminal-quest.service - Terminal Quest server.
+Nov 11 22:21:38 Samuel systemd[236]: terminal-quest.service: Consumed 1.241s CPU time.
+Nov 11 22:21:43 Samuel systemd[235]: Started terminal-quest.service - Terminal Quest server.
+Nov 11 22:21:44 Samuel node[726]: {"level":30,"time":1794446504362,"pid":726,"hostname":"Samuel","port":3001,"msg":"server listening"}
+Nov 11 22:22:13 Samuel systemd[235]: Stopping terminal-quest.service - Terminal Quest server...
+Nov 11 22:22:13 Samuel node[726]: {"level":30,"time":1794446533508,"pid":726,"hostname":"Samuel","signal":"SIGTERM","msg":"server shutting down"}
+Nov 11 22:22:13 Samuel node[726]: {"level":30,"time":1794446533509,"pid":726,"hostname":"Samuel","msg":"server shut down"}
+Nov 11 22:22:13 Samuel systemd[235]: Stopped terminal-quest.service - Terminal Quest server.
+Nov 11 22:22:13 Samuel systemd[235]: terminal-quest.service: Consumed 1.378s CPU time.
+Nov 11 22:22:18 Samuel systemd[256]: Started terminal-quest.service - Terminal Quest server.
+Nov 11 22:22:18 Samuel node[723]: {"level":30,"time":1794446538979,"pid":723,"hostname":"Samuel","port":3001,"msg":"server listening"}
+Nov 11 22:22:19 Samuel systemd[256]: Stopping terminal-quest.service - Terminal Quest server...
+Nov 11 22:22:19 Samuel node[723]: {"level":30,"time":1794446539771,"pid":723,"hostname":"Samuel","signal":"SIGTERM","msg":"server shutting down"}
+Nov 11 22:22:19 Samuel node[723]: {"level":30,"time":1794446539908,"pid":723,"hostname":"Samuel","msg":"server shut down"}
+Nov 11 22:22:19 Samuel systemd[256]: Stopped terminal-quest.service - Terminal Quest server.
+Nov 11 22:22:19 Samuel systemd[256]: terminal-quest.service: Consumed 1.147s CPU time.
+Nov 11 22:22:20 Samuel systemd[256]: Started terminal-quest.service - Terminal Quest server.
+Nov 11 22:22:20 Samuel node[920]: {"level":30,"time":1794446540839,"pid":920,"hostname":"Samuel","port":3001,"msg":"server listening"}
+Nov 11 22:22:35 Samuel systemd[256]: Stopping terminal-quest.service - Terminal Quest server...
+Nov 11 22:22:35 Samuel node[920]: {"level":30,"time":1794446555318,"pid":920,"hostname":"Samuel","signal":"SIGTERM","msg":"server shutting down"}
+Nov 11 22:22:35 Samuel node[920]: {"level":30,"time":1794446555319,"pid":920,"hostname":"Samuel","msg":"server shut down"}
+Nov 11 22:22:35 Samuel systemd[256]: Stopped terminal-quest.service - Terminal Quest server.
+Nov 11 22:22:35 Samuel systemd[256]: terminal-quest.service: Consumed 1.044s CPU time.
+Nov 11 22:22:44 Samuel systemd[241]: Started terminal-quest.service - Terminal Quest server.
+Nov 11 22:22:45 Samuel node[744]: {"level":30,"time":1794446565667,"pid":744,"hostname":"Samuel","port":3001,"msg":"server listening"}
+Nov 11 22:22:46 Samuel systemd[241]: terminal-quest.service: Sent signal SIGKILL to main process 744 (MainThread) on client request.
+Nov 11 22:22:47 Samuel systemd[241]: terminal-quest.service: Main process exited, code=killed, status=9/KILL
+Nov 11 22:22:47 Samuel systemd[241]: terminal-quest.service: Failed with result 'signal'.
+Nov 11 22:22:47 Samuel systemd[241]: terminal-quest.service: Consumed 1.273s CPU time, 281.5M memory peak, 0B memory swap peak.
+Nov 11 22:22:49 Samuel systemd[241]: terminal-quest.service: Scheduled restart job, restart counter is at 1.
+Nov 11 22:22:49 Samuel systemd[241]: Started terminal-quest.service - Terminal Quest server.
+Nov 11 22:22:51 Samuel node[922]: {"level":30,"time":1794446571061,"pid":922,"hostname":"Samuel","orphans":1,"msg":"reaper removed orphan sandboxes at boot"}
+Nov 11 22:22:51 Samuel node[922]: {"level":30,"time":1794446571064,"pid":922,"hostname":"Samuel","port":3001,"msg":"server listening"}

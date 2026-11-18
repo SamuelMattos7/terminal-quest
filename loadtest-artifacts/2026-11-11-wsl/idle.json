@@ -1,0 +1,41 @@
+{
+  "status": "client checks passed; host evidence and recovery checks still required",
+  "mode": "idle",
+  "baseUrl": "http://127.0.0.1:3301",
+  "origin": "https://quest.loadtest.invalid",
+  "targetVmVerified": false,
+  "startedAt": "2026-11-12T00:47:13.578Z",
+  "idleExpired": true,
+  "idleWaitMs": 57176.81570000001,
+  "latencies": {
+    "start": {
+      "count": 1,
+      "p50Ms": 356.86659999999995,
+      "p95Ms": 356.86659999999995
+    },
+    "echo": {
+      "count": 0,
+      "p50Ms": null,
+      "p95Ms": null
+    },
+    "completion": {
+      "count": 0,
+      "p50Ms": null,
+      "p95Ms": null
+    }
+  },
+  "rawMs": {
+    "starts": [
+      356.86659999999995
+    ],
+    "echoes": [],
+    "rampEchoes": [],
+    "completions": []
+  },
+  "sessionIds": [
+    "cd0fb71b-2799-473e-a376-86dd1dccebbf"
+  ],
+  "cleanupErrors": [],
+  "cleanupRequestedAt": "2026-11-12T00:48:11.152Z",
+  "finishedAt": "2026-11-12T00:49:11.159Z"
+}

@@ -1,0 +1,27 @@
+
+> terminal-quest@0.0.1 loadtest C:\Users\samym\OneDrive\Escritorio\Portfolio Samuel\Game\terminal-quest
+> pnpm --filter @terminal-quest/load-test loadtest "--base-url" "http://127.0.0.1:3301" "--origin" "https://quest.loadtest.invalid" "--out" "C:\\Users\\samym\\OneDrive\\Escritorio\\Portfolio Samuel\\Game\\terminal-quest\\.t9-2-artifacts.local\\run-01.json"
+
+
+> @terminal-quest/load-test@0.0.1 loadtest C:\Users\samym\OneDrive\Escritorio\Portfolio Samuel\Game\terminal-quest\tools\scripts
+> tsx loadtest.ts "--base-url" "http://127.0.0.1:3301" "--origin" "https://quest.loadtest.invalid" "--out" "C:\\\\Users\\\\samym\\\\OneDrive\\\\Escritorio\\\\Portfolio Samuel\\\\Game\\\\terminal-quest\\\\.t9-2-artifacts.local\\\\run-01.json"
+
+2026-11-12T00:26:39.551Z 21 guests created; waiting 61 s for a fresh HTTP rate-limit window
+2026-11-12T00:27:40.957Z active sessions: 1/20
+2026-11-12T00:27:44.094Z active sessions: 2/20
+2026-11-12T00:27:47.247Z active sessions: 3/20
+2026-11-12T00:27:50.394Z active sessions: 4/20
+2026-11-12T00:27:53.524Z active sessions: 5/20
+2026-11-12T00:27:56.688Z active sessions: 6/20
+2026-11-12T00:27:59.860Z active sessions: 7/20
+2026-11-12T00:28:03.160Z sessions closed; waiting 60 s for host cleanup/resource sampling
+Error: start returned HTTP 500
+    at start (C:\Users\samym\OneDrive\Escritorio\Portfolio Samuel\Game\terminal-quest\tools\scripts\scenario.ts:86:40)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async execute (C:\Users\samym\OneDrive\Escritorio\Portfolio Samuel\Game\terminal-quest\tools\scripts\scenario.ts:129:20)
+    at async runScenario (C:\Users\samym\OneDrive\Escritorio\Portfolio Samuel\Game\terminal-quest\tools\scripts\scenario.ts:182:5)
+    at async <anonymous> (C:\Users\samym\OneDrive\Escritorio\Portfolio Samuel\Game\terminal-quest\tools\scripts\loadtest.ts:46:5)
+C:\Users\samym\OneDrive\Escritorio\Portfolio Samuel\Game\terminal-quest\tools\scripts:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @terminal-quest/load-test@0.0.1 loadtest: `tsx loadtest.ts "--base-url" "http://127.0.0.1:3301" "--origin" "https://quest.loadtest.invalid" "--out" "C:\\\\Users\\\\samym\\\\OneDrive\\\\Escritorio\\\\Portfolio Samuel\\\\Game\\\\terminal-quest\\\\.t9-2-artifacts.local\\\\run-01.json"`
+Exit status 1
+ ELIFECYCLE  Command failed with exit code 1.

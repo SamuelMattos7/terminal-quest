@@ -374,10 +374,14 @@ const stream = await exec.start({ hijack: true, stdin: true, Tty: true });
 Use `string_decoder.StringDecoder('utf8')` when converting chunks to `stdout` strings so multi-byte characters are not split.
 
 ### 7.3 Container security profiles
+**2026-11-11 (T10.1, D-059):** `sudo_allow` adds absolute commands with optional literal arguments to the default admin list (`id`, `apt-get`, `dpkg`, `useradd/usermod/userdel`, `groupadd/groupmod/groupdel`, `service`, `chown/chmod/chgrp`, `kill/pkill`). Sudoers directives, wildcards and line breaks are rejected. Extra capabilities are limited to explicit `NET_RAW`/`NET_ADMIN` on admin. Setup validates root-owned mode-0440 sudoers and starts cron last unless `needs_cron: false`. Admin tools retain the accepted in-container tampering limitation (D-004/D-010); basic isolation is unchanged.
+
+**2026-11-11 (T9.2, D-057):** Enforce process/thread budgets with the per-container cgroup PID controller. Do not set `RLIMIT_NPROC`: its UID-wide accounting crosses sandbox boundaries and prevented the rootless target from launching the eighth session. The cgroup limit remains 128 by default; effective enforcement must be verified on the target.
+
 Always (all profiles):
 - Labels: `tq.managed=true`, `tq.attempt=<id>`, `tq.user=<id>`, `tq.level=<id>`, `tq.created=<unix>`.
 - `--cap-drop ALL` then add back only what the profile needs.
-- `--pids-limit` (default 128), `--memory` (default 256m, swap = same), `--cpus` (default 0.5), ulimits: `nofile=1024`, `nproc` = pids, `core=0`.
+- `--pids-limit` (default 128, enforced by the cgroup PID controller), `--memory` (default 256m, swap = same), `--cpus` (default 0.5), ulimits: `nofile=1024`, `core=0`. No UID-wide `nproc` override.
 - `--network none` unless level `network: lan`.
 - No `--privileged`, no docker socket, no host mounts (except the optional read-only `/opt/tq` if not baked into the image; prefer baked in).
 - `/tmp` as tmpfs `size=32m,noexec,nosuid`. `/home/player` on the container layer (needs exec for scripts levels) — protect with pids/memory limits and a per-session TTL. If `SANDBOX_RUNTIME` env is set (e.g. `runsc`), pass `--runtime`.
@@ -818,17 +822,20 @@ Run time budget: whole W1+W2 suite < 10 min on CI (parallelize up to 4 container
 ---
 
 ## 13. Security Checklist (must all be satisfied before any public deployment)
-- [ ] Containers: caps dropped, resource limits set, `no-new-privileges` for `basic`, network `none` by default, no host mounts, no docker socket inside.
-- [ ] `lan` networks are `Internal: true` (no internet egress) and per-attempt.
-- [ ] The server process controls Docker → it is root-equivalent on the host. Production: run Docker **rootless** or on a dedicated VM; run the server as a non-root user in the `docker` group of that VM only. Never expose the Docker socket over TCP.
-- [ ] Secrets/answers/checks are never sent to the client. `GET /api/levels/:id` returns a whitelisted DTO only (use an explicit `toPublicLevel`).
-- [ ] WebSocket auth: session must belong to cookie user; validate Origin header against `PUBLIC_ORIGIN`.
-- [ ] Input limits (stdin rate, frame size), one session per user, per-IP and per-user rate limits.
-- [ ] Reaper guarantees cleanup; boot-time orphan sweep.
-- [ ] Checks run with fixed PATH/env as root and time limits; check scripts are root-owned and not writable by player.
-- [ ] Logging excludes terminal contents (log only commands in `events` payloads truncated to 200 chars, and only if `LOG_COMMANDS=1`).
-- [ ] CSP header on web (default-src 'self'; connect-src 'self' ws:/wss: same host), no external scripts/fonts.
-- [ ] Known/accepted limitation: players with `admin` sudo could tamper with system binaries; leaderboards are out of MVP scope for this reason.
+
+> 2026-11-11 (D-054): T9.1 outcomes and per-item evidence are recorded in [security-review.md](security-review.md). Ticks cover the audited Worlds 1–2 basic/no-network release. Explicit waivers below permit repository-audit completion only; production host verification remains a public-deployment prerequisite. Requirements are unchanged.
+
+- [x] Containers: caps dropped, resource limits set, `no-new-privileges` for `basic`, network `none` by default, no host mounts, no docker socket inside.
+- [ ] `lan` networks are `Internal: true` (no internet egress) and per-attempt. **D-054 waiver: inactive and rejected; implement/verify in T10.2 before enabling.**
+- [ ] The server process controls Docker → it is root-equivalent on the host. Production: run Docker **rootless** or on a dedicated VM; run the server as a non-root user in the `docker` group of that VM only. Never expose the Docker socket over TCP. **D-054 audit waiver: target VM unavailable; actual host checks blocked, not passed or waived for public deployment.**
+- [x] Secrets/answers/checks are never sent to the client. `GET /api/levels/:id` returns a whitelisted DTO only (use an explicit `toPublicLevel`).
+- [x] WebSocket auth: session must belong to cookie user; validate Origin header against `PUBLIC_ORIGIN`.
+- [x] Input limits (stdin rate, frame size), one session per user, per-IP and per-user rate limits.
+- [x] Reaper guarantees cleanup; boot-time orphan sweep. **Cleanup retries retain ownership/capacity while Docker is unavailable.**
+- [x] Checks run with fixed PATH/env as root and time limits; check scripts are root-owned and not writable by player. **Release verified; D-013 and D-054 document context-specific cwd/specialty-check exceptions.**
+- [x] Logging excludes terminal contents (log only commands in `events` payloads truncated to 200 chars, and only if `LOG_COMMANDS=1`). **D-054 waiver: optional command logging is unimplemented; no command text is persisted, even with that flag.**
+- [x] CSP header on web (default-src 'self'; connect-src 'self' ws:/wss: same host), no external scripts/fonts.
+- [x] Known/accepted limitation: players with `admin` sudo could tamper with system binaries; leaderboards are out of MVP scope for this reason. **D-004/D-010/D-054; admin absent from release.**
 
 ---
 

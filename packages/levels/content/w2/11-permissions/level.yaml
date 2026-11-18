@@ -1,0 +1,62 @@
+id: w2-11-permissions
+world: 2
+order: 11
+title: Permission Slip
+kind: lesson
+difficulty: 2
+estimated_minutes: 6
+story: |
+  Tux-9000: "The release handoff needs three access changes. You should
+  be able to run the deploy script, only you should be able to read
+  or edit the private note, and the team needs write access to the
+  shared directory. Inspect the current permissions before changing them."
+teaches: [chmod]
+par_commands: 4
+xp: 50
+sandbox: { profile: basic, network: none, start_cwd: /home/player }
+setup:
+  dirs:
+    - { path: /home/player/shared, mode: '755' }
+  files:
+    - { path: /home/player/deploy.sh, mode: '644', content: "#!/bin/sh\necho Ready\n" }
+    - { path: /home/player/secret.txt, mode: '644', content: "Internal handoff notes\n" }
+objectives:
+  - id: enable-deploy
+    text: 'Give the owner execute permission on `deploy.sh` and preserve its other permissions (mode 744).'
+    check: { type: file_mode, path: /home/player/deploy.sh, mode: '744' }
+  - id: protect-secret
+    text: 'Set `secret.txt` to mode 600 so only the owner can read and write it.'
+    check: { type: file_mode, path: /home/player/secret.txt, mode: '600' }
+  - id: allow-team-write
+    text: 'Set the `shared/` directory to mode 775 so the group can also write there.'
+    check: { type: file_mode, path: /home/player/shared, mode: '775' }
+hints:
+  - 'Use `ls -l` for files and `ls -ld shared` to see the permissions of the directory itself.'
+  - 'In a symbolic mode, `u+x` adds owner execute permission and `g+w` adds group write permission. In octal, read is 4, write is 2, and execute is 1.'
+  - 'Run `chmod u+x deploy.sh`, `chmod 600 secret.txt`, and `chmod g+w shared`.'
+explain:
+  - command: 'ls -l; ls -ld shared'
+    parts:
+      - { token: '-l', meaning: 'show the permission bits in the long listing' }
+      - { token: '-d', meaning: 'show the directory entry itself' }
+  - command: 'chmod u+x deploy.sh'
+    parts:
+      - { token: 'u+x', meaning: 'add execute for the owner and preserve the other bits' }
+  - command: 'chmod 600 secret.txt'
+    parts:
+      - {
+          token: '600',
+          meaning: 'give the owner read and write and clear the group and other bits',
+        }
+  - command: 'chmod g+w shared'
+    parts:
+      - { token: 'g+w', meaning: 'add write access for the group' }
+cheatsheet:
+  - { skill: chmod, syntax: 'ls -l FILE; ls -ld DIR', note: 'Inspect file or directory modes.' }
+  - { skill: chmod, syntax: 'chmod u+x FILE', note: 'Add execute permission for the owner.' }
+  - { skill: chmod, syntax: 'chmod 600 FILE', note: 'Allow only the owner to read and write.' }
+  - { skill: chmod, syntax: 'chmod g+w DIR', note: 'Add group write access to a directory.' }
+success_message: 'Handoff ready. Each entry has the requested access.'
+solutions:
+  reference: solution.sh
+  wrong: [wrong/execute-for-everyone.sh, wrong/public-note.sh]
