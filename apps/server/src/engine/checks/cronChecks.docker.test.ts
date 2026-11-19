@@ -28,6 +28,55 @@ describe('cron checks', () => {
     await closeSandbox(fx);
   }, 60_000);
 
+  it('previews exactly five upcoming UTC runs as the player', async () => {
+    const preview = await fx.provider.exec(
+      fx.handle,
+      ['sh', '-ec', 'date +%s; /opt/tq/bin/tux cron "$1"; date +%s', 'sh', '*/5 * * * *'],
+      { user: 'player', timeoutMs: 5000 },
+    );
+    expect(preview.code).toBe(0);
+    expect(preview.stderr).toBe('');
+    const [before, heading, ...lines] = preview.stdout.trim().split('\n');
+    const after = Number(lines.pop());
+    expect(heading).toBe('Next 5 simulated runs (UTC)');
+    expect(lines).toHaveLength(5);
+    const runTimes = lines.map((line) => {
+      expect(line).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/);
+      return Date.parse(line.replace(' ', 'T').replace(' UTC', ':00Z')) / 1_000;
+    });
+    const interval = 5 * 60;
+    const nextRun = (now: number) => (Math.floor(now / interval) + 1) * interval;
+    const expectedRuns = (now: number) => lines.map((_, index) => nextRun(now) + index * interval);
+    expect([expectedRuns(Number(before)), expectedRuns(after)]).toContainEqual(runTimes);
+  });
+
+  it('includes cron preview in Tux help and supports calendar aliases', async () => {
+    const help = await fx.provider.exec(fx.handle, ['/opt/tq/bin/tux', 'help'], { user: 'player' });
+    expect(help.code).toBe(0);
+    expect(help.stdout).toContain("cron '<schedule>'");
+    const preview = await fx.provider.exec(fx.handle, ['/opt/tq/bin/tux', 'cron', '@daily'], {
+      user: 'player',
+    });
+    expect(preview.code).toBe(0);
+    const dates = preview.stdout.trim().split('\n').slice(1);
+    expect(dates).toHaveLength(5);
+    for (const date of dates) expect(date).toMatch(/^\d{4}-\d{2}-\d{2} 00:00 UTC$/);
+  });
+
+  it.each([
+    { args: [], error: 'Usage: tux cron' },
+    { args: ['* * * * * *'], error: 'expected a five-field schedule' },
+    { args: ['60 * * * *'], error: 'bad schedule' },
+    { args: ['@reboot'], error: 'has no calendar fire times' },
+  ])('rejects a non-calendar cron preview for $args', async ({ args, error }) => {
+    const result = await fx.provider.exec(fx.handle, ['/opt/tq/bin/tux', 'cron', ...args], {
+      user: 'player',
+    });
+    expect(result.code).toBe(2);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain(error);
+  });
+
   it('matches schedules semantically, including */5 ≡ minute list', async () => {
     const ctx = baseCtx();
     const match = await runCheck(

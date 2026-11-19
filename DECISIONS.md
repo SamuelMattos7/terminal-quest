@@ -80,10 +80,10 @@ Lightweight architecture decision log. Add an entry whenever you choose between 
 ### D-008 â€” Cron level validation: semantic match + cron-like dry run (default)
 
 - **Date:** (project start)
-- **Status:** Open (pending SPIKE S1, T10.3)
+- **Status:** Accepted (T10.3, D-061)
 - **Context:** Real-time cron firing makes levels slow.
 - **Decision:** Default to `crontab_entry` (semantic match via `cronmatch.py`) plus `cron_dry_run` (executes the command in a cron-like minimal env). Try `libfaketime` acceleration as a spike.
-- **Consequences:** If the spike works, add a `cron_fire` check type; otherwise this stays.
+- **Consequences:** The spike demonstrated missed runs under calendar-scale acceleration. D-061 records the fallback.
 
 ### D-009 â€” Systemd is simulated with a shim (default)
 
@@ -540,3 +540,13 @@ _Append below this line. Continue numbering from D-011._
 - **Consequences:** LAN requires Docker Engine 28+ and the three images built by `pnpm images:build`. The local verification uses Docker Desktop's Linux engine. D-054's production-host prerequisite remains in effect.
 - **Environment:** The restricted shell could neither fetch the pinned pnpm version nor access the Docker named pipe. Starting Docker Desktop and running pnpm against the host cache and Docker pipe resolved both issues.
 - **Validation:** On Docker Desktop Engine 29.8.1, player containers in basic and admin LANs reached their own services and had no route to public IPv4/IPv6 addresses. Direct HTTPS, public DNS lookups (including queries to Docker's embedded resolver), and traffic to a neighboring attempt's web server failed. All three LAN lessons cleared the three-seed matrix with baseline and wrong solutions incomplete. `pnpm verify` passed 543 tests, `pnpm test:docker` passed 101 tests, and `pnpm levels:lint` found 31 levels and zero problems. Zero managed containers or networks remained.
+
+### D-061 — Use cron schedule previews and dry runs for T10.3
+
+- **Date:** 2026-11-19
+- **Status:** Accepted
+- **Context:** World 4 teaches recurring, weekday, and monthly schedules. S1 had a five-minute limit to see whether accelerated Debian cron could run those jobs predictably during play.
+- **Experiment:** In a disposable `tq-base` derivative on Docker Engine 29.8.1, preload `libfaketime` 0.9.10-2.1 into Debian cron 3.0pl1-162 with `FAKETIME_DONT_FAKE_MONOTONIC=1`. Use the admin sandbox limits, network isolation, and a `player` crontab. At 30× from 12:00:05 UTC, cron ran the startup job, the every-minute job three times, and the fixed 12:01 and 12:02 jobs once each within six real seconds. The observer's preloaded Python sleep initially returned `EINVAL`. Using an unpreloaded external sleep let the observer measure the runs.
+- **Outcome:** At 172,800× from 2026-01-02 UTC, install daily, weekday, and monthly entries as `player` after cron starts. In 20 real seconds (about 40 simulated days at that rate), the player jobs recorded 24 daily runs, 26 weekday runs, and one monthly run. The daily count fell below the conservative minimum of 28. At 30×, advancing from January 2 to February 1 would take about 24 real hours.
+- **Decision:** Adopt the plan's fallback. Keep semantic `crontab_entry` and minimal-environment `cron_dry_run` for validation. Add `tux cron '*/5 * * * *'` to preview the next five UTC calendar times from the sandbox clock via `cronmatch.py`. The preview takes one schedule argument and prints timestamps locally. It rejects `@reboot` because startup has no calendar time.
+- **Validation:** Rebuilt `tq-base` and ran ShellCheck on Tux. `pnpm verify` passed 543 tests. `pnpm test:docker` passed 107 tests, including previews as `player`, semantic matching, cron-like dry runs, real admin cron startup, and the release playthrough. The `w3-01-sudo-and-id` matrix passed all 12 cases across three seeds. `pnpm levels:lint` found 31 levels and zero problems. No managed Docker containers or networks remained.

@@ -417,12 +417,17 @@ PROMPT_COMMAND="__tq_log"
 Notes: a repeated empty Enter must not log a duplicate (handled via history number). Commands are logged **after** they finish (so exit code is available). Format per line: `epoch<TAB>exit<TAB>cwd<TAB>command`.
 
 ### 7.5 `tux` helper CLI (`/opt/tq/bin/tux`, bash)
-Writes one JSON line to `/run/tq/inbox` and prints a short local message.
+Server requests write one JSON line to `/run/tq/inbox` and print a short local message.
+
+**2026-11-19 (T10.3, D-061).** Cron validation uses semantic schedule matching and cron-like dry runs. Tux can preview calendar times directly in the terminal.
+
 - `tux hint` → inbox `{"cmd":"hint"}`; prints "Tux: Hint requested. Check the Quest panel →".
 - `tux status` → inbox `{"cmd":"status"}`; server replies via `tux` WS message.
 - `tux submit <text…>` → inbox `{"cmd":"submit","text":"…"}` (JSON-escape properly with `jq -n --arg`); prints "Answer submitted."
 - `tux explain <command…>` → inbox `{"cmd":"explain","text":"…"}`; server replies using explain data / man summary (best effort).
-- `tux help` → lists the above.
+- `tux cron '*/5 * * * *'` → prints the next five simulated run times in UTC via `cronmatch.py`. Supply one quoted five-field schedule or a calendar alias such as `@daily`.
+- `tux help` → lists the commands.
+
 Server watches `/run/tq/inbox` via `watchFile` and handles each line (`submit` stores answers in the in-memory session `answers[]` used by `answer_equals` checks, then triggers an evaluation).
 
 ### 7.6 Lifecycle & resource management
