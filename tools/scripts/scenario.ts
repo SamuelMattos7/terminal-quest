@@ -157,8 +157,9 @@ export async function runScenario(
     report.capacity = await assertCapacity(capacity);
     holding = true;
     const heldFrom = performance.now();
-    for (let elapsed = 0; elapsed < timing.holdMs; elapsed += 1000) {
-      await pause(Math.min(1000, timing.holdMs - elapsed));
+    // Timers can resolve just before the requested duration. Use measured elapsed time.
+    for (let elapsed = 0; elapsed < timing.holdMs; elapsed = performance.now() - heldFrom) {
+      await pause(Math.min(1000, Math.ceil(timing.holdMs - elapsed)));
       check();
     }
     report.holdDurationMs = performance.now() - heldFrom;
