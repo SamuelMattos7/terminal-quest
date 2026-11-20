@@ -83,11 +83,12 @@ describe('script and login-shell checks', () => {
     ).toBe(false);
   });
 
-  it('checks files created relative to the case scratch directory', async () => {
+  it('uses the case scratch directory with the player home', async () => {
     await setupAsRoot(
       fx,
       "cat > /home/player/write-output.sh <<'FIXTURE_EOF'\n" +
         '#!/bin/bash\n' +
+        'test "$HOME" = /home/player || exit 1\n' +
         'echo "backup complete" > result.txt\n' +
         'FIXTURE_EOF\n' +
         'chmod 755 /home/player/write-output.sh',
@@ -100,7 +101,7 @@ describe('script and login-shell checks', () => {
         {
           name: 'writes a report',
           args: [],
-          setup: [],
+          setup: ['test "$HOME" = /home/player'],
           hidden: false,
           expect: {
             exit_code: 0,

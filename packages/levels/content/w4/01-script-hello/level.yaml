@@ -1,0 +1,53 @@
+id: 'w4-01-script-hello'
+world: 4
+order: 1
+title: 'Hello, Script'
+kind: 'lesson'
+difficulty: 3
+estimated_minutes: 8
+story: 'Tux-9000: "Write your first executable script. Add a shebang and greet whoever runs it by discovering the account name with whoami."'
+teaches:
+  - 'scripting-basics'
+par_commands: 7
+xp: 130
+objectives:
+  - id: 'write-script'
+    text: 'Create executable ~/hello.sh and print Hello, <current user>.'
+    check:
+      type: 'script_tests'
+      path: '/home/player/hello.sh'
+      shellcheck: false
+      cases:
+        - name: 'current-account'
+          args: []
+          expect:
+            exit_code: 0
+            stdout_equals: 'Hello, player'
+          hidden: true
+        - name: 'ignore-spoofed-user-env'
+          args: []
+          expect:
+            exit_code: 0
+            stdout_equals: 'Hello, player'
+          env:
+            USER: 'penguin'
+            LOGNAME: 'visitor'
+          hidden: true
+hints:
+  - 'A shebang tells the kernel which interpreter to use.'
+  - 'Try $(whoami) inside a quoted printf argument.'
+  - 'Start the file with #!/bin/bash, then chmod +x hello.sh and run ./hello.sh.'
+explain:
+  - command: 'chmod +x hello.sh'
+    parts:
+      - token: 'chmod'
+        meaning: 'Mark the script executable so it can be run directly.'
+cheatsheet:
+  - skill: 'scripting-basics'
+    syntax: 'chmod +x hello.sh'
+    note: 'Mark the script executable so it can be run directly.'
+success_message: 'The kernel ran your script, and the greeting found the right account.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/fixed-name.sh'

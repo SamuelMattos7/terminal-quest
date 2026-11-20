@@ -1,0 +1,112 @@
+id: 'w5-03-shellcheck-bats'
+world: 5
+order: 3
+title: 'Test Your Shell'
+kind: 'lesson'
+difficulty: 4
+estimated_minutes: 8
+story: 'Tux-9000: "normalize.sh should sort unique nonblank rows and exit 64 with no input path. Fix its shell warnings, then write Bats tests that prove the contract even when the input filename contains spaces."'
+teaches:
+  - 'shellcheck'
+  - 'bats'
+par_commands: 7
+xp: 150
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+setup:
+  files:
+    - path: '/home/player/normalize.sh'
+      content: "#!/bin/bash\nset -euo pipefail\n[[ $# == 1 ]] || exit 64\nsed '/^[[:space:]]*$/d' -- $1 | LC_ALL=C sort -u\n"
+      mode: '755'
+      owner: 'player'
+objectives:
+  - id: 'fix-normalizer'
+    text: 'Fix ~/normalize.sh so ShellCheck passes and it sorts unique nonblank rows through a quoted path.'
+    check:
+      type: 'script_tests'
+      path: '/home/player/normalize.sh'
+      shellcheck: true
+      cases:
+        - name: 'sorted-unique'
+          args:
+            - 'ice ledger'
+          expect:
+            exit_code: 0
+            stdout_equals: "alpha\nzulu"
+          setup:
+            - "printf 'zulu\\n\\nalpha\\nzulu\\n \\n' >'ice ledger'"
+          hidden: true
+        - name: 'missing-input'
+          args: []
+          expect:
+            exit_code: 64
+          hidden: true
+  - id: 'test-contract'
+    text: 'Write executable ~/normalize.bats. Run the script named by NORMALIZE (which defaults to ~/normalize.sh) and catch duplicate, blank-row, and path-splitting regressions.'
+    check:
+      type: 'script_tests'
+      path: '/home/player/normalize.bats'
+      shellcheck: false
+      cases:
+        - name: 'correct-implementation'
+          args: []
+          expect:
+            exit_code: 0
+          env:
+            NORMALIZE: './candidate'
+          setup:
+            - 'cp "$HOME/normalize.sh" candidate'
+          hidden: true
+        - name: 'duplicate-regression'
+          args: []
+          expect:
+            exit_code: 1
+          env:
+            NORMALIZE: './candidate'
+          setup:
+            - "cat > candidate <<'CANDIDATE'\n#!/bin/bash\nset -euo pipefail\n[[ $# == 1 ]] || exit 64\nsed '/^[[:space:]]*$/d' -- \"$1\" | LC_ALL=C sort\nCANDIDATE\nchmod +x candidate"
+          hidden: true
+        - name: 'blank-row-regression'
+          args: []
+          expect:
+            exit_code: 1
+          env:
+            NORMALIZE: './candidate'
+          setup:
+            - "cat > candidate <<'CANDIDATE'\n#!/bin/bash\nset -euo pipefail\n[[ $# == 1 ]] || exit 64\ncat -- \"$1\" | LC_ALL=C sort -u\nCANDIDATE\nchmod +x candidate"
+          hidden: true
+        - name: 'path-splitting-regression'
+          args: []
+          expect:
+            exit_code: 1
+          env:
+            NORMALIZE: './candidate'
+          setup:
+            - "cat > candidate <<'CANDIDATE'\n#!/bin/bash\nset -euo pipefail\n[[ $# == 1 ]] || exit 64\nsed '/^[[:space:]]*$/d' -- $1 | LC_ALL=C sort -u\nCANDIDATE\nchmod +x candidate"
+          hidden: true
+hints:
+  - 'Run shellcheck normalize.sh and find the unquoted expansion.'
+  - 'In Bats, run captures the command’s exit status in $status and its output in $output.'
+  - 'Build a fixture that has a spaced filename, duplicate rows, and a blank row. Assert its exact normalized output.'
+explain:
+  - command: 'shellcheck FILE'
+    parts:
+      - token: 'shellcheck'
+        meaning: 'Find shell syntax and correctness hazards before shipping.'
+  - command: 'run "$candidate" "$input"'
+    parts:
+      - token: 'run'
+        meaning: 'Capture the command result so a Bats test can inspect output and status.'
+cheatsheet:
+  - skill: 'shellcheck'
+    syntax: 'shellcheck FILE'
+    note: 'Find shell syntax and correctness hazards before shipping.'
+  - skill: 'bats'
+    syntax: 'run "$candidate" "$input"'
+    note: 'Capture the command result so a Bats test can inspect output and status.'
+success_message: 'The repaired script is clean and the tests caught every hidden regression.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/only-happy-exit.sh'

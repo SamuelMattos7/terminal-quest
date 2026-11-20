@@ -105,6 +105,11 @@ async function driveScript(
   tracker: TrackerState,
   scriptText: string,
 ): Promise<void> {
+  const marker = 'TQ_SOLUTION_' + randomUUID();
+  // Feed each line at a PS1 or PS2 prompt. Foreground commands (including
+  // sudo's nested PTY) must never receive the remaining script on stdin.
+  const promptCommand =
+    "set +o emacs; set +o vi; printf -v PS1 '\\n%s\\n' " + marker + '; PS2=$PS1';
   const shell = await provider.openShell(handle, { cols: 80, rows: 24 });
   const inbox = await provider.watchFile(handle, '/run/tq/inbox', (line) => {
     touch();
@@ -113,7 +118,7 @@ async function driveScript(
   const cmdlog = await provider.watchFile(handle, '/run/tq/cmdlog', (line) => {
     touch();
     const entry = parseCmdlogLine(line);
-    if (entry !== undefined) {
+    if (entry !== undefined && entry.command !== promptCommand) {
       noteCommand(tracker, entry);
     }
   });
@@ -121,10 +126,39 @@ async function driveScript(
   function touch(): void {
     active = Date.now();
   }
-  shell.onData(touch);
+  const deadline = Date.now() + PHASE_TIMEOUT_MS;
+  let onPrompt: (() => void) | undefined;
+  let outputTail = '';
+  shell.onData((chunk) => {
+    touch();
+    const output = outputTail + chunk.toString();
+    const prompted =
+      output.includes('\n' + marker + '\r\n') || output.includes('\n' + marker + '\n');
+    outputTail = prompted ? '' : output.slice(-(marker.length + 4));
+    if (prompted) onPrompt?.();
+  });
+  function sendLine(line: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(
+        () => {
+          onPrompt = undefined;
+          reject(new Error(handle.spec.levelId + ': terminal did not return to a prompt'));
+        },
+        Math.max(0, deadline - Date.now()),
+      );
+      onPrompt = () => {
+        clearTimeout(timer);
+        onPrompt = undefined;
+        resolve();
+      };
+      shell.write(line + '\n');
+    });
+  }
   try {
-    shell.write(scriptText.endsWith('\n') ? scriptText : `${scriptText}\n`);
-    const deadline = Date.now() + PHASE_TIMEOUT_MS;
+    await sendLine(promptCommand);
+    for (const line of scriptText.trimEnd().split('\n')) {
+      await sendLine(line);
+    }
     while (Date.now() - active < QUIET_MS && Date.now() < deadline) {
       await sleep(100);
     }

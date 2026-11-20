@@ -1,0 +1,48 @@
+id: 'w3-14-packages'
+world: 3
+order: 14
+title: 'Package Deal'
+kind: 'lesson'
+difficulty: 2
+estimated_minutes: 8
+story: 'Tux-9000: "The Engine Room has an offline package on the workbench. Inspect penguin-inspect.deb, install it, then run its tool and save its output in installed.txt."'
+teaches:
+  - 'dpkg'
+par_commands: 7
+xp: 110
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+setup:
+  generators:
+    - script: 'setup/gen.sh'
+objectives:
+  - id: 'install-tool'
+    text: 'Install the bundled penguin-inspect package.'
+    check:
+      type: 'exec'
+      inline: "dpkg-query -s penguin-inspect | grep -Fx 'Status: install ok installed' && command -v penguin-inspect"
+  - id: 'run-tool'
+    text: 'Save penguin-inspect output to ~/installed.txt.'
+    check:
+      type: 'file_content'
+      path: '/home/player/installed.txt'
+      equals: 'Engine room diagnostics ready'
+hints:
+  - 'dpkg-deb -I displays the package metadata before installation.'
+  - 'Install a local package with sudo dpkg -i FILE. Check dpkg -l penguin-inspect.'
+  - 'Run penguin-inspect >installed.txt after installing it.'
+explain:
+  - command: 'sudo dpkg -i FILE.deb'
+    parts:
+      - token: 'sudo'
+        meaning: 'Install a local Debian package without contacting a repository.'
+cheatsheet:
+  - skill: 'dpkg'
+    syntax: 'sudo dpkg -i FILE.deb'
+    note: 'Install a local Debian package without contacting a repository.'
+success_message: 'Your diagnostics tool is installed and working offline.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/inspect-only.sh'

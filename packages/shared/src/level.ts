@@ -190,6 +190,7 @@ export const LevelSchema = z
     par_commands: z.number().int().positive(),
     xp: z.number().int().positive(),
     requires: LevelRequirementSchema.optional(),
+    sequential: z.boolean().optional(),
     sandbox: SandboxSchema.default({}),
     setup: SetupSchema.optional(),
     objectives: z.array(ObjectiveSchema).min(1),
@@ -204,6 +205,13 @@ export const LevelSchema = z
   })
   .strict()
   .superRefine((v, ctx) => {
+    if (v.sequential && v.objectives.some((objective) => objective.optional || objective.bonus)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['objectives'],
+        message: 'sequential objectives must all be required',
+      });
+    }
     if (v.requires === 'systemd-shim' && v.sandbox.profile !== 'admin') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

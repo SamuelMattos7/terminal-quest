@@ -1,0 +1,49 @@
+id: 'w3-02-users-groups'
+world: 3
+order: 2
+title: 'Meet the Team'
+kind: 'lesson'
+difficulty: 2
+estimated_minutes: 8
+story: 'Tux-9000: "Deploy needs a local account with its own home and access to the web team. Provision deploy and add www-data as a supplementary group."'
+teaches:
+  - 'users-groups'
+par_commands: 7
+xp: 110
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+objectives:
+  - id: 'create-home'
+    text: 'Create deploy with the home directory /home/deploy.'
+    check:
+      type: 'all'
+      checks:
+        - type: 'file_owner'
+          path: '/home/deploy'
+          user: 'deploy'
+        - type: 'exec'
+          inline: 'getent passwd deploy | cut -d: -f6 | grep -Fx /home/deploy'
+  - id: 'join-web-team'
+    text: 'Add deploy to the supplementary group www-data.'
+    check:
+      type: 'exec'
+      inline: "test \"$(id -gn deploy)\" != www-data && id -Gn deploy | tr ' ' '\\n' | grep -Fx www-data"
+hints:
+  - 'Check the account database with getent passwd deploy.'
+  - 'useradd -m creates the home directory. usermod -aG appends a supplementary group.'
+  - 'Use sudo useradd -m deploy and sudo usermod -aG www-data deploy. Inspect the result with id deploy.'
+explain:
+  - command: 'sudo usermod -aG GROUP USER'
+    parts:
+      - token: 'sudo'
+        meaning: 'Append a supplementary group while preserving current memberships.'
+cheatsheet:
+  - skill: 'users-groups'
+    syntax: 'sudo usermod -aG GROUP USER'
+    note: 'Append a supplementary group while preserving current memberships.'
+success_message: 'Deploy has a home and web-team access.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/primary-group.sh'

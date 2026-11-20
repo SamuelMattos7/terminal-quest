@@ -1,0 +1,70 @@
+id: 'w4-13-cron-pitfalls'
+world: 4
+order: 13
+title: "Cron Doesn't Care"
+kind: 'lesson'
+difficulty: 3
+estimated_minutes: 8
+story: 'Tux-9000: "From ~/ops, ./bin/collect works by hand. Cron starts in your home directory with a minimal environment. Fix the 06:15 job to write stdout and stderr to ~/audit.log, and silence cron mail with MAILTO."'
+teaches:
+  - 'cron-env'
+par_commands: 7
+xp: 130
+sandbox:
+  profile: 'admin'
+setup:
+  dirs:
+    - path: '/home/player/ops/bin'
+  files:
+    - path: '/home/player/ops/bin/collect'
+      content: "#!/bin/sh\nprintf \"%s\\n\" \"audit complete\"\n"
+      mode: '755'
+      owner: 'player'
+  commands:
+    - "printf '%s\\n' '15 6 * * * ./bin/collect' | crontab -u player -"
+objectives:
+  - id: 'keep-audit-time'
+    text: 'Keep the collect job at 06:15 every day.'
+    check:
+      type: 'crontab_entry'
+      user: 'player'
+      schedule: '15 6 * * *'
+      command_regex: 'collect'
+  - id: 'run-cleanly'
+    text: 'Make the job succeed in a cron-like environment.'
+    check:
+      type: 'cron_dry_run'
+      user: 'player'
+      command_regex: 'collect'
+      expect:
+        exit_code: 0
+        stdout_equals: ''
+  - id: 'record-audit'
+    text: 'Append collect output to ~/audit.log.'
+    check:
+      type: 'file_content'
+      path: '/home/player/audit.log'
+      contains: 'audit complete'
+  - id: 'silence-mail'
+    text: 'Set MAILTO to the empty string and redirect stderr to the log as well.'
+    check:
+      type: 'exec'
+      inline: "set -o pipefail; tab=$(crontab -l -u player) && grep -Eq '^[[:space:]]*MAILTO[[:space:]]*=[[:space:]]*\"\"[[:space:]]*$' <<< \"$tab\" && grep -Eq 'collect[[:space:]].*audit\\.log[[:space:]]+2>&1' <<< \"$tab\""
+hints:
+  - 'A crontab job starts in $HOME and has a short PATH. Use the full path even when the job works after cd.'
+  - 'Use >> /home/player/audit.log 2>&1 so both streams reach the log.'
+  - 'Put MAILTO="" above the 15 6 * * * line. Keep /home/player/ops/bin/collect as the command path.'
+explain:
+  - command: 'COMMAND >> /absolute/path.log 2>&1'
+    parts:
+      - token: 'COMMAND'
+        meaning: 'Append stdout and stderr to the same log during an unattended run.'
+cheatsheet:
+  - skill: 'cron-env'
+    syntax: 'COMMAND >> /absolute/path.log 2>&1'
+    note: 'Append stdout and stderr to the same log during an unattended run.'
+success_message: 'The job now works under the same constraints as its cron environment.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/relative-command.sh'

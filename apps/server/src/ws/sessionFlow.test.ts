@@ -9,6 +9,7 @@ import { deferred, guestCookie, makeLevel, makeTestContext } from '../testUtils.
 import type { ExecResult } from '../sandbox/provider.js';
 import { noteCommand } from '../engine/objectiveTracker.js';
 import { closeLiveSession, evaluateAndReport, requestHint, type FlowDeps } from './sessionFlow.js';
+import { sessionStateMessage } from './sessionMessages.js';
 import * as review from '../progression/review.js';
 import { HINT_NUDGE_TEXT, STUCK_MS } from '../progression/dialogue.js';
 
@@ -110,6 +111,30 @@ it.each(['wait', 'progress', 'close'] as const)(
     }
   },
 );
+
+it('announces the next sequential objective and includes it in reconnect state', async () => {
+  const fixture = makeLevel('a', 1, 1);
+  fixture.level.sequential = true;
+  fixture.level.objectives = [
+    { id: 'first', text: 'Run pwd.', check: { type: 'command_used', regex: '^pwd$' } },
+    { id: 'next', text: 'Run ls.', check: { type: 'command_used', regex: '^ls$' } },
+  ];
+  const ctx = await setup([fixture]);
+  try {
+    expect(sessionStateMessage(ctx.live).objectives).toEqual([{ id: 'first', status: 'pending' }]);
+    noteCommand(ctx.live.tracker, { command: 'pwd', exitCode: 0, cwd: '/home/player', epoch: 1 });
+    await evaluateAndReport(ctx.deps, ctx.live);
+    expect(ctx.send).toHaveBeenCalledWith(JSON.stringify({ t: 'tux', text: 'Run ls.' }));
+    const snapshot = sessionStateMessage(ctx.live);
+    expect(ctx.send).toHaveBeenCalledWith(JSON.stringify(snapshot));
+    expect(snapshot.objectives).toEqual([
+      { id: 'first', status: 'done' },
+      { id: 'next', status: 'pending' },
+    ]);
+  } finally {
+    await ctx.cleanup();
+  }
+});
 
 it('reports a required hold file as pending after deletion and done after recreation (A17)', async () => {
   const fixture = makeLevel('a', 1, 1);

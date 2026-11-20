@@ -1,6 +1,8 @@
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 import { WorldsResponseSchema, type WorldsResponse } from '@terminal-quest/shared';
 import { levelProgress, skillProgress, users } from '../db/schema.js';
+import { levelStates } from '../progression/unlock.js';
 import { guestCookie, makeLevel, makeTestContext, type TestContext } from '../testUtils.js';
 
 const tree = [
@@ -28,6 +30,29 @@ function markDone(ctx: TestContext, userId: string, levelId: string): void {
 }
 
 describe('GET /api/worlds', () => {
+  it('exposes the full curriculum and lets normal progression reach the final boss', async () => {
+    const enabled = [1, 2, 3, 4, 5];
+    const root = fileURLToPath(new URL('../../../../packages/levels/content/', import.meta.url));
+    const ctx = await makeTestContext([], { ENABLE_WORLDS: enabled }, root);
+    try {
+      const cookie = await guestCookie(ctx.app);
+      const worlds = await getWorlds(ctx, cookie);
+      expect(worlds.worlds.map((world) => world.id)).toEqual(enabled);
+      expect(worlds.worlds.map((world) => world.levels.length)).toEqual([12, 15, 15, 16, 9]);
+      const ordered = worlds.worlds.flatMap((world) => world.levels);
+      expect(ordered.at(-1)?.id).toBe('w5-10-boss-prod-is-down');
+      const done = new Set<string>();
+      for (const level of ordered) {
+        expect(levelStates(ctx.app.levels.byWorld, done, false, enabled).get(level.id)).toBe(
+          'available',
+        );
+        done.add(level.id);
+      }
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+
   it('requires a session', async () => {
     const ctx = await makeTestContext(tree);
     try {

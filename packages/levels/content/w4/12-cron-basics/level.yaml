@@ -1,0 +1,75 @@
+id: 'w4-12-cron-basics'
+world: 4
+order: 12
+title: 'Cron Basics'
+kind: 'lesson'
+difficulty: 3
+estimated_minutes: 8
+story: 'Tux-9000: "Schedule bin/heartbeat every five minutes, bin/sweep at 03:00 weekdays, and bin/inventory at 02:30 on day one of every month. Translate the inventory expression into a sentence for Tux."'
+teaches:
+  - 'cron'
+par_commands: 7
+xp: 130
+sandbox:
+  profile: 'admin'
+setup:
+  dirs:
+    - path: '/home/player/bin'
+  files:
+    - path: '/home/player/bin/heartbeat'
+      content: "#!/bin/sh\nprintf \"%s\\n\" heartbeat\n"
+      mode: '755'
+      owner: 'player'
+    - path: '/home/player/bin/sweep'
+      content: "#!/bin/sh\nprintf \"%s\\n\" sweep\n"
+      mode: '755'
+      owner: 'player'
+    - path: '/home/player/bin/inventory'
+      content: "#!/bin/sh\nprintf \"%s\\n\" inventory\n"
+      mode: '755'
+      owner: 'player'
+objectives:
+  - id: 'heartbeat-every-five'
+    text: 'Schedule /home/player/bin/heartbeat every five minutes.'
+    check:
+      type: 'crontab_entry'
+      user: 'player'
+      schedule: '*/5 * * * *'
+      command_regex: "^/home/player/bin/heartbeat(?:\\s|$)"
+  - id: 'weekday-sweep'
+    text: 'Schedule /home/player/bin/sweep at 03:00 on weekdays.'
+    check:
+      type: 'crontab_entry'
+      user: 'player'
+      schedule: '0 3 * * 1-5'
+      command_regex: "^/home/player/bin/sweep(?:\\s|$)"
+  - id: 'monthly-inventory'
+    text: 'Schedule /home/player/bin/inventory at 02:30 on the first day of each month.'
+    check:
+      type: 'crontab_entry'
+      user: 'player'
+      schedule: '30 2 1 * *'
+      command_regex: "^/home/player/bin/inventory(?:\\s|$)"
+  - id: 'read-calendar'
+    text: 'Explain 30 2 1 * * with tux submit, in the format HH:MM on the first day of every month.'
+    check:
+      type: 'answer_equals'
+      value: '02:30 on the first day of every month'
+hints:
+  - 'Read the fields left to right: minute, hour, day-of-month, month, day-of-week.'
+  - 'Use */5 for the minute step and 1-5 for Monday through Friday. tux cron previews future UTC times.'
+  - 'Check the calendar with tux cron "30 2 1 * *". Submit the time and the day of the month in the requested format.'
+explain:
+  - command: 'crontab -l'
+    parts:
+      - token: 'crontab'
+        meaning: 'Inspect the installed schedule for the current user.'
+cheatsheet:
+  - skill: 'cron'
+    syntax: 'crontab -l'
+    note: 'Inspect the installed schedule for the current user.'
+success_message: 'All three schedules match their calendar requirements.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/swapped-hour-minute.sh'

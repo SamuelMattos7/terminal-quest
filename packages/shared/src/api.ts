@@ -31,13 +31,16 @@ export const PublicLevelSchema = z
 export type PublicLevel = z.infer<typeof PublicLevelSchema>;
 
 /** Strip a full level down to its public DTO. Never add check/setup/solutions/hints here. */
-export function toPublicLevel(level: Level): PublicLevel {
+export function toPublicLevel(
+  level: Level,
+  revealed = level.sequential ? 1 : level.objectives.length,
+): PublicLevel {
   return PublicLevelSchema.parse({
     id: level.id,
     title: level.title,
     story: level.story,
     kind: level.kind,
-    objectives: level.objectives.map((o) => ({
+    objectives: level.objectives.slice(0, revealed).map((o) => ({
       id: o.id,
       text: o.text,
       optional: o.optional,

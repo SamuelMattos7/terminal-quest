@@ -331,6 +331,8 @@ Behavioural rules: stdin frames are rate-limited (max 64 KB/s); frames > 16 KB a
 ## 7. Sandbox Specification
 
 ### 7.1 Images
+
+**2026-11-19 (T10.5, D-063).** The base image also includes `patch`, `logrotate`, `iptables`, `tcpdump`, and `make` for the offline automation, diagnostics, and defensive firewall lessons.
 **`tq-base`** (Debian 12 slim). Install: `bash coreutils findutils grep sed gawk less nano vim man-db manpages manpages-dev procps psmisc iproute2 iputils-ping curl netcat-openbsd dnsutils openssh-client tar gzip bzip2 xz-utils zip unzip jq cron rsync tmux git sudo lsof strace shellcheck bats file tree ncurses-term locales python3 python3-croniter` (python only for checkers).
 - Users: `player` (uid 1000, home `/home/player`, shell bash). Root exists for checks.
 - Remove `su` abilities for player unless profile `admin`. Sudo config differs by profile (see below).
@@ -394,6 +396,8 @@ Always (all profiles):
 | `admin` | sudo enabled for `player` (NOPASSWD, but a restricted command list per level via `/etc/sudoers.d/tq`; default allow-list: package, user, service, chown/chmod/chgrp, kill, mount-less admin tools), cron daemon started, optional `NET_RAW`/`NET_ADMIN` only for levels that set `capabilities:` explicitly | `+ AUDIT_WRITE, SYS_CHROOT, NET_BIND_SERVICE` |
 
 ### 7.4 `/opt/tq/bashrc`
+
+**2026-11-19 (T10.5, D-063).** The command log hook preserves Bash's latest background PID (`$!`) so the job-control lesson can use it across prompts.
 ```bash
 # sourced by the interactive shell
 [ -f /etc/bash.bashrc ] && . /etc/bash.bashrc
@@ -405,7 +409,7 @@ __tq_last_n=""
 __tq_log() {
   local ec=$?
   local n cmd
-  read -r n cmd < <(HISTTIMEFORMAT= history 1)
+  read -r n cmd <<< "$(HISTTIMEFORMAT= history 1)"
   if [ -n "$n" ] && [ "$n" != "$__tq_last_n" ]; then
     __tq_last_n="$n"
     printf '%s\t%s\t%s\t%s\n' "$(date +%s)" "$ec" "$PWD" "${cmd//$'\n'/ }" >> /run/tq/cmdlog 2>/dev/null
@@ -475,6 +479,8 @@ checks/           # custom check scripts referenced by `exec` checks
 ### 8.1 `level.yaml` schema
 
 **2026-11-19 (T10.4, D-062).** Admin levels can declare the optional top-level `requires: systemd-shim` field to start the simulator and show its disclosure on the level page.
+
+**2026-11-19 (T10.5, D-063).** An optional top-level `sequential: true` flag reveals required objectives in order. The public level response begins with the first stage. Clearing a stage expands the quest panel and sends the next objective in a Tux message. Reconnecting restores the objectives revealed so far.
 
 ```yaml
 id: w2-06-grep-recursive-regex
@@ -583,6 +589,8 @@ Additional rule: objectives are **sticky** by default (once true they stay done)
 > 2026-10-16 (D-019): `answer_equals` passes when **any** submitted answer matches, not only the latest. The "latest" wording above predates multi-answer levels (w1-09, w2-15 boss): live evaluation already made each submit count via stickiness, and the `levels:test` harness evaluates once after the full solution, so latest-only could never complete them.
 
 ### 8.3 `script_tests` cases
+
+**2026-11-19 (T10.5, D-063).** Case setup and execution default `HOME` to the player's home directory. Case execution can override it through `env`. Each case retains its separate scratch working directory.
 ```yaml
 check:
   type: script_tests
@@ -800,7 +808,7 @@ Legend — **Profile**: B=basic, A=admin. **Net**: none/lan. **Needs**: infra de
 | w5-01-getopts-usage | Real CLI | `getopts`, usage/`--help`, exit codes | Write `mytool` with flags `-v -o FILE -n N`, helpful usage | `script_tests` (hidden) | |
 | w5-02-idempotent-flock | Run It Twice | idempotency, `flock`, atomic writes | Script safe to re-run and to run concurrently (two instances) | `script_tests` + `exec` concurrent harness | |
 | w5-03-shellcheck-bats | Test Your Shell | `shellcheck`, `bats` | Fix a buggy script flagged by shellcheck; write bats tests that catch 3 hidden buggy variants | `shellcheck_clean` + `exec` (runs player's bats against mutants; must fail on every mutant, pass on original) | the mutants are the "wrong" solutions |
-| w5-04-proc-strace-lsof | Under the Hood | `strace`, `lsof`, `/proc` | Find which file a hung process waits on; find deleted-but-open file hogging disk (`lsof +L1`); submit; free the space | `answer_equals`, `exec` df-diff | cap `SYS_PTRACE` |
+| w5-04-proc-strace-lsof | Under the Hood | `strace`, `lsof`, `/proc` | Find which FIFO a hung process waits on and the deleted-but-open file hogging disk. Submit the names and free the space. | `answer_equals`, `exec` df-diff | inspect same-user processes (D-063) |
 | w5-05-perf-triage | Who's Slow? | `vmstat`, `iostat`-lite, `top` | 3 seeded processes (CPU/IO/memory hog); identify each and kill the right one | `answer_equals`, `process_absent` | |
 | w5-06-network-debug | Packets Don't Lie | `ss`, `tcpdump`, `nc`, `iptables` | A firewall rule blocks port 8080: find & fix so `curl` succeeds; capture a packet proving it | `exec` curl, `answer_equals` | lan, caps `NET_ADMIN`,`NET_RAW` |
 | w5-07-ssh-hardening | Lock It Down | `sshd_config`, `find -perm`, audit | Harden sshd config (no root login, key-only), find SUID & world-writable files and fix | `exec` config parse, `file_mode` | lan, `ssh` |
@@ -824,7 +832,7 @@ Loads all `level.yaml` at server start, validates with zod, builds indexes: by i
 Turns `setup` into: (1) a list of tar entries for `putFiles` (files, `content_file`, `checks/*` into `/opt/tq/checks/<levelId>/`, generator scripts into `/opt/tq/gen/`); (2) a root-run script executed with `bash -e`: create dirs → set owners/modes → run generators (`TQ_SEED`) → run `commands` → write `rc_extra` to `/home/player/.bashrc` (create if missing; chown player) → create `/run/tq/{cmdlog,inbox}` (0622) and `/opt/tq/secret` → start cron if profile `admin` and level declares `needs_cron: true` (default true for admin).
 
 ### 12.3 `levels:lint` rules (beyond schema)
-**2026-11-18 (T10.2, D-060):** World 3 may temporarily have exactly orders 1, 10, 11 and 12 so T10.2 can verify the three LAN lessons before T10.5 authors the remaining content. Other order sets still follow the contiguous-order rule.
+**2026-11-19 (T10.5, D-063).** World 3 now follows the contiguous-order rule. World 5 allows the single planned gap at order 9 when the namespace elective is omitted and the final boss is present at order 10.
 
 **2026-11-06 (A29, D-044):** Require explain cards, cheatsheet entries, and distinct wrong solutions. Check both setup file sources for seeded answers.
 

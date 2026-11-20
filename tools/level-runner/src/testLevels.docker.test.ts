@@ -1,4 +1,6 @@
 import { dirname, join, resolve } from 'node:path';
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { loadLevels } from '@terminal-quest/server/engine/levelLoader';
@@ -21,7 +23,18 @@ describe('runLevelTests on the w1-02 sample', () => {
       throw new Error('unreachable');
     }
     const provider = new DockerProvider({ socketPath: process.env['DOCKER_SOCKET'] });
-    const report = await runLevelTests({ provider, level, levelDir, seeds: [1] });
+    const scratch = mkdtempSync(join(tmpdir(), 'tq-slow-solution-'));
+    const report = await (async () => {
+      try {
+        cpSync(levelDir, scratch, { recursive: true });
+        const solution = join(scratch, level.solutions.reference);
+        const body = readFileSync(solution, 'utf8');
+        writeFileSync(solution, 'sleep 1.5\n' + body);
+        return await runLevelTests({ provider, level, levelDir: scratch, seeds: [1] });
+      } finally {
+        rmSync(scratch, { recursive: true, force: true });
+      }
+    })();
     expect(report.ok).toBe(true);
     const [seed] = report.seeds;
     expect(seed?.baseline.completed).toBe(false);

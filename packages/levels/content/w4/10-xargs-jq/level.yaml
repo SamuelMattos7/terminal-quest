@@ -1,0 +1,77 @@
+id: 'w4-10-xargs-jq'
+world: 4
+order: 10
+title: 'Pipeline Pro'
+kind: 'lesson'
+difficulty: 3
+estimated_minutes: 8
+story: 'Tux-9000: "Extract the active accounts’ email addresses from users.json. Clean up .tmp files under drop, including filenames with spaces, and keep its data files."'
+teaches:
+  - 'jq'
+  - 'xargs'
+par_commands: 7
+xp: 130
+setup:
+  dirs:
+    - path: '/home/player/drop'
+    - path: '/home/player/drop/shift notes'
+  files:
+    - path: '/home/player/users.json'
+      content: "{\"users\":[{\"email\":\"ada@penguin.invalid\",\"active\":true},{\"email\":\"bot@penguin.invalid\",\"active\":false},{\"email\":\"mira@penguin.invalid\",\"active\":true}]}\n"
+      mode: '644'
+      owner: 'player'
+    - path: '/home/player/drop/ice draft.tmp'
+      content: "old\n"
+      mode: '644'
+      owner: 'player'
+    - path: '/home/player/drop/shift notes/temp copy.tmp'
+      content: "old\n"
+      mode: '644'
+      owner: 'player'
+    - path: '/home/player/drop/shift notes/keep me.txt'
+      content: "keep\n"
+      mode: '644'
+      owner: 'player'
+objectives:
+  - id: 'extract-active'
+    text: 'Write just the active emails to ~/active.txt, in input order, with no JSON quotes.'
+    check:
+      type: 'file_content'
+      path: '/home/player/active.txt'
+      equals: "ada@penguin.invalid\nmira@penguin.invalid"
+  - id: 'safe-cleanup'
+    text: 'Remove all .tmp files under ~/drop and leave keep me.txt intact.'
+    check:
+      type: 'all'
+      checks:
+        - type: 'exec'
+          inline: 'test -d /home/player/drop && test -z "$(find /home/player/drop -type f -name ''*.tmp'' -print -quit)"'
+        - type: 'file_content'
+          path: '/home/player/drop/shift notes/keep me.txt'
+          equals: 'keep'
+    hold: true
+hints:
+  - 'Use jq select(.active) to keep only active user records.'
+  - 'jq -r prints raw strings. Use find -print0 paired with xargs -0 for paths with spaces.'
+  - 'Pipe find drop -type f -name "*.tmp" -print0 to xargs -0r rm --.'
+explain:
+  - command: "jq -r '.users[] | select(.active) | .email'"
+    parts:
+      - token: 'jq'
+        meaning: 'Filter active records and render their email fields without JSON quotes.'
+  - command: 'find DIR -print0 | xargs -0 COMMAND'
+    parts:
+      - token: 'find'
+        meaning: 'Preserve each filename as one argument with NUL separators.'
+cheatsheet:
+  - skill: 'jq'
+    syntax: "jq -r '.users[] | select(.active) | .email'"
+    note: 'Filter active records and render their email fields without JSON quotes.'
+  - skill: 'xargs'
+    syntax: 'find DIR -print0 | xargs -0 COMMAND'
+    note: 'Preserve each filename as one argument with NUL separators.'
+success_message: 'The email report is clean and the spaced filenames were handled safely.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/split-paths.sh'

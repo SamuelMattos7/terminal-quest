@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LevelSchema, type Level } from '@terminal-quest/shared';
+import { LevelSchema, toPublicLevel, type Level } from '@terminal-quest/shared';
 import type { SandboxProvider } from '../sandbox/provider.js';
 import {
   createTracker,
@@ -62,6 +62,33 @@ function stubProvider(): SandboxProvider {
 }
 
 describe('requiredObjectives', () => {
+  it('reveals and evaluates sequential stages only after the prior stage passes', async () => {
+    const level = makeLevel({
+      sequential: true,
+      objectives: [
+        { id: 'first', text: 'First stage', check: { type: 'answer_equals', value: 'one' } },
+        { id: 'second', text: 'Second stage', check: { type: 'answer_equals', value: 'two' } },
+      ],
+    });
+    const tracker = createTracker(level);
+    const provider = stubProvider();
+    const handle = {} as Parameters<typeof evaluate>[1];
+    expect(toPublicLevel(level).objectives.map(({ id }) => id)).toEqual(['first']);
+    submitAnswer(tracker, 'two');
+    expect(await evaluate(provider, handle, level, tracker, { seed: 1 })).toMatchObject({
+      newlyDone: [],
+      completed: false,
+    });
+    submitAnswer(tracker, 'one');
+    expect(await evaluate(provider, handle, level, tracker, { seed: 1 })).toMatchObject({
+      newlyDone: ['first', 'second'],
+      completed: true,
+    });
+    expect(toPublicLevel(level, tracker.revealedObjectives).objectives.map(({ id }) => id)).toEqual(
+      ['first', 'second'],
+    );
+  });
+
   it('excludes bonus and optional objectives', () => {
     expect(requiredObjectives(makeLevel())).toEqual(['ran-pwd', 'found-word']);
   });

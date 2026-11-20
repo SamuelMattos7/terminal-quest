@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { toPublicLevel, type Level } from '@terminal-quest/shared';
+import type { Level } from '@terminal-quest/shared';
 import { createCoach } from '../engine/coach.js';
 import { parseCmdlogLine } from '../engine/cmdlog.js';
 import { createHintState, nextHint } from '../engine/hints.js';
@@ -260,21 +260,4 @@ export async function launchLevelSession(
     }
     throw err;
   }
-}
-
-export function sessionStateMessage(live: LiveSession): {
-  level: ReturnType<typeof toPublicLevel>;
-  objectives: { id: string; status: 'pending' | 'done' }[];
-  hintsUsed: number;
-  completed: boolean;
-} {
-  return {
-    level: toPublicLevel(live.level),
-    objectives: live.level.objectives.map((o) => ({
-      id: o.id,
-      status: (live.tracker.done.get(o.id) === true ? 'done' : 'pending') as 'pending' | 'done',
-    })),
-    hintsUsed: live.hints.tiersUsed.length,
-    completed: live.completed,
-  };
 }

@@ -1,0 +1,75 @@
+id: 'w5-06-network-debug'
+world: 5
+order: 6
+title: "Packets Don't Lie"
+kind: 'lesson'
+difficulty: 4
+estimated_minutes: 8
+story: 'Tux-9000: "The local status app is listening, but the training firewall rejects TCP 8080. Inspect its INPUT chain, remove the targeted reject, and capture one loopback packet from a successful request."'
+teaches:
+  - 'iptables'
+  - 'tcpdump'
+  - 'networking'
+par_commands: 7
+xp: 150
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+  network: 'lan'
+  sidecars:
+    - 'web'
+  capabilities:
+    - 'NET_ADMIN'
+    - 'NET_RAW'
+  sudo_allow:
+    - '/usr/sbin/iptables -S INPUT'
+    - '/usr/sbin/iptables -D INPUT -p tcp --dport 8080 -j REJECT'
+    - '/usr/bin/tcpdump -l -nn -i lo -c 1 tcp port 8080'
+setup:
+  dirs:
+    - path: '/home/player/network-status'
+  files:
+    - path: '/home/player/network-status/health.txt'
+      content: "firewall-repaired\n"
+      mode: '644'
+      owner: 'player'
+  commands:
+    - "runuser -u player -- python3 -m http.server 8080 --bind 127.0.0.1 --directory /home/player/network-status </dev/null >/dev/null 2>&1 &\nfor attempt in {1..50}; do\n  if curl --max-time 1 -fsS http://127.0.0.1:8080/health.txt >/dev/null 2>&1; then break; fi\n  sleep .03\ndone\ncurl --max-time 1 -fsS http://127.0.0.1:8080/health.txt >/dev/null\niptables -A INPUT -p tcp --dport 8080 -j REJECT"
+objectives:
+  - id: 'repair-port'
+    text: 'Remove the targeted INPUT reject so the app responds at http://127.0.0.1:8080/health.txt.'
+    check:
+      type: 'exec'
+      inline: 'curl --max-time 2 -fsS http://127.0.0.1:8080/health.txt | grep -Fx firewall-repaired'
+    hold: true
+  - id: 'record-packet'
+    text: 'Capture a loopback TCP packet involving port 8080 to ~/packet.txt.'
+    check:
+      type: 'file_content'
+      path: '/home/player/packet.txt'
+      matches: "IP 127\\.0\\.0\\.1\\.\\d+ > 127\\.0\\.0\\.1\\.8080: Flags \\[S\\]"
+hints:
+  - 'ss -tln shows whether the service is listening. sudo iptables -S INPUT lists the local rules.'
+  - 'Remove the one rule with sudo iptables -D INPUT -p tcp --dport 8080 -j REJECT.'
+  - 'Start sudo tcpdump -l -nn -i lo -c 1 tcp port 8080 >packet.txt in the background, then curl the local status URL.'
+explain:
+  - command: 'iptables -S INPUT'
+    parts:
+      - token: 'iptables'
+        meaning: 'List the exact rules affecting incoming packets in this sandbox.'
+  - command: 'tcpdump -l -nn -i lo -c 1 tcp port 8080'
+    parts:
+      - token: 'tcpdump'
+        meaning: 'Capture one numeric TCP packet on loopback and flush the output promptly.'
+cheatsheet:
+  - skill: 'iptables'
+    syntax: 'iptables -S INPUT'
+    note: 'List the exact rules affecting incoming packets in this sandbox.'
+  - skill: 'tcpdump'
+    syntax: 'tcpdump -l -nn -i lo -c 1 tcp port 8080'
+    note: 'Capture one numeric TCP packet on loopback and flush the output promptly.'
+success_message: 'The local status route is reachable and the capture shows its TCP handshake.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/no-capture.sh'

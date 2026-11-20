@@ -40,6 +40,7 @@ export function adminSudoers(level: Level): PutFilesEntry[] {
 export function adminSetupCommands(level: Level): string[] {
   if (level.sandbox.profile !== 'admin') return [];
   return [
+    'getent -s files hosts "$(hostname)" >/dev/null || printf "127.0.1.1 %s\\n" "$(hostname)" >> /etc/hosts',
     'chown root:root /etc/sudoers.d/tq',
     'chmod 0440 /etc/sudoers.d/tq',
     '/usr/sbin/visudo -cf /etc/sudoers.d/tq',

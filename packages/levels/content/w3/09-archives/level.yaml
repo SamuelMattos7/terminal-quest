@@ -1,0 +1,66 @@
+id: 'w3-09-archives'
+world: 3
+order: 9
+title: 'Pack & Unpack'
+kind: 'lesson'
+difficulty: 2
+estimated_minutes: 8
+story: 'Tux-9000: "Make a compressed archive of site. Restore the whole tree under /tmp/restore, then extract just config.ini to ~/config.ini from the archive. Leave the source intact."'
+teaches:
+  - 'tar-zip'
+par_commands: 7
+xp: 110
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+setup:
+  dirs:
+    - path: '/home/player/site'
+  files:
+    - path: '/home/player/site/config.ini'
+      content: "color=ice\n"
+      mode: '644'
+      owner: 'player'
+    - path: '/home/player/site/index.html'
+      content: "<h1>Polar Status</h1>\n"
+      mode: '644'
+      owner: 'player'
+    - path: '/home/player/site/.build'
+      content: "edition=7\n"
+      mode: '644'
+      owner: 'player'
+objectives:
+  - id: 'pack-site'
+    text: 'Create ~/site.tar.gz containing all three site files under site/.'
+    check:
+      type: 'exec'
+      inline: "set -e; cd /home/player; test \"$(tar -tzf site.tar.gz | sed '/\\/$/d' | sort)\" = \"$(printf '%s\\n' site/.build site/config.ini site/index.html)\"; for item in .build config.ini index.html; do tar -xOzf site.tar.gz \"site/$item\" | cmp - \"site/$item\"; done"
+  - id: 'restore-site'
+    text: 'Restore the site tree as /tmp/restore/site, including the hidden file.'
+    check:
+      type: 'exec'
+      inline: 'diff -r /home/player/site /tmp/restore/site'
+  - id: 'extract-config'
+    text: 'Extract config.ini by itself as ~/config.ini.'
+    check:
+      type: 'file_content'
+      path: '/home/player/config.ini'
+      equals: 'color=ice'
+hints:
+  - 'Use tar -czf to create a gzip archive. Archiving the directory includes hidden files.'
+  - 'Create /tmp/restore and use tar -xzf with -C /tmp/restore.'
+  - 'Use tar -xOzf site.tar.gz site/config.ini >config.ini to extract one member to stdout.'
+explain:
+  - command: 'tar -xzf ARCHIVE -C DIRECTORY'
+    parts:
+      - token: 'tar'
+        meaning: 'Extract the gzip archive into the chosen directory.'
+cheatsheet:
+  - skill: 'tar-zip'
+    syntax: 'tar -xzf ARCHIVE -C DIRECTORY'
+    note: 'Extract the gzip archive into the chosen directory.'
+success_message: 'The archive, full restore, and extracted config all match.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/skip-hidden.sh'

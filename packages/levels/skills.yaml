@@ -190,167 +190,167 @@
   title: 'users and groups'
   group: admin
   world: 3
-  prereqs: []
+  prereqs: [sudo]
 - id: chown
   title: 'chown'
   group: permissions
   world: 3
-  prereqs: []
+  prereqs: [users-groups, chmod]
 - id: special-bits
   title: 'setuid, setgid, sticky'
   group: permissions
   world: 3
-  prereqs: []
+  prereqs: [chown, umask]
 - id: ps
   title: 'ps'
   group: processes
   world: 3
-  prereqs: []
+  prereqs: [grep]
 - id: signals
   title: 'signals'
   group: processes
   world: 3
-  prereqs: []
+  prereqs: [ps]
 - id: job-control
   title: 'job control'
   group: processes
   world: 3
-  prereqs: []
+  prereqs: [signals]
 - id: env-vars
   title: 'environment variables'
   group: env
   world: 3
-  prereqs: []
+  prereqs: [help]
 - id: path
   title: 'PATH'
   group: env
   world: 3
-  prereqs: []
+  prereqs: [env-vars]
 - id: bashrc
   title: '.bashrc'
   group: env
   world: 3
-  prereqs: []
+  prereqs: [path]
 - id: disk-usage
   title: 'disk usage'
   group: system
   world: 3
-  prereqs: []
+  prereqs: [sort-uniq]
 - id: tar-zip
   title: 'tar and zip'
   group: system
   world: 3
-  prereqs: []
+  prereqs: [paths, disk-usage]
 - id: networking
   title: 'networking basics'
   group: net
   world: 3
-  prereqs: []
+  prereqs: [ps]
 - id: curl
   title: 'curl'
   group: net
   world: 3
-  prereqs: []
+  prereqs: [networking]
 - id: dns
   title: 'dns'
   group: net
   world: 3
-  prereqs: []
+  prereqs: [networking]
 - id: ssh
   title: 'ssh'
   group: net
   world: 3
-  prereqs: []
+  prereqs: [networking, chmod]
 - id: scp
   title: 'scp'
   group: net
   world: 3
-  prereqs: []
+  prereqs: [ssh]
 - id: rsync
   title: 'rsync'
   group: net
   world: 3
-  prereqs: []
+  prereqs: [scp, tar-zip]
 - id: dpkg
   title: 'dpkg'
   group: system
   world: 3
-  prereqs: []
+  prereqs: [sudo, file-types]
 - id: scripting-basics
   title: 'scripting basics'
   group: scripting
   world: 4
-  prereqs: []
+  prereqs: [chmod, whoami]
 - id: quoting
   title: 'quoting'
   group: scripting
   world: 4
-  prereqs: []
+  prereqs: [scripting-basics]
 - id: exit-codes
   title: 'exit codes'
   group: scripting
   world: 4
-  prereqs: []
+  prereqs: [scripting-basics, redirection]
 - id: conditionals
   title: 'conditionals'
   group: scripting
   world: 4
-  prereqs: []
+  prereqs: [exit-codes, file-types]
 - id: loops
   title: 'loops'
   group: scripting
   world: 4
-  prereqs: []
+  prereqs: [conditionals, globs]
 - id: functions
   title: 'functions'
   group: scripting
   world: 4
-  prereqs: []
+  prereqs: [loops, quoting]
 - id: strict-mode
   title: 'strict mode'
   group: scripting
   world: 4
-  prereqs: []
+  prereqs: [functions, exit-codes]
 - id: sed
   title: 'sed'
   group: text
   world: 4
-  prereqs: []
+  prereqs: [grep, regex-basics]
 - id: awk
   title: 'awk'
   group: text
   world: 4
-  prereqs: []
+  prereqs: [pipes, cut-tr]
 - id: xargs
   title: 'xargs'
   group: text
   world: 4
-  prereqs: []
+  prereqs: [find, pipes]
 - id: jq
   title: 'jq'
   group: text
   world: 4
-  prereqs: []
+  prereqs: [pipes]
 - id: heredocs
   title: 'heredocs'
   group: scripting
   world: 4
-  prereqs: []
+  prereqs: [quoting, redirection]
 - id: diff-patch
   title: 'diff and patch'
   group: scripting
   world: 4
-  prereqs: []
+  prereqs: [heredocs]
 - id: cron
   title: 'cron'
   group: automation
   world: 4
-  prereqs: []
+  prereqs: [scripting-basics, chmod]
 - id: cron-env
   title: 'cron environment'
   group: automation
   world: 4
-  prereqs: []
+  prereqs: [cron, env-vars]
 - id: systemd
   title: 'systemd'
   group: automation
@@ -360,72 +360,72 @@
   title: 'logrotate'
   group: automation
   world: 4
-  prereqs: []
+  prereqs: [cron, disk-usage]
 - id: getopts
   title: 'getopts'
   group: scripting
   world: 5
-  prereqs: []
+  prereqs: [conditionals, exit-codes]
 - id: flock
   title: 'flock'
   group: scripting
   world: 5
-  prereqs: []
+  prereqs: [strict-mode, functions]
 - id: shellcheck
   title: 'shellcheck'
   group: scripting
   world: 5
-  prereqs: []
+  prereqs: [strict-mode]
 - id: bats
   title: 'bats'
   group: scripting
   world: 5
-  prereqs: []
+  prereqs: [shellcheck, functions]
 - id: strace
   title: 'strace'
   group: pro
   world: 5
-  prereqs: []
+  prereqs: [ps, signals]
 - id: lsof
   title: 'lsof'
   group: pro
   world: 5
-  prereqs: []
+  prereqs: [disk-usage, ps]
 - id: perf
   title: 'perf triage'
   group: pro
   world: 5
-  prereqs: []
+  prereqs: [ps, lsof]
 - id: iptables
   title: 'iptables'
   group: pro
   world: 5
-  prereqs: []
+  prereqs: [networking, sudo]
 - id: tcpdump
   title: 'tcpdump'
   group: pro
   world: 5
-  prereqs: []
+  prereqs: [networking, iptables]
 - id: ssh-hardening
   title: 'ssh hardening'
   group: pro
   world: 5
-  prereqs: []
+  prereqs: [ssh, special-bits]
 - id: tmux
   title: 'tmux'
   group: pro
   world: 5
-  prereqs: []
+  prereqs: [job-control]
 - id: git-bisect
   title: 'git bisect'
   group: pro
   world: 5
-  prereqs: []
+  prereqs: [exit-codes, scripting-basics]
 - id: make
   title: 'make'
   group: pro
   world: 5
-  prereqs: []
+  prereqs: [functions, paths]
 - id: namespaces
   title: 'namespaces'
   group: pro

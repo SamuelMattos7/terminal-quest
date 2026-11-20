@@ -1,0 +1,40 @@
+id: 'w4-09-awk'
+world: 4
+order: 9
+title: 'Awk Basics'
+kind: 'lesson'
+difficulty: 3
+estimated_minutes: 8
+story: 'Tux-9000: "The transfer ledger repeats each account across several rows. Sum field two for each account and write the totals sorted by account name."'
+teaches:
+  - 'awk'
+par_commands: 7
+xp: 130
+setup:
+  generators:
+    - script: 'setup/gen.sh'
+objectives:
+  - id: 'sum-transfers'
+    text: 'Write ~/totals.txt as user total, one row per account, sorted by name.'
+    check:
+      type: 'file_content'
+      path: '/home/player/totals.txt'
+      equals: '{{secret:transfer-totals}}'
+hints:
+  - 'Awk splits whitespace-separated rows into $1, $2, and so on.'
+  - 'Use an associative array indexed by the first field and add the second field for each record.'
+  - 'Print the accumulated array in END, then pipe to sort and redirect to totals.txt.'
+explain:
+  - command: "awk '{sum[$1]+=$2} END { ... }'"
+    parts:
+      - token: 'awk'
+        meaning: 'Accumulate one total per field-one key before producing the report.'
+cheatsheet:
+  - skill: 'awk'
+    syntax: "awk '{sum[$1]+=$2} END { ... }'"
+    note: 'Accumulate one total per field-one key before producing the report.'
+success_message: 'Every transfer contributed to the correct account total.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/last-transfer-only.sh'

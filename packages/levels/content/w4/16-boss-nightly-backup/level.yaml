@@ -1,0 +1,121 @@
+id: 'w4-16-boss-nightly-backup'
+world: 4
+order: 16
+title: 'Boss: The Nightly Backup'
+kind: 'boss'
+difficulty: 5
+estimated_minutes: 22
+story: 'Tux-9000: "Build a production-style backup script, prove it on demo-src, and schedule it at 02:00. Use a lock, keep seven timestamped archives, and leave a readable audit log. A backup is only useful if we can read it."'
+teaches:
+  - 'strict-mode'
+  - 'cron'
+  - 'tar-zip'
+par_commands: 18
+xp: 210
+sandbox:
+  profile: 'admin'
+setup:
+  dirs:
+    - path: '/home/player/demo-src'
+  files:
+    - path: '/home/player/demo-src/ops notes.txt'
+      content: "Nightly backup drill\n"
+      mode: '644'
+      owner: 'player'
+objectives:
+  - id: 'implement-backup'
+    text: 'Create executable ~/backup.sh SOURCE DEST with strict error handling, a flock on DEST/.backup.lock, gzip archives named snapshot-YYYYMMDDTHHMMSSZ.tar.gz, seven-file retention, and DEST/backup.log.'
+    check:
+      type: 'script_tests'
+      path: '/home/player/backup.sh'
+      shellcheck: true
+      cases:
+        - name: 'needs-arguments'
+          args: []
+          expect:
+            exit_code: 64
+            stderr_contains: 'Usage'
+          hidden: true
+        - name: 'invalid-source'
+          args:
+            - 'missing'
+            - 'out'
+          expect:
+            exit_code: 66
+            stderr_contains: 'Source'
+          hidden: true
+        - name: 'retention'
+          args:
+            - 'source data'
+            - 'archive store'
+          expect:
+            exit_code: 0
+            files:
+              - path: 'archive store/snapshot-????????T??????Z.tar.gz'
+                exists: true
+              - path: 'archive store/snapshot-20000101T000000Z.tar.gz'
+                exists: false
+              - path: 'archive store/snapshot-20000102T000000Z.tar.gz'
+                exists: true
+              - path: 'archive store/backup.log'
+                contains: 'Created snapshot-'
+          setup:
+            - 'mkdir ''source data'' ''archive store''; touch ''source data/a''; for n in 01 02 03 04 05 06 07; do touch "archive store/snapshot-200001${n}T000000Z.tar.gz"; done'
+          hidden: true
+        - name: 'lock-contention'
+          args:
+            - 'source'
+            - 'out'
+          expect:
+            exit_code: 75
+            files:
+              - path: 'out/snapshot-*.tar.gz'
+                exists: false
+          setup:
+            - "mkdir source out; flock out/.backup.lock sh -c 'touch out/locked; sleep 4' </dev/null >/dev/null 2>&1 & while [ ! -f out/locked ]; do sleep .02; done"
+          hidden: true
+  - id: 'run-demo'
+    text: 'Run the script on ~/demo-src and ~/demo-dest. The archive must contain the original ops notes.txt and the log must name the archive.'
+    check:
+      type: 'exec'
+      inline: 'set -e; cd /home/player/demo-dest; shopt -s nullglob; archives=(snapshot-????????T??????Z.tar.gz); test "${#archives[@]}" -gt 0; for archive in "${archives[@]}"; do tar -xOzf "$archive" ''./ops notes.txt'' | cmp - ''/home/player/demo-src/ops notes.txt''; grep -Fx "Created $archive" backup.log; done'
+  - id: 'schedule-backup'
+    text: 'Install a 02:00 daily crontab entry running the script on its absolute demo paths.'
+    check:
+      type: 'crontab_entry'
+      user: 'player'
+      schedule: '0 2 * * *'
+      command_regex: "^/home/player/backup[.]sh\\s+/home/player/demo-src\\s+/home/player/demo-dest(?:\\s|$)"
+hints:
+  - 'Validate the two arguments before creating anything. Quote every path that might contain a space.'
+  - 'Use flock on a file descriptor opened on DEST/.backup.lock. Sort your UTC timestamped names newest first before trimming older archives.'
+  - 'tar -czf TEMP -C "$src" . creates a restorable archive. Rename it into place and schedule the absolute command with 0 2 * * *.'
+explain:
+  - command: 'flock -n FD'
+    parts:
+      - token: 'flock'
+        meaning: 'Acquire the destination lock without waiting. Exit 75 when another backup owns it.'
+  - command: 'tar -czf ARCHIVE -C SOURCE .'
+    parts:
+      - token: 'tar'
+        meaning: 'Create a gzip archive of the source tree using relative member names.'
+  - command: '0 2 * * * /absolute/backup.sh SOURCE DEST'
+    parts:
+      - token: '0'
+        meaning: 'Schedule one backup each day at 02:00.'
+cheatsheet:
+  - skill: 'strict-mode'
+    syntax: 'flock -n FD'
+    note: 'Acquire the destination lock without waiting. Exit 75 when another backup owns it.'
+  - skill: 'cron'
+    syntax: 'tar -czf ARCHIVE -C SOURCE .'
+    note: 'Create a gzip archive of the source tree using relative member names.'
+  - skill: 'tar-zip'
+    syntax: '0 2 * * * /absolute/backup.sh SOURCE DEST'
+    note: 'Schedule one backup each day at 02:00.'
+success_message: 'The backup can be restored, concurrent runs are guarded, and the nightly job is scheduled.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/no-lock.sh'
+    - 'wrong/wrong-hour.sh'

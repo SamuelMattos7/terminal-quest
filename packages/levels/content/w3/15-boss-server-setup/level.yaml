@@ -1,0 +1,110 @@
+id: 'w3-15-boss-server-setup'
+world: 3
+order: 15
+title: 'Boss: Server Setup'
+kind: 'boss'
+difficulty: 5
+estimated_minutes: 22
+story: 'Tux-9000: "Bring a new engine server online. Provision deploy and its restricted directory, install the offline tool, bring up HTTP, and send the handoff with a fresh SSH key. The temporary SSH key is ~/.ssh/bootstrap."'
+teaches:
+  - 'users-groups'
+  - 'dpkg'
+  - 'ssh'
+par_commands: 18
+xp: 210
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+  sudo_allow:
+    - '/usr/bin/install -d -o deploy -g deploy -m 750 /srv/engine'
+  network: 'lan'
+  sidecars:
+    - 'ssh'
+setup:
+  dirs:
+    - path: '/home/player/status-site'
+  files:
+    - path: '/home/player/status-site/health.txt'
+      content: "engine-ready\n"
+      mode: '644'
+      owner: 'player'
+    - path: '/home/player/handoff.txt'
+      content: "Engine Room handoff approved.\n"
+      mode: '644'
+      owner: 'player'
+  sidecar_setup:
+    ssh_authorized_key: '/home/player/.ssh/bootstrap.pub'
+  generators:
+    - script: 'setup/gen.sh'
+objectives:
+  - id: 'provision-deploy'
+    text: 'Create deploy with /home/deploy and give it ownership of /srv/engine with mode 750.'
+    check:
+      type: 'all'
+      checks:
+        - type: 'exec'
+          inline: 'getent passwd deploy | cut -d: -f6 | grep -Fx /home/deploy && test -d /home/deploy'
+        - type: 'file_owner'
+          path: '/srv/engine'
+          user: 'deploy'
+          group: 'deploy'
+        - type: 'file_mode'
+          path: '/srv/engine'
+          mode: '750'
+    hold: true
+  - id: 'install-diagnostics'
+    text: 'Install the local penguin-inspect.deb package.'
+    check:
+      type: 'exec'
+      inline: "dpkg-query -s penguin-inspect | grep -Fx 'Status: install ok installed' && command -v penguin-inspect"
+    hold: true
+  - id: 'serve-health'
+    text: 'Keep a background HTTP service on 127.0.0.1:8080 serving status-site/health.txt.'
+    check:
+      type: 'all'
+      checks:
+        - type: 'port_listening'
+          port: 8080
+        - type: 'exec'
+          inline: 'curl --max-time 2 -fsS http://127.0.0.1:8080/health.txt | grep -Fx engine-ready'
+    hold: true
+  - id: 'handoff'
+    text: 'Enroll a new key for remote deploy and use it to copy handoff.txt to that account.'
+    check:
+      type: 'exec'
+      inline: 'set -e; test "$(cat /home/deploy/handoff.txt)" = ''Engine Room handoff approved.''; test "$(cut -d'' '' -f2 /home/deploy/.ssh/authorized_keys | sort -u | wc -l)" -ge 2'
+      sidecar: 'ssh'
+    hold: true
+hints:
+  - 'Start with the local account and access mode. The remote deploy account already exists.'
+  - 'Use sudo install -d -o deploy -g deploy -m 750 /srv/engine. Run a background HTTP server with nohup and Python’s http.server.'
+  - 'Enroll a new Ed25519 public key with ssh-copy-id -f and the bootstrap identity. Use the new private key for scp.'
+explain:
+  - command: 'sudo install -d -o USER -g GROUP -m MODE DIR'
+    parts:
+      - token: 'sudo'
+        meaning: 'Create the directory with its intended owner, group and permission bits.'
+  - command: 'python3 -m http.server 8080 --bind 127.0.0.1'
+    parts:
+      - token: 'python3'
+        meaning: 'Serve files privately from an HTTP process inside the sandbox.'
+  - command: 'ssh-copy-id -f -i KEY.pub USER@HOST'
+    parts:
+      - token: 'ssh-copy-id'
+        meaning: 'Enroll the specified public key using an existing authentication route.'
+cheatsheet:
+  - skill: 'users-groups'
+    syntax: 'sudo install -d -o USER -g GROUP -m MODE DIR'
+    note: 'Create the directory with its intended owner, group and permission bits.'
+  - skill: 'dpkg'
+    syntax: 'python3 -m http.server 8080 --bind 127.0.0.1'
+    note: 'Serve files privately from an HTTP process inside the sandbox.'
+  - skill: 'ssh'
+    syntax: 'ssh-copy-id -f -i KEY.pub USER@HOST'
+    note: 'Enroll the specified public key using an existing authentication route.'
+success_message: 'The server is provisioned and the authenticated handoff is complete.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/directory-too-open.sh'
+    - 'wrong/no-new-key.sh'

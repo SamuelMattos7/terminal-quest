@@ -1,0 +1,142 @@
+id: 'w5-10-boss-prod-is-down'
+world: 5
+order: 10
+title: 'Final Boss: Production is Down'
+kind: 'boss'
+sequential: true
+difficulty: 5
+estimated_minutes: 22
+story: 'Tux-9000: "The Engine Room is down. Start with the filesystem pressure alert in the quest panel. Tux will reveal the next incident task as you resolve each one. Keep your recovery changes in place."'
+teaches:
+  - 'lsof'
+  - 'cron-env'
+  - 'iptables'
+par_commands: 18
+xp: 210
+sandbox:
+  profile: 'admin'
+  needs_cron: true
+  capabilities:
+    - 'NET_ADMIN'
+  sudo_allow:
+    - '/usr/sbin/iptables'
+setup:
+  dirs:
+    - path: '/home/player/bin'
+  files:
+    - path: '/home/player/service.conf'
+      content: "mode=standby\nport=8081\n"
+      mode: '644'
+      owner: 'player'
+    - path: '/usr/local/bin/tq-appctl'
+      content: "#!/bin/bash\nset -eu\n[[ $# == 1 && $1 == configtest ]]\nfile=/home/player/service.conf\ngrep -Fxq 'mode=active' \"$file\"\ngrep -Fxq 'port=8080' \"$file\"\n[[ $(grep -Ec '^(mode|port)=' \"$file\") == 2 ]]\nprintf '%s\\n' 'configuration valid'"
+      mode: '755'
+      owner: 'root'
+    - path: '/home/player/bin/health-check'
+      content: "#!/bin/sh\nprintf \"%s\\n\" healthy\n"
+      mode: '755'
+      owner: 'player'
+  generators:
+    - script: 'setup/gen.sh'
+objectives:
+  - id: 'recover-filesystem'
+    text: 'Use lsof +L1 to find the process holding the deleted engine log. Stop the holder and return at least 5 MiB to /tmp.'
+    check:
+      type: 'all'
+      checks:
+        - type: 'process_absent'
+          cmdline_regex: '^tq-old-log '
+          user: 'player'
+        - type: 'exec'
+          inline: 'before=$(cat /opt/tq/secret/incident-disk); now=$(df -B1 --output=used /tmp | tail -1); test "$((before-now))" -ge 5242880'
+    hold: true
+  - id: 'stop-runaway'
+    text: 'Use ps to isolate tq-runaway and stop it.'
+    check:
+      type: 'process_absent'
+      cmdline_regex: '^tq-runaway '
+      user: 'player'
+    hold: true
+  - id: 'repair-health-cron'
+    text: 'Repair the player crontab so the absolute /home/player/bin/health-check runs every five minutes.'
+    check:
+      type: 'crontab_entry'
+      user: 'player'
+      schedule: '*/5 * * * *'
+      command_regex: "^/home/player/bin/health-check(?:\\s|$)"
+    hold: true
+  - id: 'validate-service'
+    text: 'Repair ~/service.conf so tq-appctl configtest accepts mode=active and port=8080.'
+    check:
+      type: 'exec'
+      inline: '/usr/local/bin/tq-appctl configtest'
+    hold: true
+  - id: 'block-source'
+    text: 'Find the most frequent FAILED source in ~/events.log and drop only that source in the sandbox INPUT chain.'
+    check:
+      type: 'exec'
+      inline: 'source_ip=$(cat /opt/tq/secret/incident-source); /usr/sbin/iptables -C INPUT -s "$source_ip" -j DROP && test "$(/usr/sbin/iptables -S INPUT | grep -c ''^-A INPUT'')" -eq 1'
+    hold: true
+  - id: 'write-postmortem'
+    text: 'Create executable ~/postmortem.sh LOG. Print FAILED=<failure count> then TOP=<most frequent FAILED source>. Break ties lexically and print TOP=none if there are no failures.'
+    check:
+      type: 'script_tests'
+      path: '/home/player/postmortem.sh'
+      shellcheck: false
+      cases:
+        - name: 'incident'
+          args:
+            - 'events'
+          expect:
+            exit_code: 0
+            stdout_equals: "FAILED=4\nTOP=198.51.100.5"
+          setup:
+            - "printf '%s\\n' '00:01 FAILED 198.51.100.9' '00:02 FAILED 198.51.100.5' '00:03 OK 198.51.100.9' '00:04 FAILED 198.51.100.5' '00:05 FAILED 198.51.100.9' >events"
+          hidden: true
+        - name: 'quiet'
+          args:
+            - 'events'
+          expect:
+            exit_code: 0
+            stdout_equals: "FAILED=0\nTOP=none"
+          setup:
+            - "printf '%s\\n' '00:01 OK 198.51.100.3' >events"
+          hidden: true
+        - name: 'missing-log-argument'
+          args: []
+          expect:
+            exit_code: 64
+          hidden: true
+hints:
+  - 'Work through the quest one incident at a time. Use tux status if you need the current instruction.'
+  - 'Measure the failing subsystem first, then change the narrowest setting that restores it.'
+  - 'Compare observable state after each repair. For reports, filter events by their exact outcome field before counting.'
+explain:
+  - command: 'lsof +L1'
+    parts:
+      - token: 'lsof'
+        meaning: 'Find open files whose directory links are gone.'
+  - command: 'tq-appctl configtest'
+    parts:
+      - token: 'tq-appctl'
+        meaning: 'Check the service configuration before considering it recovered.'
+  - command: 'awk ''$2 == "FAILED"'' LOG'
+    parts:
+      - token: 'awk'
+        meaning: 'Select failure records by field instead of matching incidental text.'
+cheatsheet:
+  - skill: 'lsof'
+    syntax: 'lsof +L1'
+    note: 'Find open files whose directory links are gone.'
+  - skill: 'cron-env'
+    syntax: 'tq-appctl configtest'
+    note: 'Check the service configuration before considering it recovered.'
+  - skill: 'iptables'
+    syntax: 'awk ''$2 == "FAILED"'' LOG'
+    note: 'Select failure records by field instead of matching incidental text.'
+success_message: 'The Engine Room is back in service. The postmortem gives the next operator a starting point.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/wrong-schedule.sh'
+    - 'wrong/count-all-events.sh'

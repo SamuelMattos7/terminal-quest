@@ -1,0 +1,66 @@
+id: 'w3-13-rsync'
+world: 3
+order: 13
+title: 'Sync Up'
+kind: 'lesson'
+difficulty: 2
+estimated_minutes: 8
+story: 'Tux-9000: "The mirror is stale. Preview the sync first, then make mirror match the contents of site. Keep the hidden manifest and remove files missing from the source."'
+teaches:
+  - 'rsync'
+par_commands: 7
+xp: 110
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+setup:
+  dirs:
+    - path: '/home/player/site'
+    - path: '/home/player/mirror'
+  files:
+    - path: '/home/player/site/index.html'
+      content: "<h1>Mirror version 2</h1>\n"
+      mode: '644'
+      owner: 'player'
+    - path: '/home/player/site/.build'
+      content: "version=2\n"
+      mode: '644'
+      owner: 'player'
+    - path: '/home/player/mirror/index.html'
+      content: "old\n"
+      mode: '644'
+      owner: 'player'
+    - path: '/home/player/mirror/stale.txt'
+      content: "remove me\n"
+      mode: '644'
+      owner: 'player'
+objectives:
+  - id: 'mirror-site'
+    text: 'Make ~/mirror match ~/site exactly, including hidden files.'
+    check:
+      type: 'exec'
+      inline: 'diff -r /home/player/site /home/player/mirror'
+  - id: 'preview-sync'
+    text: 'Preview the rsync changes before committing them.'
+    check:
+      type: 'command_used'
+      regex: "^rsync\\s+.*(?:--dry-run|-[A-Za-z]*n[A-Za-z]*)\\b"
+    bonus: true
+hints:
+  - 'A trailing slash on site/ copies its contents instead of nesting the directory.'
+  - 'Run rsync with -n first. --delete removes files absent from the source.'
+  - 'Preview with rsync -avn --delete site/ mirror/, then drop the n to apply it.'
+explain:
+  - command: 'rsync -av --delete SRC/ DEST/'
+    parts:
+      - token: 'rsync'
+        meaning: 'Synchronize directory contents and remove stale destination entries.'
+cheatsheet:
+  - skill: 'rsync'
+    syntax: 'rsync -av --delete SRC/ DEST/'
+    note: 'Synchronize directory contents and remove stale destination entries.'
+success_message: 'The mirror is current. Stale files and hidden-file omissions are gone.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/keep-stale.sh'

@@ -1,0 +1,99 @@
+id: 'w5-02-idempotent-flock'
+world: 5
+order: 2
+title: 'Run It Twice'
+kind: 'lesson'
+difficulty: 4
+estimated_minutes: 8
+story: 'Tux-9000: "Two operators can reconcile the same registry at once. Add each tag once, write the sorted registry atomically, and use a lock to prevent competing writers from clobbering it."'
+teaches:
+  - 'flock'
+par_commands: 7
+xp: 150
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+objectives:
+  - id: 'reconcile-safely'
+    text: 'Create executable ~/reconcile.sh DIR TAG. Keep a sorted, unique DIR/tags.txt. Take an exclusive nonblocking lock on DIR/.reconcile.lock and return 75 if busy. Publish the registry with an atomic rename.'
+    check:
+      type: 'script_tests'
+      path: '/home/player/reconcile.sh'
+      shellcheck: false
+      cases:
+        - name: 'repeat-is-safe'
+          args:
+            - 'out'
+            - 'west'
+          expect:
+            exit_code: 0
+            files:
+              - path: 'out/tags.txt'
+                matches: "^east\\nwest\\n$"
+              - path: 'out/.tags.*'
+                exists: false
+          setup:
+            - "mkdir out; printf 'west\\neast\\n' >out/tags.txt"
+          hidden: true
+        - name: 'lock-busy'
+          args:
+            - 'out'
+            - 'unwanted'
+          expect:
+            exit_code: 75
+            files:
+              - path: 'out/tags.txt'
+                matches: "^existing\\n$"
+          setup:
+            - "mkdir out; echo existing >out/tags.txt; flock out/.reconcile.lock sh -c 'touch out/locked; sleep 4' </dev/null >/dev/null 2>&1 & while [ ! -f out/locked ]; do sleep .02; done"
+          hidden: true
+        - name: 'parallel-attempts'
+          args:
+            - 'parallel'
+            - 'west'
+          expect:
+            exit_code: 0
+            files:
+              - path: 'parallel/tags.txt'
+                matches: "^east\\nnorth\\nwest\\n$"
+          setup:
+            - 'mkdir parallel; add() { for i in $(seq 1 40); do "$HOME/reconcile.sh" parallel "$1" && return; sleep .02; done; return 1; }; add east & first=$!; add north & second=$!; wait "$first" && wait "$second"'
+          hidden: true
+        - name: 'replace-instead-of-overwrite'
+          args:
+            - 'atomic'
+            - 'west'
+          expect:
+            exit_code: 0
+            files:
+              - path: 'atomic/tags.txt'
+                matches: "^east\\nwest\\n$"
+              - path: 'original'
+                matches: "^east\\n$"
+          setup:
+            - 'mkdir atomic; echo east >atomic/tags.txt; ln atomic/tags.txt original'
+          hidden: true
+  - id: 'prove-repeat'
+    text: 'Demonstrate repeated adds to ~/registry by leaving north and south in its tags.txt, once each.'
+    check:
+      type: 'file_content'
+      path: '/home/player/registry/tags.txt'
+      equals: "north\nsouth"
+hints:
+  - 'Idempotency means adding the same tag twice leaves the same registry.'
+  - 'Keep the exclusive lock for the entire read, sort, and write sequence.'
+  - 'Create a temporary file in the destination, sort -u into it, then move it over tags.txt.'
+explain:
+  - command: 'flock -n FD'
+    parts:
+      - token: 'flock'
+        meaning: 'Prevent concurrent use of the critical section without blocking indefinitely.'
+cheatsheet:
+  - skill: 'flock'
+    syntax: 'flock -n FD'
+    note: 'Prevent concurrent use of the critical section without blocking indefinitely.'
+success_message: 'The registry is consistent after repeats and competing writers.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/unlocked-writer.sh'

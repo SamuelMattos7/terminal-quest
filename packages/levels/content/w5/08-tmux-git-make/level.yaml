@@ -1,0 +1,81 @@
+id: 'w5-08-tmux-git-make'
+world: 5
+order: 8
+title: 'Tools of the Trade'
+kind: 'lesson'
+difficulty: 4
+estimated_minutes: 8
+story: 'Tux-9000: "Start a detached ops session. In the workbench repository, bisect the first failing revision with check.sh and submit the full hash. Add a make build target that copies src/status.txt into dist/status.txt."'
+teaches:
+  - 'tmux'
+  - 'git-bisect'
+  - 'make'
+par_commands: 7
+xp: 150
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+setup:
+  dirs:
+    - path: '/home/player/workbench'
+  files:
+    - path: '/home/player/workbench/check.sh'
+      content: "#!/bin/sh\ngrep -Fxq healthy src/status.txt\n"
+      mode: '755'
+      owner: 'player'
+  generators:
+    - script: 'setup/gen.sh'
+objectives:
+  - id: 'start-ops-session'
+    text: 'Leave a detached tmux session named ops.'
+    check:
+      type: 'exec'
+      inline: "/usr/sbin/runuser -u player -- tmux has-session -t '=ops'"
+    hold: true
+  - id: 'name-first-bad'
+    text: 'Submit the full hash of the first bad commit in ~/workbench.'
+    check:
+      type: 'answer_equals'
+      from_file: '/opt/tq/secret/bad-commit'
+  - id: 'build-artifact'
+    text: 'Add a Makefile build target and generate dist/status.txt from src/status.txt.'
+    check:
+      type: 'all'
+      checks:
+        - type: 'exec'
+          inline: "cd /home/player/workbench && grep -q '^build:' Makefile && cmp src/status.txt dist/status.txt"
+        - type: 'file_content'
+          path: '/home/player/workbench/dist/status.txt'
+          equals: 'degraded'
+hints:
+  - 'Use tmux new-session -d -s ops to keep the terminal available.'
+  - 'Mark HEAD bad and the first commit good. git bisect run ./check.sh automates the midpoint checks.'
+  - 'Use a tab to indent the mkdir and cp recipes under the Makefile rule. Run make build after git bisect reset.'
+explain:
+  - command: 'git bisect run ./check.sh'
+    parts:
+      - token: 'git'
+        meaning: 'Use the supplied test’s exit code to locate the first failing revision.'
+  - command: 'make build'
+    parts:
+      - token: 'make'
+        meaning: 'Run the build target and its file prerequisites.'
+  - command: 'tmux new-session -d -s ops'
+    parts:
+      - token: 'tmux'
+        meaning: 'Create the named session without taking over the terminal.'
+cheatsheet:
+  - skill: 'tmux'
+    syntax: 'git bisect run ./check.sh'
+    note: 'Use the supplied test’s exit code to locate the first failing revision.'
+  - skill: 'git-bisect'
+    syntax: 'make build'
+    note: 'Run the build target and its file prerequisites.'
+  - skill: 'make'
+    syntax: 'tmux new-session -d -s ops'
+    note: 'Create the named session without taking over the terminal.'
+success_message: 'The workspace persists, the first bad change is identified, and the artifact builds.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/head-is-not-first-bad.sh'

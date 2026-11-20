@@ -1,0 +1,67 @@
+id: 'w4-07-strict-mode'
+world: 4
+order: 7
+title: 'Fail Fast'
+kind: 'lesson'
+difficulty: 3
+estimated_minutes: 8
+story: 'Tux-9000: "Sort the nonempty report lines through a temporary workspace. Use TMPDIR, clean up after both success and failure, and propagate an upstream pipeline error."'
+teaches:
+  - 'strict-mode'
+par_commands: 7
+xp: 130
+objectives:
+  - id: 'write-script'
+    text: 'Create executable ~/sort-report.sh FILE. Sort nonempty lines with grep and sort. Make a sort.* directory under TMPDIR and remove it even when reading fails.'
+    check:
+      type: 'script_tests'
+      path: '/home/player/sort-report.sh'
+      shellcheck: false
+      cases:
+        - name: 'sort-success'
+          args:
+            - 'report'
+          expect:
+            exit_code: 0
+            stdout_equals: "Alpha\nBeta"
+            files:
+              - path: 'working/sort.*'
+                exists: false
+          setup:
+            - "mkdir working; printf 'Beta\\n\\nAlpha\\n' >report"
+          env:
+            TMPDIR: 'working'
+          hidden: true
+        - name: 'missing-input'
+          args:
+            - 'missing'
+          expect:
+            exit_code: 2
+            stdout_equals: ''
+            stderr_contains: 'missing'
+            files:
+              - path: 'working/sort.*'
+                exists: false
+          setup:
+            - 'mkdir working'
+          env:
+            TMPDIR: 'working'
+          hidden: true
+hints:
+  - 'set -euo pipefail stops the script when a pipeline fails and catches unset variables.'
+  - 'Use mktemp -d "$TMPDIR/sort.XXXXXX" and register an EXIT trap immediately.'
+  - 'Sort into the temporary directory and print the result only after the pipeline completes.'
+explain:
+  - command: 'trap ''rm -rf -- "$scratch"'' EXIT'
+    parts:
+      - token: 'trap'
+        meaning: 'Run cleanup when the script exits through either the success or failure path.'
+cheatsheet:
+  - skill: 'strict-mode'
+    syntax: 'trap ''rm -rf -- "$scratch"'' EXIT'
+    note: 'Run cleanup when the script exits through either the success or failure path.'
+success_message: 'The report sorts successfully and failed runs leave no workspace behind.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/leaks-temporary-directory.sh'

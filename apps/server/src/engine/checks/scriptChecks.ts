@@ -51,6 +51,7 @@ async function runCase(
     const res = await provider.exec(handle, ['bash', '-c', line], {
       user: 'player',
       cwd: scratch,
+      env: { HOME: '/home/player' },
       timeoutMs: 10_000,
     });
     if (res.code !== 0) {
@@ -62,7 +63,7 @@ async function runCase(
   const res = await provider.exec(handle, [scriptPath, ...testCase.args], {
     user: 'player',
     cwd: scratch,
-    env: testCase.env,
+    env: { HOME: '/home/player', ...testCase.env },
     stdin: testCase.stdin,
     timeoutMs: 10_000,
   });

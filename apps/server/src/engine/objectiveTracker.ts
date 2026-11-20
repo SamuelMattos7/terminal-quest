@@ -22,6 +22,7 @@ import type { SandboxHandle, SandboxProvider } from '../sandbox/provider.js';
 
 export interface TrackerState {
   done: Map<string, boolean>;
+  revealedObjectives: number;
   answers: string[];
   commands: LoggedCommand[];
   commandBytes: number;
@@ -43,6 +44,7 @@ export interface InboxExplain {
 export function createTracker(level: Level): TrackerState {
   return {
     done: new Map(level.objectives.map((o) => [o.id, false])),
+    revealedObjectives: level.sequential ? 1 : level.objectives.length,
     answers: [],
     commands: [],
     commandBytes: 0,
@@ -133,7 +135,8 @@ export async function evaluate(
 ): Promise<EvaluateResult> {
   const newlyDone: string[] = [];
   const newlyPending: string[] = [];
-  for (const objective of level.objectives) {
+  for (const [index, objective] of level.objectives.entries()) {
+    if (index >= state.revealedObjectives) break;
     const wasDone = state.done.get(objective.id) ?? false;
     if (wasDone && !objective.hold) {
       continue;
@@ -152,6 +155,9 @@ export async function evaluate(
     state.done.set(objective.id, passed);
     if (passed !== wasDone) {
       (passed ? newlyDone : newlyPending).push(objective.id);
+    }
+    if (passed && index + 1 === state.revealedObjectives && index + 1 < level.objectives.length) {
+      state.revealedObjectives += 1;
     }
   }
   const completed = requiredObjectives(level).every((id) => state.done.get(id) === true);

@@ -1,0 +1,65 @@
+id: 'w4-06-functions'
+world: 4
+order: 6
+title: 'Functions'
+kind: 'lesson'
+difficulty: 3
+estimated_minutes: 8
+story: 'Tux-9000: "The credit receipt works but mixes calculation and presentation. Refactor receipt.sh into add_tax and print_total using local variables. Keep its output identical."'
+teaches:
+  - 'functions'
+par_commands: 7
+xp: 130
+setup:
+  files:
+    - path: '/home/player/receipt.sh'
+      content: "#!/bin/bash\nprintf '%s: %d credits\\n' \"$1\" \"$(($2 + $2 / 5))\""
+      mode: '755'
+      owner: 'player'
+objectives:
+  - id: 'preserve-output'
+    text: 'Keep the receipt behavior for labels with spaces and different subtotals.'
+    check:
+      type: 'script_tests'
+      path: '/home/player/receipt.sh'
+      shellcheck: false
+      cases:
+        - name: 'whole-tax'
+          args:
+            - 'Cable bundle'
+            - '40'
+          expect:
+            exit_code: 0
+            stdout_equals: 'Cable bundle: 48 credits'
+          hidden: true
+        - name: 'round-down'
+          args:
+            - 'Late fee'
+            - '19'
+          expect:
+            exit_code: 0
+            stdout_equals: 'Late fee: 22 credits'
+          hidden: true
+  - id: 'factor-functions'
+    text: 'Define and use add_tax and print_total, with a local variable in each.'
+    check:
+      type: 'exec'
+      inline: "set -e; cd /home/player; bash -n receipt.sh; grep -Eq '^[[:space:]]*(function[[:space:]]+)?add_tax[[:space:]]*(\\(\\))?' receipt.sh; grep -Eq '^[[:space:]]*(function[[:space:]]+)?print_total[[:space:]]*(\\(\\))?' receipt.sh; test \"$(grep -Ec '^[[:space:]]*local ' receipt.sh)\" -ge 2"
+hints:
+  - 'Keep the existing 20% integer arithmetic and exact output format.'
+  - 'Use add_tax() { ...; } to print the computed number. Use local for each function’s intermediate values.'
+  - 'Call print_total "$1" "$2". Inside it, capture add_tax output with command substitution.'
+explain:
+  - command: 'local name=$1'
+    parts:
+      - token: 'local'
+        meaning: 'Scope an argument or intermediate value to the function that owns it.'
+cheatsheet:
+  - skill: 'functions'
+    syntax: 'local name=$1'
+    note: 'Scope an argument or intermediate value to the function that owns it.'
+success_message: 'The refactor preserved the receipt and separated its two responsibilities.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/duplicate-inline.sh'
