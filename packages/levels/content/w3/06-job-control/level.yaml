@@ -1,0 +1,72 @@
+id: 'w3-06-job-control'
+world: 3
+order: 6
+title: 'Job Control'
+kind: 'lesson'
+difficulty: 2
+estimated_minutes: 8
+story: 'Tux-9000: "Start job.py shift in the background. Stop it, save its ps STAT in stopped.txt, then resume it. Leave job.py watch running under nohup. Both jobs should still be alive."'
+teaches:
+  - 'job-control'
+par_commands: 7
+xp: 110
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+setup:
+  files:
+    - path: '/home/player/job.py'
+      content: "#!/usr/bin/python3\nimport pathlib\nimport signal\nimport sys\n\nhome = pathlib.Path.home()\nif sys.argv[1] == \"shift\":\n    signal.signal(signal.SIGCONT, lambda *_: (home / \"resumed.txt\").write_text(\"continued\\n\"))\n    (home / \"shift.ready\").touch()\nelse:\n    if signal.getsignal(signal.SIGHUP) != signal.SIG_IGN:\n        sys.exit(\"Use nohup to protect this job from hangups\")\nwhile True:\n    signal.pause()"
+      mode: '755'
+      owner: 'player'
+objectives:
+  - id: 'pause-shift'
+    text: 'Record the shift job’s stopped STAT in ~/stopped.txt.'
+    check:
+      type: 'file_content'
+      path: '/home/player/stopped.txt'
+      matches: '^T[+sl<NL]*$'
+  - id: 'resume-shift'
+    text: 'Resume the shift job and leave it running.'
+    check:
+      type: 'all'
+      checks:
+        - type: 'file_content'
+          path: '/home/player/resumed.txt'
+          equals: 'continued'
+        - type: 'process_state'
+          cmdline_regex: '^/usr/bin/python3 ./job[.]py shift$'
+          state: 'S'
+    hold: true
+  - id: 'leave-watcher'
+    text: 'Start job.py watch under nohup and leave it running.'
+    check:
+      type: 'process_running'
+      cmdline_regex: '^/usr/bin/python3 ./job[.]py watch$'
+      user: 'player'
+    hold: true
+hints:
+  - 'An ampersand starts a background job. $! stores the newest background PID.'
+  - 'Send STOP, record ps -o stat= -p PID, then use bg or send CONT.'
+  - 'Run nohup ./job.py watch >watch.log 2>&1 & for the watcher.'
+explain:
+  - command: 'ps -o stat= -p PID'
+    parts:
+      - token: 'ps'
+        meaning: 'Inspect job state. T means stopped and S means interruptible sleep.'
+  - command: 'nohup COMMAND &'
+    parts:
+      - token: 'nohup'
+        meaning: 'Ignore hangups and start the command in the background.'
+cheatsheet:
+  - skill: 'job-control'
+    syntax: 'ps -o stat= -p PID'
+    note: 'Inspect job state. T means stopped and S means interruptible sleep.'
+  - skill: 'job-control'
+    syntax: 'nohup COMMAND &'
+    note: 'Ignore hangups and start the command in the background.'
+success_message: 'The shift resumed and the watcher will survive a hangup.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/never-resumed.sh'

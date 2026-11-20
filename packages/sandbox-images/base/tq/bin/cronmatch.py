@@ -4,6 +4,7 @@
 Usage: cronmatch.py '<schedule-a>' '<schedule-b>' [--count N]
 Exit 0 when both schedules fire at the same times, 1 when they differ,
 2 on usage errors or unparseable schedules.
+Use cronmatch.py --next '<schedule>' to preview five runs from now in UTC.
 
 Schedules are 5-field expressions or aliases (@yearly, @annually, @monthly,
 @weekly, @daily, @midnight, @hourly, @reboot). @reboot only equals @reboot.
@@ -46,12 +47,12 @@ def expand(schedule: str) -> str | None:
     return text
 
 
-def fire_times(schedule: str, count: int) -> list[datetime]:
+def fire_times(schedule: str, count: int, start: datetime = EPOCH) -> list[datetime]:
     expr = expand(schedule)
     if expr is None:
         raise ValueError("@reboot has no calendar fire times")
     try:
-        it = croniter(expr, EPOCH)
+        it = croniter(expr, start)
     except Exception as exc:
         raise ValueError(f"bad schedule {schedule!r}: {exc}") from exc
     try:
@@ -62,6 +63,21 @@ def fire_times(schedule: str, count: int) -> list[datetime]:
 
 def main(argv: list[str]) -> int:
     rest = argv[1:]
+    if len(rest) == 2 and rest[0] == "--next":
+        schedule = rest[1]
+        if not schedule.strip().startswith("@") and len(schedule.split()) != 5:
+            print("cronmatch.py: expected a five-field schedule or cron alias", file=sys.stderr)
+            return 2
+        try:
+            runs = fire_times(schedule, 5, datetime.now(timezone.utc))
+        except ValueError as exc:
+            print(f"cronmatch.py: {exc}", file=sys.stderr)
+            return 2
+        print("Next 5 simulated runs (UTC)")
+        for run in runs:
+            print(run.strftime("%Y-%m-%d %H:%M UTC"))
+        return 0
+
     count = 10
     schedules: list[str] = []
     i = 0

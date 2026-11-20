@@ -54,6 +54,7 @@ jobs:
       - run: pnpm images:build
       - run: pnpm levels:lint
       - run: pnpm levels:test --world 1,2 --expect-levels 27 --seeds 3
+      - run: pnpm levels:test --world 3 --seeds 3
       - run: pnpm test:docker
 
   e2e:

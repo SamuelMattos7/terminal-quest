@@ -1,0 +1,50 @@
+id: 'w4-08-sed'
+world: 4
+order: 8
+title: 'Stream Editor'
+kind: 'lesson'
+difficulty: 3
+estimated_minutes: 8
+story: 'Tux-9000: "Render the engine config template. Set host to ice-gate and port to 9090, remove comment lines, and leave the original template intact."'
+teaches:
+  - 'sed'
+par_commands: 7
+xp: 130
+setup:
+  files:
+    - path: '/home/player/config.tpl'
+      content: "# generated: do not edit\nhost=@HOST@\nport=@PORT@\n  # operator notes\nurl=http://@HOST@:@PORT@\nmode=maintenance\n"
+      mode: '644'
+      owner: 'player'
+objectives:
+  - id: 'render-config'
+    text: 'Create ~/config.conf with both placeholders replaced everywhere and all comment lines removed.'
+    check:
+      type: 'file_content'
+      path: '/home/player/config.conf'
+      equals: "host=ice-gate\nport=9090\nurl=http://ice-gate:9090\nmode=maintenance"
+  - id: 'keep-template'
+    text: 'Keep the source template unchanged.'
+    check:
+      type: 'file_content'
+      path: '/home/player/config.tpl'
+      equals: "# generated: do not edit\nhost=@HOST@\nport=@PORT@\n  # operator notes\nurl=http://@HOST@:@PORT@\nmode=maintenance"
+    hold: true
+hints:
+  - 'sed leaves the input file alone unless you pass -i. Redirect its output.'
+  - 'Use separate -e expressions to delete comment lines and substitute fields.'
+  - 'An anchored pattern with [[:space:]]* catches indented comments. Replace both @HOST@ and @PORT@ globally.'
+explain:
+  - command: "sed -e '/PATTERN/d' -e 's/OLD/NEW/g'"
+    parts:
+      - token: 'sed'
+        meaning: 'Filter matching lines and replace all occurrences of a placeholder.'
+cheatsheet:
+  - skill: 'sed'
+    syntax: "sed -e '/PATTERN/d' -e 's/OLD/NEW/g'"
+    note: 'Filter matching lines and replace all occurrences of a placeholder.'
+success_message: 'The rendered config contains values and no operator comments.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/keeps-comments.sh'

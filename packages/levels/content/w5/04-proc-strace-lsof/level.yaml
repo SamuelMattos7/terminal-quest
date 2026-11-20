@@ -1,0 +1,81 @@
+id: 'w5-04-proc-strace-lsof'
+world: 5
+order: 4
+title: 'Under the Hood'
+kind: 'lesson'
+difficulty: 4
+estimated_minutes: 8
+story: 'Tux-9000: "An ingestion process is waiting on a FIFO and a logger still holds an unlinked file. Identify both basenames with lsof or /proc. Then stop the log holder and leave ingestion alone."'
+teaches:
+  - 'strace'
+  - 'lsof'
+par_commands: 7
+xp: 150
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+setup:
+  files:
+    - path: '/opt/tq/inspect-fd.py'
+      content: "#!/usr/bin/python3\nimport os\nfrom pathlib import Path\nimport time\n\npath = os.environ[\"TQ_FILE\"]\nkind = os.environ[\"TQ_PROBE\"]\nif kind == \"blocked\":\n    fifo = os.open(path, os.O_RDWR)\n    Path(\"/tmp/tq-debug/reader.ready\").touch()\n    os.read(fifo, 1)\nelse:\n    handle = os.open(path, os.O_RDONLY)\n    os.unlink(path)\n    Path(\"/tmp/tq-debug/writer.ready\").touch()\n    time.sleep(600)\n    os.close(handle)"
+      mode: '644'
+      owner: 'root'
+  generators:
+    - script: 'setup/gen.sh'
+objectives:
+  - id: 'identify-fifo'
+    text: 'Submit the basename of the FIFO held by tq-ingest.'
+    check:
+      type: 'answer_equals'
+      from_file: '/opt/tq/secret/feed'
+  - id: 'identify-deleted-log'
+    text: 'Submit the basename of the deleted log held by tq-log-holder.'
+    check:
+      type: 'answer_equals'
+      from_file: '/opt/tq/secret/held-log'
+  - id: 'recover-disk'
+    text: 'Stop tq-log-holder, return at least 5 MiB to /tmp, and leave tq-ingest running.'
+    check:
+      type: 'all'
+      checks:
+        - type: 'process_absent'
+          cmdline_regex: '^tq-log-holder '
+          user: 'player'
+        - type: 'process_running'
+          cmdline_regex: '^tq-ingest '
+          user: 'player'
+        - type: 'exec'
+          inline: 'before=$(cat /opt/tq/secret/tmp-used); now=$(df -B1 --output=used /tmp | tail -1); test "$((before - now))" -ge 5242880'
+    hold: true
+hints:
+  - 'Find the process IDs with pgrep -f and inspect descriptors as their owning user.'
+  - 'Use lsof -a -p PID +L1 to restrict the unlinked-file scan to the log holder.'
+  - 'Submit both basenames before sending TERM to only tq-log-holder. Compare df /tmp before and after.'
+explain:
+  - command: 'strace -e trace=file ls -l /proc/PID/fd'
+    parts:
+      - token: 'strace'
+        meaning: 'Trace file operations by your own inspection command.'
+  - command: 'lsof -a -p PID +L1'
+    parts:
+      - token: 'lsof'
+        meaning: 'Find file descriptors with no directory links for one process.'
+  - command: 'ls -l /proc/PID/fd'
+    parts:
+      - token: 'ls'
+        meaning: 'Inspect the file descriptors exposed by the kernel for your process.'
+cheatsheet:
+  - skill: 'strace'
+    syntax: 'strace -e trace=file ls -l /proc/PID/fd'
+    note: 'Trace file operations by your own inspection command.'
+  - skill: 'lsof'
+    syntax: 'lsof -a -p PID +L1'
+    note: 'Find file descriptors with no directory links for one process.'
+  - skill: 'lsof'
+    syntax: 'ls -l /proc/PID/fd'
+    note: 'Inspect the file descriptors exposed by the kernel for your process.'
+success_message: 'Releasing the open descriptor returned the space while ingestion stayed online.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/kill-ingestion.sh'

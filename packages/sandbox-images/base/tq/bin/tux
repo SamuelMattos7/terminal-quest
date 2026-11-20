@@ -1,6 +1,6 @@
 #!/bin/bash
-# tux — helper CLI for players (plan.md §7.5). Talks to the server by
-# appending one JSON line to /run/tq/inbox (the server tails it).
+# tux — helper CLI for players (plan.md §7.5). Server requests are sent
+# by appending a JSON line to /run/tq/inbox.
 set -u
 
 usage() {
@@ -10,6 +10,7 @@ Usage: tux <command> [args]
   status            Ask the server for your objective status.
   submit <text...>  Submit an answer.
   explain <cmd...>   Ask what a command does.
+  cron '<schedule>'  Simulate the next 5 runs of a cron schedule in UTC.
   help              Show this help.
 EOF
 }
@@ -40,6 +41,13 @@ case "${1-help}" in
     fi
     jq -c -n --arg text "$*" '{"cmd":"explain","text":$text}' >> /run/tq/inbox
     echo "Tux: Explanation requested. Watch the Quest panel."
+    ;;
+  cron)
+    if [ "$#" -ne 2 ]; then
+      echo "Usage: tux cron '*/5 * * * *'" >&2
+      exit 2
+    fi
+    exec /opt/tq/bin/cronmatch.py --next "$2"
     ;;
   help | -h | --help)
     usage

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CheckSchema } from './checks.js';
+import { SandboxNetworkSchema, SandboxSidecarsSchema } from './sandboxNetwork.js';
 import { DockerImageSchema, regexSource } from './validation.js';
 
 // Full `level.yaml` schema for plan.md §8.1. Structural rules from §12.3
@@ -11,6 +12,7 @@ export function countWords(text: string): number {
 }
 
 export const SandboxCapabilitySchema = z.enum(['NET_RAW', 'NET_ADMIN']);
+export const LevelRequirementSchema = z.literal('systemd-shim');
 // Only absolute commands and literal arguments: no sudoers directives, globs,
 // aliases, command separators, or line injection from level YAML.
 export const SudoCommandSchema = z
@@ -24,8 +26,8 @@ export const SudoCommandSchema = z
 const SandboxSchema = z
   .object({
     profile: z.enum(['basic', 'admin']).default('basic'),
-    network: z.enum(['none', 'lan']).default('none'),
-    sidecars: z.array(z.enum(['web', 'ssh', 'dns'])).default([]),
+    network: SandboxNetworkSchema.default('none'),
+    sidecars: SandboxSidecarsSchema.default([]),
     image: DockerImageSchema.default('tq-base'),
     start_cwd: z.string().min(1).regex(/^\//, 'must be an absolute path').default('/home/player'),
     resources: z
@@ -43,6 +45,13 @@ const SandboxSchema = z
   })
   .strict()
   .superRefine((v, ctx) => {
+    if (v.network !== 'lan' && v.sidecars.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['sidecars'],
+        message: 'sidecars require network: lan',
+      });
+    }
     if (v.profile === 'basic' && (v.capabilities.length || v.sudo_allow.length)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -90,6 +99,12 @@ const SetupSchema = z
     dirs: z.array(SetupDirSchema).default([]),
     files: z.array(SetupFileSchema).default([]),
     generators: z.array(SetupGeneratorSchema).default([]),
+    sidecar_setup: z
+      .object({
+        ssh_authorized_key: z.string().regex(/^\/home\/player\/\.ssh\/[\w-]+\.pub$/),
+      })
+      .strict()
+      .optional(),
     commands: z.array(z.string().min(1)).default([]),
     rc_extra: z.string().optional(),
   })
@@ -174,6 +189,8 @@ export const LevelSchema = z
     teaches: z.array(z.string().min(1)).min(1).max(3),
     par_commands: z.number().int().positive(),
     xp: z.number().int().positive(),
+    requires: LevelRequirementSchema.optional(),
+    sequential: z.boolean().optional(),
     sandbox: SandboxSchema.default({}),
     setup: SetupSchema.optional(),
     objectives: z.array(ObjectiveSchema).min(1),
@@ -188,6 +205,48 @@ export const LevelSchema = z
   })
   .strict()
   .superRefine((v, ctx) => {
+    if (v.sequential && v.objectives.some((objective) => objective.optional || objective.bonus)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['objectives'],
+        message: 'sequential objectives must all be required',
+      });
+    }
+    if (v.requires === 'systemd-shim' && v.sandbox.profile !== 'admin') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['requires'],
+        message: 'systemd-shim requires the admin profile',
+      });
+    }
+    if (v.setup?.sidecar_setup && !v.sandbox.sidecars.includes('ssh')) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['setup', 'sidecar_setup'],
+        message: 'ssh_authorized_key requires the ssh sidecar',
+      });
+    }
+    function validateSidecarChecks(check: z.infer<typeof CheckSchema>, path: (string | number)[]) {
+      if (check.type === 'all' || check.type === 'any' || check.type === 'not') {
+        check.checks.forEach((child, index) =>
+          validateSidecarChecks(child, [...path, 'checks', index]),
+        );
+      }
+      if (
+        check.type === 'exec' &&
+        check.sidecar !== undefined &&
+        !v.sandbox.sidecars.includes(check.sidecar)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [...path, 'sidecar'],
+          message: 'exec sidecar must be declared in sandbox.sidecars',
+        });
+      }
+    }
+    v.objectives.forEach((objective, i) =>
+      validateSidecarChecks(objective.check, ['objectives', i, 'check']),
+    );
     if (countWords(v.story) > 80) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

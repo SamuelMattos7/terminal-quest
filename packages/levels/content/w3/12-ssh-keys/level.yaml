@@ -1,0 +1,66 @@
+id: w3-12-ssh-keys
+world: 3
+order: 12
+title: Keys to the Kingdom
+kind: lesson
+difficulty: 3
+estimated_minutes: 8
+story: |
+  Tux-9000: "The account `deploy@ssh.penguin.corp` already trusts your
+  temporary key `~/.ssh/bootstrap`. Generate an Ed25519 key at
+  `~/.ssh/id_ed25519` and enroll its public half with `ssh-copy-id`, using
+  the temporary key for that connection. Then use the new key to run
+  `hostname` remotely and copy `handoff.txt` into deploy's home directory.
+  On this private training LAN, you may accept the host key on first contact."
+teaches: [ssh, scp]
+par_commands: 5
+xp: 120
+sandbox:
+  network: lan
+  sidecars: [ssh]
+setup:
+  generators:
+    - { script: setup/gen.sh }
+  sidecar_setup:
+    ssh_authorized_key: /home/player/.ssh/bootstrap.pub
+objectives:
+  - id: remote-hostname
+    text: Submit the hostname returned by the remote machine with `tux submit`.
+    check: { type: answer_equals, from_file: /opt/tq/secret/ssh_hostname }
+  - id: deliver-file
+    text: Enroll your new public key and copy `handoff.txt` to deploy's home directory.
+    check:
+      type: exec
+      sidecar: ssh
+      inline: >-
+        test -f /home/deploy/handoff.txt &&
+        test ! -L /home/deploy/handoff.txt &&
+        test "$(cat /home/deploy/handoff.txt)" = "Intranet handoff $TQ_SEED" &&
+        test "$(awk '$1 == "ssh-ed25519" {print $2}' /home/deploy/.ssh/authorized_keys | sort -u | wc -l)" -ge 2
+hints:
+  - 'SSH keeps the private key on your client. Enroll the file ending in `.pub` on the remote account.'
+  - 'After `ssh-keygen -t ed25519`, run `ssh-copy-id -f -i ~/.ssh/id_ed25519.pub -o IdentityFile=~/.ssh/bootstrap deploy@ssh.penguin.corp`.'
+  - 'Run `ssh -i ~/.ssh/id_ed25519 deploy@ssh.penguin.corp hostname`, submit its output, and use `scp -i ~/.ssh/id_ed25519 handoff.txt deploy@ssh.penguin.corp:~/`.'
+explain:
+  - command: ssh-keygen -t ed25519
+    parts:
+      - { token: '-t ed25519', meaning: 'generate an Ed25519 key pair' }
+  - command: ssh-copy-id -f -i ~/.ssh/id_ed25519.pub -o IdentityFile=~/.ssh/bootstrap deploy@ssh.penguin.corp
+    parts:
+      - {
+          token: '-f',
+          meaning: 'skip the check that can mistake the bootstrap login for the new key',
+        }
+      - { token: '-i', meaning: 'select the public key to enroll' }
+      - { token: 'IdentityFile', meaning: 'select the existing private key used for enrollment' }
+  - command: scp -i ~/.ssh/id_ed25519 handoff.txt deploy@ssh.penguin.corp:~/
+    parts:
+      - { token: '-i', meaning: 'authenticate with the new private key' }
+      - { token: ':~/', meaning: 'place the file in the remote account home directory' }
+cheatsheet:
+  - { skill: ssh, syntax: 'ssh -i KEY USER@HOST COMMAND', note: 'Run a command over SSH.' }
+  - { skill: scp, syntax: 'scp -i KEY FILE USER@HOST:PATH', note: 'Copy a file over SSH.' }
+success_message: 'New key enrolled. The handoff made it to the right machine.'
+solutions:
+  reference: solution.sh
+  wrong: [wrong/bootstrap-only.sh, wrong/local-copy.sh]

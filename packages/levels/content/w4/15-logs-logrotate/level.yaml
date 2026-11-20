@@ -1,0 +1,47 @@
+id: 'w4-15-logs-logrotate'
+world: 4
+order: 15
+title: 'Logs & Rotation'
+kind: 'lesson'
+difficulty: 3
+estimated_minutes: 8
+story: 'Tux-9000: "The engine log needs a weekly rotation policy. Keep four old logs, compress them, and validate the policy in debug mode without rotating today’s file."'
+teaches:
+  - 'logrotate'
+par_commands: 7
+xp: 130
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+setup:
+  dirs:
+    - path: '/home/player/logs'
+  files:
+    - path: '/home/player/logs/engine.log'
+      content: "INFO Engine started\n"
+      mode: '644'
+      owner: 'player'
+objectives:
+  - id: 'rotation-policy'
+    text: 'Create ~/engine.rotate for ~/logs/engine.log with weekly rotation, four copies, and compression.'
+    check:
+      type: 'exec'
+      inline: 'set -e; /usr/sbin/logrotate -d -s /dev/null /home/player/engine.rotate; awk ''NF == 2 && $1 == "/home/player/logs/engine.log" && $2 == "{" {path++} $1 == "weekly" {weekly++} $1 == "rotate" && $2 == 4 {keep++} $1 == "compress" {zip++} $1 ~ /^(daily|monthly|yearly|nocompress)$/ {bad++} END {exit !(path == 1 && weekly == 1 && keep == 1 && zip == 1 && !bad)}'' /home/player/engine.rotate'
+hints:
+  - 'A logrotate stanza begins with the log’s absolute path and an opening brace.'
+  - 'Use weekly, rotate 4, and compress inside the stanza.'
+  - 'Run /usr/sbin/logrotate -d -s /dev/null ~/engine.rotate to debug without touching the log or saving state.'
+explain:
+  - command: 'logrotate -d -s /dev/null CONFIG'
+    parts:
+      - token: 'logrotate'
+        meaning: 'Parse a rotation policy and preview actions without changing files or saving state.'
+cheatsheet:
+  - skill: 'logrotate'
+    syntax: 'logrotate -d -s /dev/null CONFIG'
+    note: 'Parse a rotation policy and preview actions without changing files or saving state.'
+success_message: 'The engine log has a tested four-week rotation policy.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/keep-too-many.sh'

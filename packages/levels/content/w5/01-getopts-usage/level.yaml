@@ -1,0 +1,105 @@
+id: 'w5-01-getopts-usage'
+world: 5
+order: 1
+title: 'Real CLI'
+kind: 'lesson'
+difficulty: 4
+estimated_minutes: 8
+story: 'Tux-9000: "Ship mytool. Its flags select an output file and a row count, plus an optional progress message. A user who asks for help should leave knowing how to run it."'
+teaches:
+  - 'getopts'
+  - 'exit-codes'
+par_commands: 7
+xp: 150
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+objectives:
+  - id: 'implement-cli'
+    text: 'Create executable ~/mytool. Accept -o FILE and -n N (1–20), plus -v. Write integers from 1 to N. Verbose mode writes Wrote N rows to stderr. --help prints Usage and exits 0. Invalid arguments print Usage to stderr and exit 64.'
+    check:
+      type: 'script_tests'
+      path: '/home/player/mytool'
+      shellcheck: false
+      cases:
+        - name: 'quiet'
+          args:
+            - '-n'
+            - '3'
+            - '-o'
+            - 'ice report.txt'
+          expect:
+            exit_code: 0
+            stdout_equals: ''
+            stderr_equals: ''
+            files:
+              - path: 'ice report.txt'
+                matches: "^1\\n2\\n3\\n$"
+          hidden: true
+        - name: 'verbose'
+          args:
+            - '-v'
+            - '-o'
+            - 'summary'
+            - '-n'
+            - '2'
+          expect:
+            exit_code: 0
+            stdout_equals: ''
+            stderr_equals: 'Wrote 2 rows'
+            files:
+              - path: 'summary'
+                matches: "^1\\n2\\n$"
+          hidden: true
+        - name: 'help'
+          args:
+            - '--help'
+          expect:
+            exit_code: 0
+            stdout_contains: 'Usage'
+          hidden: true
+        - name: 'unknown'
+          args:
+            - '-q'
+          expect:
+            exit_code: 64
+            stderr_contains: 'Usage'
+          hidden: true
+        - name: 'bad-number'
+          args:
+            - '-o'
+            - 'invalid'
+            - '-n'
+            - '0'
+          expect:
+            exit_code: 64
+            stderr_contains: 'Usage'
+            files:
+              - path: 'invalid'
+                exists: false
+          hidden: true
+        - name: 'missing-value'
+          args:
+            - '-n'
+          expect:
+            exit_code: 64
+            stderr_contains: 'Usage'
+          hidden: true
+hints:
+  - 'Use getopts with :vo:n: so v takes no value and o and n do.'
+  - 'Recognize --help first, then shift by OPTIND - 1 after parsing short options.'
+  - 'Reject missing options and leftover positional arguments before opening the output file. seq N produces the integer rows.'
+explain:
+  - command: "while getopts ':vo:n:' flag"
+    parts:
+      - token: 'while'
+        meaning: 'Read short options, including -o and -n with arguments.'
+cheatsheet:
+  - skill: 'getopts'
+    syntax: "while getopts ':vo:n:' flag"
+    note: 'Read short options, including -o and -n with arguments.'
+success_message: 'Help, validation, quoting, and stderr all behave consistently.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/splits-output-name.sh'

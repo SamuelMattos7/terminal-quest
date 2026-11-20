@@ -16,6 +16,7 @@ import { recordLevelCompletion } from '../progression/progress.js';
 import type { LiveSession } from './liveSession.js';
 import { attemptScope, isActive, send, type FlowDeps } from './sessionContext.js';
 import { logger } from '../util/logger.js';
+import { sessionStateMessage } from './sessionMessages.js';
 
 function computeUnlocked(
   { levelsByWorld, unlockAll, enabledWorlds }: FlowDeps,
@@ -111,6 +112,7 @@ export function scheduleEvaluation(deps: FlowDeps, live: LiveSession): void {
 
 async function runEvaluation(deps: FlowDeps, live: LiveSession): Promise<void> {
   if (!isActive(deps, live)) return;
+  const alreadyRevealed = live.tracker.revealedObjectives;
   const { newlyDone, newlyPending } = await evaluate(
     deps.provider,
     live.session.handle,
@@ -142,6 +144,15 @@ async function runEvaluation(deps: FlowDeps, live: LiveSession): Promise<void> {
       type: 'objective_complete',
       payload: { objectiveId: id },
     });
+  }
+  if (live.tracker.revealedObjectives > alreadyRevealed) {
+    send(live, sessionStateMessage(live));
+    for (const objective of live.level.objectives.slice(
+      alreadyRevealed,
+      live.tracker.revealedObjectives,
+    )) {
+      send(live, { t: 'tux', text: objective.text });
+    }
   }
   if (newlyDone.length > 0) {
     // Any progress ends the stuck episode (§10.6 idle nudge).

@@ -1,0 +1,92 @@
+id: 'w4-05-loops'
+world: 4
+order: 5
+title: 'Loop de Loop'
+kind: 'lesson'
+difficulty: 3
+estimated_minutes: 8
+story: 'Tux-9000: "Back up a batch of text files by renaming them, including names with spaces. Then make a separate script add every integer from stdin. Repetition is a task for the shell."'
+teaches:
+  - 'loops'
+par_commands: 7
+xp: 130
+objectives:
+  - id: 'rename-batch'
+    text: 'Create executable ~/rename.sh DIR. Rename each immediate .txt file by appending .bak and leave unrelated files alone.'
+    check:
+      type: 'script_tests'
+      path: '/home/player/rename.sh'
+      shellcheck: false
+      cases:
+        - name: 'spaces-and-decoys'
+          args:
+            - 'inbox'
+          expect:
+            exit_code: 0
+            files:
+              - path: 'inbox/ice log.txt.bak'
+                contains: 'safe'
+              - path: 'inbox/plain.txt.bak'
+                exists: true
+              - path: 'inbox/*.txt'
+                exists: false
+              - path: 'inbox/keep.csv'
+                exists: true
+          setup:
+            - "mkdir inbox; printf safe >'inbox/ice log.txt'; touch inbox/plain.txt inbox/keep.csv"
+          hidden: true
+        - name: 'empty-directory'
+          args:
+            - 'empty'
+          expect:
+            exit_code: 0
+            stderr_equals: ''
+          setup:
+            - 'mkdir empty'
+          hidden: true
+  - id: 'sum-stream'
+    text: 'Create executable ~/sum.sh that prints the sum of newline-delimited signed integers from stdin.'
+    check:
+      type: 'script_tests'
+      path: '/home/player/sum.sh'
+      shellcheck: false
+      cases:
+        - name: 'mixed-signs'
+          args: []
+          expect:
+            exit_code: 0
+            stdout_equals: '9'
+          stdin: "11\n-6\n4"
+          hidden: true
+        - name: 'empty-stream'
+          args: []
+          expect:
+            exit_code: 0
+            stdout_equals: '0'
+          stdin: ''
+          hidden: true
+hints:
+  - 'A for loop can iterate over "$1"/*.txt while preserving each matching filename. Enable nullglob for an empty batch.'
+  - 'Use while IFS= read -r n to consume one line of stdin. Bash arithmetic uses $((…)).'
+  - 'Quote both arguments to mv. To handle a final line without a newline, add || [[ -n $n ]] to the read condition.'
+explain:
+  - command: 'for item in "$dir"/*.txt'
+    parts:
+      - token: 'for'
+        meaning: 'Iterate over matches. Quote the directory component so spaces stay literal.'
+  - command: 'while IFS= read -r line'
+    parts:
+      - token: 'while'
+        meaning: 'Read one input record per iteration without backslash processing.'
+cheatsheet:
+  - skill: 'loops'
+    syntax: 'for item in "$dir"/*.txt'
+    note: 'Iterate over matches. Quote the directory component so spaces stay literal.'
+  - skill: 'loops'
+    syntax: 'while IFS= read -r line'
+    note: 'Read one input record per iteration without backslash processing.'
+success_message: 'Your loops handled both spaced filenames and the whole input stream.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/unquoted-filenames.sh'

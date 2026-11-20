@@ -261,13 +261,15 @@ events(                                         -- telemetry, no PII
 
 All JSON. Base path `/api`. Authentication: httpOnly, SameSite=Lax cookie `tq_session` containing a random 32-byte token (store only its sha256 in `auth_tokens`). Guest accounts are created on first call to `POST /api/guest`.
 
+**2026-11-19 (T10.4, D-062).** The public level DTO includes the optional `requires` field for the simulation notice.
+
 | Method & path | Purpose | Response (shape in `packages/shared/src/api.ts`) |
 |---|---|---|
 | `GET /healthz` | liveness + docker reachable | `{ ok, docker: boolean }` |
 | `POST /api/guest` | create guest + set cookie (idempotent if cookie valid) | `{ user }` |
 | `GET /api/me` | current user, player level, xp, streak, badges | `{ user, playerLevel, xpToNext, badges[] }` |
 | `GET /api/worlds` | worlds with levels and per-level state | `{ worlds: [{ id, title, blurb, levels: [{ id, title, kind, difficulty, estimatedMinutes, state: 'locked'|'available'|'completed', bestRank? }] }] }` |
-| `GET /api/levels/:id` | public level info (NO checks, setup, solutions) | `{ id, title, story, kind, objectives:[{id,text,optional,bonus}], teaches[], parCommands, xp, hintCount }` |
+| `GET /api/levels/:id` | public level info (NO checks, setup, solutions) | `{ id, title, story, kind, objectives:[{id,text,optional,bonus}], teaches[], parCommands, xp, hintCount, requires? }` |
 | `POST /api/levels/:id/start` | start attempt | `{ sessionId, wsPath }` (429 if capacity reached with `Retry-After`) |
 | `DELETE /api/sessions/:id` | end attempt (abandon) | `{ ok }` |
 | `POST /api/sessions/:id/reset` | destroy & recreate sandbox with a **new seed**, same attempt row marked abandoned, new attempt created | `{ sessionId, wsPath }` |
@@ -329,6 +331,8 @@ Behavioural rules: stdin frames are rate-limited (max 64 KB/s); frames > 16 KB a
 ## 7. Sandbox Specification
 
 ### 7.1 Images
+
+**2026-11-19 (T10.5, D-063).** The base image also includes `patch`, `logrotate`, `iptables`, `tcpdump`, and `make` for the offline automation, diagnostics, and defensive firewall lessons.
 **`tq-base`** (Debian 12 slim). Install: `bash coreutils findutils grep sed gawk less nano vim man-db manpages manpages-dev procps psmisc iproute2 iputils-ping curl netcat-openbsd dnsutils openssh-client tar gzip bzip2 xz-utils zip unzip jq cron rsync tmux git sudo lsof strace shellcheck bats file tree ncurses-term locales python3 python3-croniter` (python only for checkers).
 - Users: `player` (uid 1000, home `/home/player`, shell bash). Root exists for checks.
 - Remove `su` abilities for player unless profile `admin`. Sudo config differs by profile (see below).
@@ -392,6 +396,8 @@ Always (all profiles):
 | `admin` | sudo enabled for `player` (NOPASSWD, but a restricted command list per level via `/etc/sudoers.d/tq`; default allow-list: package, user, service, chown/chmod/chgrp, kill, mount-less admin tools), cron daemon started, optional `NET_RAW`/`NET_ADMIN` only for levels that set `capabilities:` explicitly | `+ AUDIT_WRITE, SYS_CHROOT, NET_BIND_SERVICE` |
 
 ### 7.4 `/opt/tq/bashrc`
+
+**2026-11-19 (T10.5, D-063).** The command log hook preserves Bash's latest background PID (`$!`) so the job-control lesson can use it across prompts.
 ```bash
 # sourced by the interactive shell
 [ -f /etc/bash.bashrc ] && . /etc/bash.bashrc
@@ -403,7 +409,7 @@ __tq_last_n=""
 __tq_log() {
   local ec=$?
   local n cmd
-  read -r n cmd < <(HISTTIMEFORMAT= history 1)
+  read -r n cmd <<< "$(HISTTIMEFORMAT= history 1)"
   if [ -n "$n" ] && [ "$n" != "$__tq_last_n" ]; then
     __tq_last_n="$n"
     printf '%s\t%s\t%s\t%s\n' "$(date +%s)" "$ec" "$PWD" "${cmd//$'\n'/ }" >> /run/tq/cmdlog 2>/dev/null
@@ -417,12 +423,17 @@ PROMPT_COMMAND="__tq_log"
 Notes: a repeated empty Enter must not log a duplicate (handled via history number). Commands are logged **after** they finish (so exit code is available). Format per line: `epoch<TAB>exit<TAB>cwd<TAB>command`.
 
 ### 7.5 `tux` helper CLI (`/opt/tq/bin/tux`, bash)
-Writes one JSON line to `/run/tq/inbox` and prints a short local message.
+Server requests write one JSON line to `/run/tq/inbox` and print a short local message.
+
+**2026-11-19 (T10.3, D-061).** Cron validation uses semantic schedule matching and cron-like dry runs. Tux can preview calendar times directly in the terminal.
+
 - `tux hint` → inbox `{"cmd":"hint"}`; prints "Tux: Hint requested. Check the Quest panel →".
 - `tux status` → inbox `{"cmd":"status"}`; server replies via `tux` WS message.
 - `tux submit <text…>` → inbox `{"cmd":"submit","text":"…"}` (JSON-escape properly with `jq -n --arg`); prints "Answer submitted."
 - `tux explain <command…>` → inbox `{"cmd":"explain","text":"…"}`; server replies using explain data / man summary (best effort).
-- `tux help` → lists the above.
+- `tux cron '*/5 * * * *'` → prints the next five simulated run times in UTC via `cronmatch.py`. Supply one quoted five-field schedule or a calendar alias such as `@daily`.
+- `tux help` → lists the commands.
+
 Server watches `/run/tq/inbox` via `watchFile` and handles each line (`submit` stores answers in the in-memory session `answers[]` used by `answer_equals` checks, then triggers an evaluation).
 
 ### 7.6 Lifecycle & resource management
@@ -432,12 +443,24 @@ Server watches `/run/tq/inbox` via `watchFile` and handles each line (`submit` s
 - Pre-pull/build images in `images:build`; `start` must fail fast (clear error) if image missing.
 
 ### 7.7 Networked levels (`network: lan`, M10)
+**2026-11-18 (T10.2, D-060):** LAN sandboxes require Docker Engine 28+ for the isolated IPv4 bridge gateway mode. Each attempt owns one IPv4-only internal bridge. Docker DNS resolves the bridge aliases and uses the attempt's dnsmasq as its only upstream when declared. dnsmasq serves local records without forwarding. Other LANs have no DNS upstream outside the player container. Build the three local images with `pnpm images:build`. The managed labels let boot cleanup recover even when only a sidecar or bridge remains.
+
 - Per-session user-defined bridge network `tq-<attemptId>` with `Internal: true` (no internet).
 - Sidecars (each its own image/container, joined with aliases):
   - `web` → alias `web.penguin.corp` (nginx serving static pages + a small JSON API at `/status`, `/api/users`, with a fixed 404 and a custom header).
   - `ssh` → alias `ssh.penguin.corp` (sshd, user `deploy`, password disabled, accepts key from `/home/player/.ssh/…` when level setup installs it via `sidecar_setup`).
   - `dns` → alias `dns.penguin.corp` (dnsmasq with records like `db.penguin.corp`), and the player container's resolver points at it.
 - Sidecar definitions live in `apps/server/src/sandbox/sidecars.ts`.
+
+### 7.8 Simulated systemd (M10)
+
+**2026-11-19 (T10.4, D-062).** The admin lesson `w4-14-systemd-units` declares `requires: systemd-shim`. Setup starts a manager inside its sandbox, and the level page states that systemd is simulated.
+
+- Write named `.service` and `.timer` files under `/etc/systemd/system`. The lesson lets `player` author files there and use the shim without sudo. `systemctl daemon-reload` loads changes. An invalid file leaves the previous definitions loaded.
+- Services support `Type=simple`, an absolute `ExecStart` command with quoted arguments, `User`, and `Restart=no|on-failure`. The default account is `player`. Services require a non-root account with UID at least 1000 and a non-root primary group. Commands execute directly from `/` with a minimal environment. Restart-on-failure retries after one second.
+- Timers support `OnCalendar=daily`, `hourly`, and `*-*-* HH:MM:SS` in UTC. `Unit` defaults to the matching `.service`. `systemctl start` schedules the next occurrence, `stop` cancels it, and `list-timers` shows active timers. The manager schedules future occurrences without replaying missed ones.
+- `systemctl status` shows whether a unit is loaded, enabled, and active. `restart` stops and starts the unit. `enable` and `disable` record state for the attempt. Every new attempt starts from fresh state.
+- `journalctl -u <unit>` reads service stdout and stderr as plain text from the attempt's `/var/log/tq-journal/<unit>.log`.
 
 ---
 
@@ -454,6 +477,10 @@ checks/           # custom check scripts referenced by `exec` checks
 `id` = `w<N>-<NN>-<slug>` (e.g. `w1-03-moving-around`). The zod schema lives in `packages/shared/src/level.ts`; `levels:lint` enforces it.
 
 ### 8.1 `level.yaml` schema
+
+**2026-11-19 (T10.4, D-062).** Admin levels can declare the optional top-level `requires: systemd-shim` field to start the simulator and show its disclosure on the level page.
+
+**2026-11-19 (T10.5, D-063).** An optional top-level `sequential: true` flag reveals required objectives in order. The public level response begins with the first stage. Clearing a stage expands the quest panel and sends the next objective in a Tux message. Reconnecting restores the objectives revealed so far.
 
 ```yaml
 id: w2-06-grep-recursive-regex
@@ -488,6 +515,8 @@ setup:                                  # all executed as root BEFORE the shell 
     - { script: setup/gen.sh }          # writes data files and may write answers to /opt/tq/secret/<name>
   commands:                             # extra root shell commands, run in order after files/generators
     - "chown -R player:player /home/player"
+  # Optional for levels declaring the ssh sidecar:
+  # sidecar_setup: { ssh_authorized_key: /home/player/.ssh/bootstrap.pub }
   rc_extra: |                           # appended to player's ~/.bashrc (optional)
     alias ls='ls --color=auto'
 
@@ -529,6 +558,7 @@ solutions:
 ```
 
 ### 8.2 Check types (discriminated union on `type`)
+**2026-11-18 (T10.2, D-060):** An inline `exec` with `sidecar: ssh` runs as root in the attempt's declared SSH sidecar, with the same fixed environment, timeout, and read-only check contract.
 All paths are absolute inside the sandbox. Checks run as **root** using `env -i PATH=/usr/bin:/bin:/opt/tq/bin HOME=/root`, with a 5 s timeout each (timeout ⇒ fail + `check_timeout` event). Every type is implemented in `apps/server/src/engine/checks/<type>.ts` with unit tests.
 
 | `type` | Fields | Semantics |
@@ -559,6 +589,8 @@ Additional rule: objectives are **sticky** by default (once true they stay done)
 > 2026-10-16 (D-019): `answer_equals` passes when **any** submitted answer matches, not only the latest. The "latest" wording above predates multi-answer levels (w1-09, w2-15 boss): live evaluation already made each submit count via stickiness, and the `levels:test` harness evaluates once after the full solution, so latest-only could never complete them.
 
 ### 8.3 `script_tests` cases
+
+**2026-11-19 (T10.5, D-063).** Case setup and execution default `HOME` to the player's home directory. Case execution can override it through `env`. Each case retains its separate scratch working directory.
 ```yaml
 check:
   type: script_tests
@@ -776,7 +808,7 @@ Legend — **Profile**: B=basic, A=admin. **Net**: none/lan. **Needs**: infra de
 | w5-01-getopts-usage | Real CLI | `getopts`, usage/`--help`, exit codes | Write `mytool` with flags `-v -o FILE -n N`, helpful usage | `script_tests` (hidden) | |
 | w5-02-idempotent-flock | Run It Twice | idempotency, `flock`, atomic writes | Script safe to re-run and to run concurrently (two instances) | `script_tests` + `exec` concurrent harness | |
 | w5-03-shellcheck-bats | Test Your Shell | `shellcheck`, `bats` | Fix a buggy script flagged by shellcheck; write bats tests that catch 3 hidden buggy variants | `shellcheck_clean` + `exec` (runs player's bats against mutants; must fail on every mutant, pass on original) | the mutants are the "wrong" solutions |
-| w5-04-proc-strace-lsof | Under the Hood | `strace`, `lsof`, `/proc` | Find which file a hung process waits on; find deleted-but-open file hogging disk (`lsof +L1`); submit; free the space | `answer_equals`, `exec` df-diff | cap `SYS_PTRACE` |
+| w5-04-proc-strace-lsof | Under the Hood | `strace`, `lsof`, `/proc` | Find which FIFO a hung process waits on and the deleted-but-open file hogging disk. Submit the names and free the space. | `answer_equals`, `exec` df-diff | inspect same-user processes (D-063) |
 | w5-05-perf-triage | Who's Slow? | `vmstat`, `iostat`-lite, `top` | 3 seeded processes (CPU/IO/memory hog); identify each and kill the right one | `answer_equals`, `process_absent` | |
 | w5-06-network-debug | Packets Don't Lie | `ss`, `tcpdump`, `nc`, `iptables` | A firewall rule blocks port 8080: find & fix so `curl` succeeds; capture a packet proving it | `exec` curl, `answer_equals` | lan, caps `NET_ADMIN`,`NET_RAW` |
 | w5-07-ssh-hardening | Lock It Down | `sshd_config`, `find -perm`, audit | Harden sshd config (no root login, key-only), find SUID & world-writable files and fix | `exec` config parse, `file_mode` | lan, `ssh` |
@@ -800,6 +832,8 @@ Loads all `level.yaml` at server start, validates with zod, builds indexes: by i
 Turns `setup` into: (1) a list of tar entries for `putFiles` (files, `content_file`, `checks/*` into `/opt/tq/checks/<levelId>/`, generator scripts into `/opt/tq/gen/`); (2) a root-run script executed with `bash -e`: create dirs → set owners/modes → run generators (`TQ_SEED`) → run `commands` → write `rc_extra` to `/home/player/.bashrc` (create if missing; chown player) → create `/run/tq/{cmdlog,inbox}` (0622) and `/opt/tq/secret` → start cron if profile `admin` and level declares `needs_cron: true` (default true for admin).
 
 ### 12.3 `levels:lint` rules (beyond schema)
+**2026-11-19 (T10.5, D-063).** World 3 now follows the contiguous-order rule. World 5 allows the single planned gap at order 9 when the namespace elective is omitted and the final boss is present at order 10.
+
 **2026-11-06 (A29, D-044):** Require explain cards, cheatsheet entries, and distinct wrong solutions. Check both setup file sources for seeded answers.
 
 - `id` matches directory; `order` unique and contiguous within a world.
@@ -826,7 +860,7 @@ Run time budget: whole W1+W2 suite < 10 min on CI (parallelize up to 4 container
 > 2026-11-11 (D-054): T9.1 outcomes and per-item evidence are recorded in [security-review.md](security-review.md). Ticks cover the audited Worlds 1–2 basic/no-network release. Explicit waivers below permit repository-audit completion only; production host verification remains a public-deployment prerequisite. Requirements are unchanged.
 
 - [x] Containers: caps dropped, resource limits set, `no-new-privileges` for `basic`, network `none` by default, no host mounts, no docker socket inside.
-- [ ] `lan` networks are `Internal: true` (no internet egress) and per-attempt. **D-054 waiver: inactive and rejected; implement/verify in T10.2 before enabling.**
+- [x] `lan` networks are `Internal: true` (no internet egress) and per-attempt. **T10.2 verified player-container isolation on Docker Desktop Engine 29.8.1 (D-060). Production-host verification is tracked below.**
 - [ ] The server process controls Docker → it is root-equivalent on the host. Production: run Docker **rootless** or on a dedicated VM; run the server as a non-root user in the `docker` group of that VM only. Never expose the Docker socket over TCP. **D-054 audit waiver: target VM unavailable; actual host checks blocked, not passed or waived for public deployment.**
 - [x] Secrets/answers/checks are never sent to the client. `GET /api/levels/:id` returns a whitelisted DTO only (use an explicit `toPublicLevel`).
 - [x] WebSocket auth: session must belong to cookie user; validate Origin header against `PUBLIC_ORIGIN`.

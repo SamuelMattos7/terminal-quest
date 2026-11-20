@@ -1,0 +1,42 @@
+id: 'w3-04-ps-and-top'
+world: 3
+order: 4
+title: "Who's Running?"
+kind: 'lesson'
+difficulty: 2
+estimated_minutes: 8
+story: 'Tux-9000: "A mystery daemon is idling under a name with a changing suffix. Inspect the process table and submit its PID. The PID is numeric. The suffix is decoration."'
+teaches:
+  - 'ps'
+par_commands: 7
+xp: 110
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+setup:
+  generators:
+    - script: 'setup/gen.sh'
+objectives:
+  - id: 'identify-daemon'
+    text: 'Submit the PID of the mystery-daemon process.'
+    check:
+      type: 'answer_equals'
+      from_file: '/opt/tq/secret/mystery-pid'
+hints:
+  - 'ps can display PID and arguments in separate columns.'
+  - 'pgrep -f matches the full command line. Anchor the pattern at the start.'
+  - 'Try pgrep -f "^mystery-daemon-" and submit the PID it prints.'
+explain:
+  - command: 'ps -eo pid,args'
+    parts:
+      - token: 'ps'
+        meaning: 'Print process IDs alongside complete command lines.'
+cheatsheet:
+  - skill: 'ps'
+    syntax: 'ps -eo pid,args'
+    note: 'Print process IDs alongside complete command lines.'
+success_message: 'You found the daemon in the process table.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/name-suffix.sh'

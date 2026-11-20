@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import type { Level } from '@terminal-quest/shared';
 import { compileSetup } from '@terminal-quest/server/engine/setupCompiler';
@@ -60,21 +61,17 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function specFor(level: Level, attemptId: string): SandboxSpec {
-  if (level.sandbox.network !== 'none') {
-    throw new Error(
-      `level ${level.id} needs network '${level.sandbox.network}' (unsupported until T10.2)`,
-    );
-  }
+function specFor(level: Level, seed: number): SandboxSpec {
   return {
-    attemptId,
+    attemptId: `levels-test-${randomUUID()}`,
     userId: 'levels-test',
     levelId: level.id,
     image: level.sandbox.image,
     profile: level.sandbox.profile,
     capabilities: level.sandbox.capabilities,
-    network: 'none',
-    sidecars: [],
+    network: level.sandbox.network,
+    sidecars: level.sandbox.sidecars,
+    seed,
     resources: {
       memoryMb: level.sandbox.resources.memory_mb,
       cpus: level.sandbox.resources.cpus,
@@ -90,9 +87,8 @@ async function setupSandbox(
   level: Level,
   levelDir: string,
   seed: number,
-  tag: string,
 ): Promise<SandboxHandle> {
-  const handle = await provider.create(specFor(level, `levels-test-${level.id}-s${seed}-${tag}`));
+  const handle = await provider.create(specFor(level, seed));
   try {
     await runSetup(provider, handle, compileSetup(level, levelDir, seed), seed);
     return handle;
@@ -109,6 +105,11 @@ async function driveScript(
   tracker: TrackerState,
   scriptText: string,
 ): Promise<void> {
+  const marker = 'TQ_SOLUTION_' + randomUUID();
+  // Feed each line at a PS1 or PS2 prompt. Foreground commands (including
+  // sudo's nested PTY) must never receive the remaining script on stdin.
+  const promptCommand =
+    "set +o emacs; set +o vi; printf -v PS1 '\\n%s\\n' " + marker + '; PS2=$PS1';
   const shell = await provider.openShell(handle, { cols: 80, rows: 24 });
   const inbox = await provider.watchFile(handle, '/run/tq/inbox', (line) => {
     touch();
@@ -117,7 +118,7 @@ async function driveScript(
   const cmdlog = await provider.watchFile(handle, '/run/tq/cmdlog', (line) => {
     touch();
     const entry = parseCmdlogLine(line);
-    if (entry !== undefined) {
+    if (entry !== undefined && entry.command !== promptCommand) {
       noteCommand(tracker, entry);
     }
   });
@@ -125,10 +126,39 @@ async function driveScript(
   function touch(): void {
     active = Date.now();
   }
-  shell.onData(touch);
+  const deadline = Date.now() + PHASE_TIMEOUT_MS;
+  let onPrompt: (() => void) | undefined;
+  let outputTail = '';
+  shell.onData((chunk) => {
+    touch();
+    const output = outputTail + chunk.toString();
+    const prompted =
+      output.includes('\n' + marker + '\r\n') || output.includes('\n' + marker + '\n');
+    outputTail = prompted ? '' : output.slice(-(marker.length + 4));
+    if (prompted) onPrompt?.();
+  });
+  function sendLine(line: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(
+        () => {
+          onPrompt = undefined;
+          reject(new Error(handle.spec.levelId + ': terminal did not return to a prompt'));
+        },
+        Math.max(0, deadline - Date.now()),
+      );
+      onPrompt = () => {
+        clearTimeout(timer);
+        onPrompt = undefined;
+        resolve();
+      };
+      shell.write(line + '\n');
+    });
+  }
   try {
-    shell.write(scriptText.endsWith('\n') ? scriptText : `${scriptText}\n`);
-    const deadline = Date.now() + PHASE_TIMEOUT_MS;
+    await sendLine(promptCommand);
+    for (const line of scriptText.trimEnd().split('\n')) {
+      await sendLine(line);
+    }
     while (Date.now() - active < QUIET_MS && Date.now() < deadline) {
       await sleep(100);
     }
@@ -150,7 +180,7 @@ async function runSeed(
   seed: number,
 ): Promise<SeedReport> {
   // Baseline + reference share one pristine sandbox (baseline runs nothing).
-  const main = await setupSandbox(provider, level, levelDir, seed, 'main');
+  const main = await setupSandbox(provider, level, levelDir, seed);
   try {
     const tracker = createTracker(level);
     const baselineEval = await evaluate(provider, main, level, tracker, { seed });
@@ -181,7 +211,7 @@ async function runSeed(
 
     const wrongs: PhaseResult[] = [];
     for (const wrong of level.solutions.wrong) {
-      const handle = await setupSandbox(provider, level, levelDir, seed, `wrong-${wrongs.length}`);
+      const handle = await setupSandbox(provider, level, levelDir, seed);
       try {
         const wrongTracker = createTracker(level);
         await driveScript(provider, handle, wrongTracker, readSolution(levelDir, wrong));

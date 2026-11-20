@@ -1,0 +1,52 @@
+id: 'w3-05-signals-kill'
+world: 3
+order: 5
+title: 'Zombie Slayer'
+kind: 'lesson'
+difficulty: 2
+estimated_minutes: 8
+story: 'Tux-9000: "cpu_hog ignores the usual termination signal and is using the sandbox CPU budget. Stop it without interrupting important-worker."'
+teaches:
+  - 'signals'
+par_commands: 7
+xp: 110
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+setup:
+  commands:
+    - "runuser -u player -- bash -c 'exec -a cpu_hog bash -c '\"'\"'trap \"\" TERM; while :; do :; done'\"'\"'' </dev/null >/dev/null 2>&1 &\nrunuser -u player -- bash -c 'exec -a important-worker sleep 600' </dev/null >/dev/null 2>&1 &"
+objectives:
+  - id: 'protect-worker'
+    text: 'Keep important-worker running.'
+    check:
+      type: 'process_running'
+      cmdline_regex: '^important-worker 600$'
+      user: 'player'
+    hold: true
+  - id: 'stop-hog'
+    text: 'Stop cpu_hog.'
+    check:
+      type: 'process_absent'
+      cmdline_regex: '^cpu_hog '
+      user: 'player'
+    hold: true
+hints:
+  - 'Identify both jobs before sending a signal.'
+  - 'SIGTERM is a request. SIGKILL is enforced by the kernel.'
+  - 'Use pkill -KILL -f "^cpu_hog " after verifying that exact prefix with pgrep -af.'
+explain:
+  - command: 'kill -KILL PID'
+    parts:
+      - token: 'kill'
+        meaning: 'Terminate the identified process when it cannot handle a graceful stop.'
+cheatsheet:
+  - skill: 'signals'
+    syntax: 'kill -KILL PID'
+    note: 'Terminate the identified process when it cannot handle a graceful stop.'
+success_message: 'The runaway job is gone. The important worker is still on shift.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/term-only.sh'
+    - 'wrong/both-workers.sh'

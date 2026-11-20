@@ -8,7 +8,7 @@ __tq_last_n=""
 __tq_log() {
   local ec=$?
   local n cmd
-  read -r n cmd < <(HISTTIMEFORMAT= history 1)
+  read -r n cmd <<< "$(HISTTIMEFORMAT= history 1)"
   if [ -n "$n" ] && [ "$n" != "$__tq_last_n" ]; then
     __tq_last_n="$n"
     printf '%s\t%s\t%s\t%s\n' "$(date +%s)" "$ec" "$PWD" "${cmd//$'\n'/ }" >> /run/tq/cmdlog 2>/dev/null

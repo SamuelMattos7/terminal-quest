@@ -6,6 +6,8 @@ import { buildHostConfig, buildLabels } from './profiles.js';
 import { dockerExec } from './dockerExec.js';
 import { createLineReader } from './streamLimits.js';
 import { openDockerShell } from './dockerShell.js';
+import { startLan } from './sidecars.js';
+import { destroyResources, discoverResources } from './dockerResources.js';
 import { logger } from '../util/logger.js';
 import { SandboxCreateError } from './provider.js';
 import type {
@@ -19,14 +21,6 @@ import type {
   SandboxSpec,
   ShellStream,
 } from './provider.js';
-
-function statusCodeOf(err: unknown): number | undefined {
-  if (typeof err === 'object' && err !== null && 'statusCode' in err) {
-    const sc = (err as { statusCode: unknown }).statusCode;
-    return typeof sc === 'number' ? sc : undefined;
-  }
-  return undefined;
-}
 
 function toEnvList(env: Record<string, string>): string[] {
   return Object.entries(env).map(([k, v]) => `${k}=${v}`);
@@ -80,17 +74,26 @@ export class DockerProvider implements SandboxProvider {
     // The container's own PID 1 is `sleep infinity`: it only keeps the
     // sandbox alive. All interaction (shell, setup, checks) happens via
     // exec, so a bare `bash` CMD would exit immediately and stop the box.
-    const container = await this.docker.createContainer({
-      Image: this.opts?.image ?? spec.image,
-      Cmd: ['sleep', 'infinity'],
-      User: 'player',
-      WorkingDir: spec.startCwd,
-      Env: toEnvList(spec.env),
-      Labels: buildLabels(spec),
-      HostConfig: buildHostConfig(spec, this.opts?.runtime),
-    });
-    const handle = { id: container.id, spec };
+    const hostConfig = buildHostConfig(spec, this.opts?.runtime);
+    const labels = buildLabels(spec);
+    const handle: SandboxHandle = { id: '', spec };
     try {
+      if (spec.network === 'lan') {
+        const lan = await startLan(this.docker, handle, this.opts?.runtime);
+        hostConfig.NetworkMode = lan.id;
+        hostConfig.Dns = [lan.dns];
+        labels['tq.network'] = lan.id;
+      }
+      const container = await this.docker.createContainer({
+        Image: this.opts?.image ?? spec.image,
+        Cmd: ['sleep', 'infinity'],
+        User: 'player',
+        WorkingDir: spec.startCwd,
+        Env: toEnvList(spec.env),
+        Labels: labels,
+        HostConfig: hostConfig,
+      });
+      handle.id = container.id;
       await container.start();
       return handle;
     } catch (err) {
@@ -99,7 +102,7 @@ export class DockerProvider implements SandboxProvider {
       } catch (cleanupError) {
         logger.error(
           { err: cleanupError, attemptId: spec.attemptId, levelId: spec.levelId },
-          'failed-start sandbox cleanup failed',
+          'sandbox acquisition cleanup failed',
         );
         throw new SandboxCreateError(handle, err, cleanupError);
       }
@@ -149,8 +152,10 @@ export class DockerProvider implements SandboxProvider {
     await Promise.all([pump, container.putArchive(archive, { path: '/' })]);
   }
 
-  exec(h: SandboxHandle, cmd: string[], opts?: ExecOptions): Promise<ExecResult> {
-    return dockerExec(this.docker.getContainer(h.id), h, cmd, opts);
+  async exec(h: SandboxHandle, cmd: string[], opts?: ExecOptions): Promise<ExecResult> {
+    const id = opts?.sidecar === undefined ? h.id : h.sidecarIds?.[opts.sidecar];
+    if (!id) throw new Error(`sandbox sidecar '${opts?.sidecar}' is unavailable`);
+    return dockerExec(this.docker.getContainer(id), h, cmd, opts);
   }
 
   openShell(h: SandboxHandle, size: { cols: number; rows: number }): Promise<ShellStream> {
@@ -217,34 +222,11 @@ export class DockerProvider implements SandboxProvider {
     return { stop };
   }
 
-  async destroy(h: SandboxHandle): Promise<void> {
-    const container = this.docker.getContainer(h.id);
-    try {
-      await container.stop({ t: 1 });
-    } catch (err) {
-      const code = statusCodeOf(err);
-      if (code !== 304 && code !== 404) {
-        throw err;
-      }
-    }
-    try {
-      await container.remove({ force: true, v: true });
-    } catch (err) {
-      if (statusCodeOf(err) !== 404) {
-        throw err;
-      }
-    }
+  destroy(h: SandboxHandle): Promise<void> {
+    return destroyResources(this.docker, h);
   }
 
-  async listManaged(): Promise<ManagedSandbox[]> {
-    const list = await this.docker.listContainers({
-      all: true,
-      filters: { label: ['tq.managed=true'] },
-    });
-    return list.map((c) => ({
-      containerId: c.Id,
-      attemptId: c.Labels['tq.attempt'] ?? '',
-      createdAt: Number(c.Labels['tq.created'] ?? '0'),
-    }));
+  listManaged(): Promise<ManagedSandbox[]> {
+    return discoverResources(this.docker);
   }
 }

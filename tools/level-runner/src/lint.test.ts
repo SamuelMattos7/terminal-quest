@@ -94,6 +94,45 @@ describe('lintLevels', () => {
     }
   });
 
+  it('rejects the former World 3 staging gaps and duplicate orders', () => {
+    const world3 = (orders: number[]) => ({
+      ...loaded([]),
+      byWorld: new Map([[3, orders.map((order) => makeLevel({ world: 3, order }))]]),
+    });
+    expect(lintLevels(world3(Array.from({ length: 15 }, (_, index) => index + 1)))).toEqual([]);
+    expect(lintLevels(world3([1, 10, 11, 12]))).toEqual([
+      expect.objectContaining({ levelId: '(world 3 ordering)' }),
+    ]);
+    expect(lintLevels(world3([1, 10, 12]))).toEqual([
+      expect.objectContaining({ levelId: '(world 3 ordering)' }),
+    ]);
+    expect(lintLevels(world3([1, 10, 10, 12]))).toEqual([
+      expect.objectContaining({ levelId: '(world 3 ordering)' }),
+    ]);
+  });
+
+  it('permits only the planned omission of the optional World 5 lesson', () => {
+    const world5 = (orders: number[], finalId = 'w5-10-boss-prod-is-down') => ({
+      ...loaded([]),
+      byWorld: new Map([
+        [
+          5,
+          orders.map((order) =>
+            makeLevel({
+              id: order === 10 ? finalId : `w5-0${order}-lesson`,
+              order,
+              world: 5,
+            }),
+          ),
+        ],
+      ]),
+    });
+    const core = [1, 2, 3, 4, 5, 6, 7, 8, 10];
+    expect(lintLevels(world5(core))).toEqual([]);
+    expect(lintLevels(world5(core, 'w5-10-other-boss'))).toHaveLength(1);
+    expect(lintLevels(world5(core.filter((order) => order !== 7)))).toHaveLength(1);
+  });
+
   it('flags too many non-bonus objectives and unknown skills', () => {
     const { dir, cleanup } = makeDir();
     try {

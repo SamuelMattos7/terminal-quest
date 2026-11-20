@@ -1,0 +1,44 @@
+id: w3-10-networking-basics
+world: 3
+order: 10
+title: Network Recon
+kind: lesson
+difficulty: 2
+estimated_minutes: 5
+story: |
+  Tux-9000: "The intranet relay is running inside your sandbox, but its port
+  changes every attempt. Run `ip a` to inspect your interfaces, then
+  `ping -c 1 web.penguin.corp` to check the LAN. Find the relay's local TCP
+  listening port and submit just the number."
+teaches: [networking]
+par_commands: 4
+xp: 100
+sandbox:
+  network: lan
+  sidecars: [web]
+setup:
+  generators:
+    - { script: setup/gen.sh }
+objectives:
+  - id: relay-port
+    text: Submit the intranet relay's local TCP listening port with `tux submit`.
+    check: { type: answer_equals, from_file: /opt/tq/secret/intranet_port }
+hints:
+  - 'Ping checks whether a host responds. To find a local service port, inspect the listening sockets.'
+  - 'Run `ss -tlnp` and look for the Python HTTP relay bound to `127.0.0.1`.'
+  - 'Read the number after `127.0.0.1:` on the Python listener line. Run `tux submit PORT` with that number.'
+explain:
+  - command: ss -tlnp
+    parts:
+      - { token: '-t', meaning: 'show TCP sockets' }
+      - { token: '-l', meaning: 'show listeners' }
+      - { token: '-n', meaning: 'show numeric ports' }
+      - { token: '-p', meaning: 'show process information when permitted' }
+cheatsheet:
+  - { skill: networking, syntax: 'ip a', note: 'Show interfaces and their addresses.' }
+  - { skill: networking, syntax: 'ping -c 1 HOST', note: 'Send one ICMP echo request.' }
+  - { skill: networking, syntax: 'ss -tlnp', note: 'List local TCP listeners and processes.' }
+success_message: 'Relay located. The network diagram gets one fewer question mark.'
+solutions:
+  reference: solution.sh
+  wrong: [wrong/remote-port.sh]

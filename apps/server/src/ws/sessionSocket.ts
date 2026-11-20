@@ -13,7 +13,8 @@ import { send, attemptScope } from './sessionContext.js';
 import { logger } from '../util/logger.js';
 import { requiredObjectives } from '../engine/objectiveTracker.js';
 import { tuxIntro } from '../progression/dialogue.js';
-import { requestHint, sessionStateMessage, type FlowDeps } from './sessionFlow.js';
+import { requestHint, type FlowDeps } from './sessionFlow.js';
+import { sessionStateMessage } from './sessionMessages.js';
 
 // WebSocket endpoint for plan.md §6.1: streams terminal I/O and drives
 // evaluation, hints, and coaching. Origin is checked against PUBLIC_ORIGIN
@@ -126,8 +127,7 @@ export async function registerSessionSocket(
         // old transport can still arrive during its close handshake.
         live.socket = adapter;
         previous?.close(SESSION_SOCKET_REPLACED);
-        const s = sessionStateMessage(live);
-        live.socket.send(JSON.stringify({ t: 'session_state', ...s, hintsTotal: 3 }));
+        live.socket.send(JSON.stringify(sessionStateMessage(live)));
         live.replay.replay(query.data.after ?? 0, adapter.send);
         if (!live.dialogue.welcomed) {
           live.dialogue.welcomed = true;

@@ -45,6 +45,7 @@ export class SessionManager {
   private readonly sessions = new Map<string, Session>();
   private readonly cleanup = new Map<string, { handle: SandboxHandle; pending?: Promise<void> }>();
   private pendingCreates = 0;
+  private readonly acquiring = new Map<string, number>();
 
   constructor(private readonly opts: SessionManagerOptions) {}
 
@@ -63,6 +64,7 @@ export class SessionManager {
     // Reserve synchronously, before yielding to Docker. Other users may
     // create concurrently, but cannot consume this slot a second time.
     this.pendingCreates += 1;
+    this.acquiring.set(spec.attemptId, (this.acquiring.get(spec.attemptId) ?? 0) + 1);
     try {
       const handle = await this.opts.provider.create(spec);
       const now = this.now();
@@ -76,6 +78,9 @@ export class SessionManager {
       throw err;
     } finally {
       this.pendingCreates -= 1;
+      const remaining = (this.acquiring.get(spec.attemptId) ?? 1) - 1;
+      if (remaining) this.acquiring.set(spec.attemptId, remaining);
+      else this.acquiring.delete(spec.attemptId);
     }
   }
 
@@ -155,23 +160,29 @@ export class SessionManager {
   }
 
   /**
-   * Boot sweep: destroy every managed container that has no live session.
-   * Returns the number of orphans destroyed.
+   * Boot sweep: destroy managed resources that have no live session.
    */
   async sweepOrphans(): Promise<number> {
-    const live = new Set([...this.sessions.values()].map((s) => s.handle.spec.attemptId));
-    const tracked = new Set([...this.cleanup.values()].map((c) => c.handle.id));
     const managed = await this.opts.provider.listManaged();
+    const live = new Set([...this.sessions.values()].map((s) => s.handle.spec.attemptId));
+    const tracked = new Set(
+      [...this.cleanup.values()].map((c) => c.handle.networkId ?? c.handle.id),
+    );
     let destroyed = 0;
     const errors: unknown[] = [];
     for (const m of managed) {
-      if (!live.has(m.attemptId) && !tracked.has(m.containerId)) {
-        // destroy() only needs the container id; the spec is unused.
+      if (
+        !live.has(m.attemptId) &&
+        !this.acquiring.has(m.attemptId) &&
+        !tracked.has(m.networkId ?? m.containerId)
+      ) {
         const id = randomUUID();
         this.cleanup.set(id, {
           handle: {
             id: m.containerId,
             spec: { attemptId: m.attemptId } as SandboxHandle['spec'],
+            ...(m.networkId === undefined ? {} : { networkId: m.networkId }),
+            ...(m.sidecarIds === undefined ? {} : { sidecarIds: m.sidecarIds }),
           },
         });
         try {

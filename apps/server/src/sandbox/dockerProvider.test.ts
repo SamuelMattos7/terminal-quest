@@ -58,10 +58,12 @@ describe('Docker sandbox configuration', () => {
       );
     },
   );
-  it('rejects LAN networks and sidecars before acquiring a container (T9.1)', async () => {
+  it('rejects invalid network and sidecar declarations before acquiring resources', async () => {
     const { provider, client } = setup();
-    await expect(provider.create({ ...spec, network: 'lan' })).rejects.toThrow('T10.2');
-    await expect(provider.create({ ...spec, sidecars: ['web'] })).rejects.toThrow('T10.2');
+    await expect(provider.create({ ...spec, sidecars: ['web'] })).rejects.toThrow('network: lan');
+    await expect(
+      provider.create({ ...spec, network: 'lan', sidecars: ['web', 'web'] }),
+    ).rejects.toThrow('unique');
     expect(client.createContainer).not.toHaveBeenCalled();
   });
   it('passes validated image and runtime overrides without changing isolation', async () => {

@@ -1,0 +1,66 @@
+id: 'w4-11-heredocs-diff'
+world: 4
+order: 11
+title: 'Heredocs & Patches'
+kind: 'lesson'
+difficulty: 3
+estimated_minutes: 8
+story: 'Tux-9000: "Prepare the corrected config with a here-document, generate a unified patch, and apply it to engine.conf. The new config uses port 9090 and active mode. Keep debug=false."'
+teaches:
+  - 'heredocs'
+  - 'diff-patch'
+par_commands: 7
+xp: 130
+setup:
+  files:
+    - path: '/home/player/engine.conf'
+      content: "port=8080\ndebug=false\nmode=standby\n"
+      mode: '644'
+      owner: 'player'
+    - path: '/opt/tq/original-engine.conf'
+      content: "port=8080\ndebug=false\nmode=standby\n"
+      mode: '644'
+      owner: 'root'
+objectives:
+  - id: 'write-new-config'
+    text: 'Create ~/next.conf with port=9090, debug=false, and mode=active in that order.'
+    check:
+      type: 'file_content'
+      path: '/home/player/next.conf'
+      equals: "port=9090\ndebug=false\nmode=active"
+  - id: 'record-and-apply'
+    text: 'Save a unified ~/engine.patch that transforms the original into next.conf, then apply it.'
+    check:
+      type: 'all'
+      checks:
+        - type: 'exec'
+          inline: 'set -e; cd /home/player; grep -q "^@@ " engine.patch; patch --batch --silent -o - /opt/tq/original-engine.conf < engine.patch | cmp - next.conf'
+        - type: 'file_content'
+          path: '/home/player/engine.conf'
+          equals: "port=9090\ndebug=false\nmode=active"
+    hold: true
+hints:
+  - 'Use cat >next.conf with a quoted here-document delimiter.'
+  - 'diff -u engine.conf next.conf produces a unified patch. Exit 1 means differences exist.'
+  - 'Use patch engine.conf <engine.patch, then compare engine.conf with next.conf.'
+explain:
+  - command: "cat >FILE <<'CONF'"
+    parts:
+      - token: 'cat'
+        meaning: 'Write a multiline literal block without shell expansion.'
+  - command: 'diff -u OLD NEW >CHANGE.patch'
+    parts:
+      - token: 'diff'
+        meaning: 'Save a unified report suitable for applying with patch.'
+cheatsheet:
+  - skill: 'heredocs'
+    syntax: "cat >FILE <<'CONF'"
+    note: 'Write a multiline literal block without shell expansion.'
+  - skill: 'diff-patch'
+    syntax: 'diff -u OLD NEW >CHANGE.patch'
+    note: 'Save a unified report suitable for applying with patch.'
+success_message: 'The config changed and the saved patch can reproduce the edit.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/reversed-patch.sh'

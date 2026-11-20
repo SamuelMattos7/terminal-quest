@@ -1,0 +1,65 @@
+id: 'w4-03-args-exit-codes'
+world: 4
+order: 3
+title: 'Arguments & Exit Codes'
+kind: 'lesson'
+difficulty: 3
+estimated_minutes: 8
+story: 'Tux-9000: "Dispatch needs exactly two arguments. Print the route when both arrive. On any other count, explain usage on stderr and return the usage error code 64."'
+teaches:
+  - 'exit-codes'
+par_commands: 7
+xp: 130
+objectives:
+  - id: 'write-script'
+    text: 'Create executable ~/dispatch.sh SOURCE DEST. Print SOURCE -> DEST with two args. Otherwise print Usage on stderr and exit 64.'
+    check:
+      type: 'script_tests'
+      path: '/home/player/dispatch.sh'
+      shellcheck: false
+      cases:
+        - name: 'valid-route'
+          args:
+            - 'Ice Gate'
+            - 'Loading Bay'
+          expect:
+            exit_code: 0
+            stdout_equals: 'Ice Gate -> Loading Bay'
+            stderr_equals: ''
+          hidden: true
+        - name: 'missing-destination'
+          args:
+            - 'origin'
+          expect:
+            exit_code: 64
+            stderr_contains: 'Usage'
+            stdout_equals: ''
+          hidden: true
+        - name: 'extra-argument'
+          args:
+            - 'a'
+            - 'b'
+            - 'c'
+          expect:
+            exit_code: 64
+            stderr_contains: 'Usage'
+            stdout_equals: ''
+          hidden: true
+hints:
+  - '$# holds the argument count.'
+  - 'Send usage to standard error with >&2 before exit 64.'
+  - 'Use (( $# != 2 )) as the guard and quote "$1" and "$2" in the success branch.'
+explain:
+  - command: "printf \"Usage: ...\\n\" >&2"
+    parts:
+      - token: 'printf'
+        meaning: 'Send diagnostic text to stderr so it stays out of successful output.'
+cheatsheet:
+  - skill: 'exit-codes'
+    syntax: "printf \"Usage: ...\\n\" >&2"
+    note: 'Send diagnostic text to stderr so it stays out of successful output.'
+success_message: 'Dispatch now distinguishes a valid route from incorrect usage.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/accepts-extra.sh'

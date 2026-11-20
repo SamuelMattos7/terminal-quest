@@ -80,15 +80,15 @@ Lightweight architecture decision log. Add an entry whenever you choose between 
 ### D-008 â€” Cron level validation: semantic match + cron-like dry run (default)
 
 - **Date:** (project start)
-- **Status:** Open (pending SPIKE S1, T10.3)
+- **Status:** Accepted (T10.3, D-061)
 - **Context:** Real-time cron firing makes levels slow.
 - **Decision:** Default to `crontab_entry` (semantic match via `cronmatch.py`) plus `cron_dry_run` (executes the command in a cron-like minimal env). Try `libfaketime` acceleration as a spike.
-- **Consequences:** If the spike works, add a `cron_fire` check type; otherwise this stays.
+- **Consequences:** The spike demonstrated missed runs under calendar-scale acceleration. D-061 records the fallback.
 
 ### D-009 â€” Systemd is simulated with a shim (default)
 
 - **Date:** (project start)
-- **Status:** Open (pending SPIKE S2, T10.4)
+- **Status:** Accepted (T10.4, D-062)
 - **Context:** Real systemd needs privileges unsuited to untrusted users in containers.
 - **Decision:** Python `systemctl`/`journalctl` shim supporting a documented subset; disclosed to players on the level page.
 - **Consequences:** Behaviour diverges from real systemd in edge cases; keep the supported subset small and documented.
@@ -528,3 +528,43 @@ _Append below this line. Continue numbering from D-011._
 - **Decision — content:** Author only `w3-01-sudo-and-id`, required for T10.1 acceptance. Generate a seed-dependent root-only access code and its protected checker copy; permit `cat` only for that visible root file. Teach identity inspection with `id`, `sudo -l` and one-command elevation; credit the existing `sudo` skill with `whoami`/`cat` prerequisites rather than adding an unplanned skill ID. Check the submitted outcome rather than exact command text. Leave the release configuration at Worlds 1–2.
 - **Consequences:** Default admin tools deliberately allow broad in-container changes (package scripts, service scripts, ownership changes); this is not an anti-cheat boundary, as accepted in D-004/D-010. Direct root shells, unrelated `sudo cat` reads, `su`, mounts and undeclared capabilities remain denied initially. The real cron test uses an `@reboot` player job, without accelerated scheduling or a T10.3 timing claim. Existing basic-profile security tests remain required; LAN and all remaining M10 work stay separate.
 - **Validation:** `pnpm verify` passed build/lint and 531 tests; `pnpm test:docker` passed 94 tests (93 server + 1 runner); `pnpm levels:lint` found 28 levels and zero problems. `w3-01` passed all 12 baseline/two-wrong/reference cases across three seeds. The full 27-level release progression passed; no managed test containers remained.
+
+### D-060 — Give every LAN attempt its own bridge and service containers
+
+- **Date:** 2026-11-18
+- **Status:** Accepted
+- **Context:** T10.2 requires the three network lessons and a player-container egress check. D-054 deferred LAN validation while the release used only `network: none`.
+- **Decision — networking:** Use one labeled, IPv4-only, internal bridge per unique attempt, with Docker's isolated gateway mode to omit the host bridge address. Docker DNS resolves local aliases and forwards only to that attempt's dnsmasq when declared. dnsmasq never forwards queries. A LAN without dnsmasq uses a loopback upstream inside the container. Player and sidecars share no host mounts or published ports. See [Docker Engine 28 release notes](https://docs.docker.com/engine/release-notes/28/).
+- **Decision — ownership:** Start and health-check the declared sidecars before launching the player. Give each service its own resource limits and the capabilities it needs to start. Record acquired IDs immediately, remove the containers before the bridge, and retain the session's capacity slot while cleanup needs retrying. Managed labels let the boot sweep recover sidecar-only and bridge-only leftovers.
+- **Decision — lessons:** W3-10 finds a seeded local listener with `ss` and uses the web sidecar for LAN reachability. W3-11 uses the web and DNS services. W3-12 installs a generated bootstrap public key as `deploy` before the lesson starts, then verifies the newly enrolled key and the delivered file in the SSH sidecar. Use `ssh-copy-id -f` because its duplicate-key probe otherwise accepts the working bootstrap identity as proof that the new key exists. Keep the release at Worlds 1–2. Lint allows the exact staged World 3 order set 1/10/11/12 until the remaining lessons are authored as a batch. Duplicate and other gap checks still apply.
+- **Consequences:** LAN requires Docker Engine 28+ and the three images built by `pnpm images:build`. The local verification uses Docker Desktop's Linux engine. D-054's production-host prerequisite remains in effect.
+- **Environment:** The restricted shell could neither fetch the pinned pnpm version nor access the Docker named pipe. Starting Docker Desktop and running pnpm against the host cache and Docker pipe resolved both issues.
+- **Validation:** On Docker Desktop Engine 29.8.1, player containers in basic and admin LANs reached their own services and had no route to public IPv4/IPv6 addresses. Direct HTTPS, public DNS lookups (including queries to Docker's embedded resolver), and traffic to a neighboring attempt's web server failed. All three LAN lessons cleared the three-seed matrix with baseline and wrong solutions incomplete. `pnpm verify` passed 543 tests, `pnpm test:docker` passed 101 tests, and `pnpm levels:lint` found 31 levels and zero problems. Zero managed containers or networks remained.
+
+### D-061 — Use cron schedule previews and dry runs for T10.3
+
+- **Date:** 2026-11-19
+- **Status:** Accepted
+- **Context:** World 4 teaches recurring, weekday, and monthly schedules. S1 had a five-minute limit to see whether accelerated Debian cron could run those jobs predictably during play.
+- **Experiment:** In a disposable `tq-base` derivative on Docker Engine 29.8.1, preload `libfaketime` 0.9.10-2.1 into Debian cron 3.0pl1-162 with `FAKETIME_DONT_FAKE_MONOTONIC=1`. Use the admin sandbox limits, network isolation, and a `player` crontab. At 30× from 12:00:05 UTC, cron ran the startup job, the every-minute job three times, and the fixed 12:01 and 12:02 jobs once each within six real seconds. The observer's preloaded Python sleep initially returned `EINVAL`. Using an unpreloaded external sleep let the observer measure the runs.
+- **Outcome:** At 172,800× from 2026-01-02 UTC, install daily, weekday, and monthly entries as `player` after cron starts. In 20 real seconds (about 40 simulated days at that rate), the player jobs recorded 24 daily runs, 26 weekday runs, and one monthly run. The daily count fell below the conservative minimum of 28. At 30×, advancing from January 2 to February 1 would take about 24 real hours.
+- **Decision:** Adopt the plan's fallback. Keep semantic `crontab_entry` and minimal-environment `cron_dry_run` for validation. Add `tux cron '*/5 * * * *'` to preview the next five UTC calendar times from the sandbox clock via `cronmatch.py`. The preview takes one schedule argument and prints timestamps locally. It rejects `@reboot` because startup has no calendar time.
+- **Validation:** Rebuilt `tq-base` and ran ShellCheck on Tux. `pnpm verify` passed 543 tests. `pnpm test:docker` passed 107 tests, including previews as `player`, semantic matching, cron-like dry runs, real admin cron startup, and the release playthrough. The `w3-01-sudo-and-id` matrix passed all 12 cases across three seeds. `pnpm levels:lint` found 31 levels and zero problems. No managed Docker containers or networks remained.
+
+### D-062 — Simulate systemd for Units of Work
+
+- **Date:** 2026-11-19
+- **Status:** Accepted
+- **Experiment:** Timebox S2 to five minutes. Install Debian systemd 252.39-1~deb12u2 in a disposable `tq-base` derivative on Docker Engine 29.8.1. Give real systemd the opportunity to run as PID 1 with the normal admin capabilities and resource limits, private cgroups, network isolation, and no host mounts. After the eight-second observation window, the container had exited with code 255. A separate mount inspection confirmed Docker exposed a read-only cgroup v2 mount. The real manager could not serve the lesson under these constraints.
+- **Decision:** Use the Python `systemctl` and `journalctl` shim. The normal admin setup starts its per-attempt manager for levels declaring `requires: systemd-shim`. Docker settings stay within the existing admin profile. Add only `w4-14-systemd-units` to teach service and timer files, starting and enabling the timer, and inspecting a service's journal. The public level DTO carries the simulation requirement so the level page can disclose the differences.
+- **Consequences:** Services default to `player`. `User` selects an ordinary sandbox account (UID 1000 or higher and a non-root primary group). The manager starts it with that UID and primary GID, a minimal environment, and cwd `/`. The player's unit directory is writable inside this lesson. The control socket is available to root and the player group. UTC timers start separately from enabling. Enabled state is scoped to the attempt and has no boot behavior. Journals capture service stdout and stderr as text. Plan §7.8 documents the remaining differences.
+- **Validation:** Rebuilt `tq-base` and ran ShellCheck on the startup script. `pnpm verify` passed 547 tests and covered the public DTO and level page disclosure. `pnpm test:docker` passed 112 tests, including live UTC timer firing and rearming, restart-on-failure, account handling, and sandbox isolation. Level lint found 32 levels and zero problems. Across three Docker seeds for Units of Work, each baseline and hourly timer attempt stayed incomplete and each daily reference completed. No managed Docker containers or networks remained.
+
+### D-063 — Complete the Engine Room, Automation Lab, and War Room
+
+- **Date:** 2026-11-19
+- **Status:** Accepted
+- **Curriculum:** Author the required World 3–5 levels, add their skill prerequisites, and retain the verified simulation and LAN lessons. Under the Hood uses same-account `lsof` and `/proc` to identify a blocked FIFO and a deleted-but-open log, and checks disk recovery. Omit the optional namespace lesson per `11.3's safety exception. These choices preserve the existing capability policy. The firewall lessons use the existing isolated `NET_ADMIN` and `NET_RAW` grant. SSH hardening validates a draft against the training sidecar's OpenSSH parser. The final boss uses synthetic failed-login records and checks an accurate source-specific block.
+- **Runtime:** Bake the needed commands into the teaching image. Resolve the container's own hostname locally for admin tools. Preserve `$!` across the prompt's command log hook. The level runner sends each line at the next primary or continuation prompt, including after quiet commands and commands that use a nested terminal. Script cases use the player's home directory in `HOME` while running in their temporary working directory.
+- **Final boss:** Keep incident stage checks on the server and reveal each objective after its predecessor passes. Reconnect restores the same revealed objectives. Keep the recovery checks active until the postmortem passes.
+- **Validation:** Level lint found 67 levels and zero problems. The three-seed Docker runs for Worlds 3, 4, and 5 passed all 15, 16, and nine levels respectively. The all-worlds map and unlock chain were verified with `ENABLE_WORLDS` set to all five worlds. `pnpm verify` passed 551 tests. `pnpm test:docker` passed 112 tests, including the release playthrough, the player-home script probe, and a solution that pauses before returning to its terminal prompt. No managed Docker containers or networks remained.

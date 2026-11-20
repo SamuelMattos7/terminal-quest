@@ -4,7 +4,7 @@ Single source of truth for build status. Tick a box only when the task's accepta
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (see Blockers)
 
-**Current focus:** T10.1 is complete on `codex/t10-1-admin-profile`: validated sudo allow-lists, real cron startup/opt-out, explicit admin capability mapping, and the complete seeded `w3-01-sudo-and-id` acceptance level (D-059). T10.2 is next; remaining M10 work is unstarted. Release configuration remains Worlds 1–2.
+**Current focus:** T10.2 is complete. The three LAN lessons pass across three seeds, and Docker Desktop verified player-container egress isolation and cleanup (D-060). Release configuration remains Worlds 1–2.
 
 ---
 
@@ -76,10 +76,10 @@ T9.2 WSL correction evidence (D-057): the first target ramp on `e7246c7` failed 
 ### M10 — Worlds 3–5
 
 - [x] T10.1 `admin` profile (sudo allow-list, cron daemon, capability mapping) ✅ `pnpm verify`: build/lint + 531 tests; `pnpm levels:lint`: 28 levels, zero problems; `pnpm levels:test --level w3-01-sudo-and-id --seeds 3`: all 12 baseline/wrong/reference cases passed. `pnpm test:docker`: 94 tests passed (93 server + 1 runner), including six admin regressions (real player cron job, cron opt-out, sudo boundaries/default tools, kernel capability mapping), basic security and the complete 27-level progression playthrough. D-059 records policy and accepted in-container authority.
-- [ ] T10.2 Sidecars + `lan` networks (no egress verified)
-- [ ] T10.3 SPIKE S1 cron timing — outcome logged in `DECISIONS.md`
-- [ ] T10.4 SPIKE S2 systemd shim — outcome logged in `DECISIONS.md`
-- [ ] T10.5 Author World 3, 4, 5 content
+- [x] T10.2 Sidecars + `lan` networks ✅ All 33 acceptance cases for `w3-10` through `w3-12` passed across three seeds. Docker Desktop 29.8.1 verified blocked IPv4/IPv6 HTTPS, public DNS, and cross-attempt traffic from player containers. `pnpm verify`: 543 tests. `pnpm test:docker`: 101 tests. `pnpm levels:lint`: 31 levels, zero problems. Zero managed containers or networks remained.
+- [x] T10.3 SPIKE S1 cron timing ✅ D-061 records missed daily firings and the fallback. `tux cron '<schedule>'` previews five UTC runs. `pnpm verify` passed 543 tests, `pnpm test:docker` passed 107 tests (10 cron cases), and the `w3-01-sudo-and-id` Docker matrix passed all 12 cases across three seeds. `pnpm levels:lint` found 31 levels and zero problems.
+- [x] T10.4 SPIKE S2 systemd shim ✅ D-062 records the failed real-systemd boot and the shim fallback. Units of Work displays the simulation notice. `pnpm verify` passed 547 tests, `pnpm test:docker` passed 112 tests (five shim cases), and `pnpm levels:lint` found 32 levels and zero problems. `w4-14-systemd-units` passed all nine baseline, wrong, and reference cases across three seeds.
+- [x] T10.5 Author Worlds 3–5 ✅ Added 35 levels, bringing the full curriculum to 67. Each batch passed level lint and a three-seed Docker matrix with zero failures (World 3: 15 levels, World 4: 16 levels, World 5: nine required levels). `pnpm verify` passed 551 tests and `pnpm test:docker` passed 112. The all-worlds progression test reaches the staged final boss. D-063 records the optional namespace omission.
 - [ ] T10.6 (Optional) OAuth / classroom mode
 
 ---
@@ -155,58 +155,64 @@ Batch verification for w2-10 through w2-12 passed `pnpm levels:lint` (24 levels,
 | ID                       | A   | L   | T   |
 | ------------------------ | --- | --- | --- |
 | w3-01-sudo-and-id        | [x] | [x] | [x] |
-| w3-02-users-groups       | [ ] | [ ] | [ ] |
-| w3-03-chown-special-bits | [ ] | [ ] | [ ] |
-| w3-04-ps-and-top         | [ ] | [ ] | [ ] |
-| w3-05-signals-kill       | [ ] | [ ] | [ ] |
-| w3-06-job-control        | [ ] | [ ] | [ ] |
-| w3-07-environment        | [ ] | [ ] | [ ] |
-| w3-08-disk-usage         | [ ] | [ ] | [ ] |
-| w3-09-archives           | [ ] | [ ] | [ ] |
-| w3-10-networking-basics  | [ ] | [ ] | [ ] |
-| w3-11-curl-and-dns       | [ ] | [ ] | [ ] |
-| w3-12-ssh-keys           | [ ] | [ ] | [ ] |
-| w3-13-rsync              | [ ] | [ ] | [ ] |
-| w3-14-packages           | [ ] | [ ] | [ ] |
-| w3-15-boss-server-setup  | [ ] | [ ] | [ ] |
+| w3-02-users-groups       | [x] | [x] | [x] |
+| w3-03-chown-special-bits | [x] | [x] | [x] |
+| w3-04-ps-and-top         | [x] | [x] | [x] |
+| w3-05-signals-kill       | [x] | [x] | [x] |
+| w3-06-job-control        | [x] | [x] | [x] |
+| w3-07-environment        | [x] | [x] | [x] |
+| w3-08-disk-usage         | [x] | [x] | [x] |
+| w3-09-archives           | [x] | [x] | [x] |
+| w3-10-networking-basics  | [x] | [x] | [x] 3 seeds, 9 cases |
+| w3-11-curl-and-dns       | [x] | [x] | [x] 3 seeds, 12 cases |
+| w3-12-ssh-keys           | [x] | [x] | [x] 3 seeds, 12 cases |
+| w3-13-rsync              | [x] | [x] | [x] |
+| w3-14-packages           | [x] | [x] | [x] |
+| w3-15-boss-server-setup  | [x] | [x] | [x] |
 
 `w3-01-sudo-and-id` ✅ Complete seeded level with protected root-only code, exact-path sudo read, three hints, explain/cheatsheet, reference and two wrong scripts. Three-seed matrix: baseline and both wrong scripts stay incomplete; reference completes on all seeds. `pnpm levels:lint`: 28 levels, zero problems; `pnpm verify`: 531 tests.
+
+**T10.5 batch verification.** `pnpm levels:lint` reported 67 levels and zero problems. `pnpm levels:test --world 3 --seeds 3 --expect-levels 15` passed all 15 levels with zero failures.
 
 ### World 4 — The Automation Lab
 
 | ID                        | A   | L   | T   |
 | ------------------------- | --- | --- | --- |
-| w4-01-script-hello        | [ ] | [ ] | [ ] |
-| w4-02-variables-quoting   | [ ] | [ ] | [ ] |
-| w4-03-args-exit-codes     | [ ] | [ ] | [ ] |
-| w4-04-conditionals        | [ ] | [ ] | [ ] |
-| w4-05-loops               | [ ] | [ ] | [ ] |
-| w4-06-functions           | [ ] | [ ] | [ ] |
-| w4-07-strict-mode         | [ ] | [ ] | [ ] |
-| w4-08-sed                 | [ ] | [ ] | [ ] |
-| w4-09-awk                 | [ ] | [ ] | [ ] |
-| w4-10-xargs-jq            | [ ] | [ ] | [ ] |
-| w4-11-heredocs-diff       | [ ] | [ ] | [ ] |
-| w4-12-cron-basics         | [ ] | [ ] | [ ] |
-| w4-13-cron-pitfalls       | [ ] | [ ] | [ ] |
-| w4-14-systemd-units       | [ ] | [ ] | [ ] |
-| w4-15-logs-logrotate      | [ ] | [ ] | [ ] |
-| w4-16-boss-nightly-backup | [ ] | [ ] | [ ] |
+| w4-01-script-hello        | [x] | [x] | [x] |
+| w4-02-variables-quoting   | [x] | [x] | [x] |
+| w4-03-args-exit-codes     | [x] | [x] | [x] |
+| w4-04-conditionals        | [x] | [x] | [x] |
+| w4-05-loops               | [x] | [x] | [x] |
+| w4-06-functions           | [x] | [x] | [x] |
+| w4-07-strict-mode         | [x] | [x] | [x] |
+| w4-08-sed                 | [x] | [x] | [x] |
+| w4-09-awk                 | [x] | [x] | [x] |
+| w4-10-xargs-jq            | [x] | [x] | [x] |
+| w4-11-heredocs-diff       | [x] | [x] | [x] |
+| w4-12-cron-basics         | [x] | [x] | [x] |
+| w4-13-cron-pitfalls       | [x] | [x] | [x] |
+| w4-14-systemd-units       | [x] | [x] | [x] |
+| w4-15-logs-logrotate      | [x] | [x] | [x] |
+| w4-16-boss-nightly-backup | [x] | [x] | [x] |
+
+**T10.5 batch verification.** `pnpm levels:lint` reported 67 levels and zero problems. `pnpm levels:test --world 4 --seeds 3 --expect-levels 16` passed all 16 levels with zero failures.
 
 ### World 5 — The War Room
 
 | ID                                   | A   | L   | T   |
 | ------------------------------------ | --- | --- | --- |
-| w5-01-getopts-usage                  | [ ] | [ ] | [ ] |
-| w5-02-idempotent-flock               | [ ] | [ ] | [ ] |
-| w5-03-shellcheck-bats                | [ ] | [ ] | [ ] |
-| w5-04-proc-strace-lsof               | [ ] | [ ] | [ ] |
-| w5-05-perf-triage                    | [ ] | [ ] | [ ] |
-| w5-06-network-debug                  | [ ] | [ ] | [ ] |
-| w5-07-ssh-hardening                  | [ ] | [ ] | [ ] |
-| w5-08-tmux-git-make                  | [ ] | [ ] | [ ] |
+| w5-01-getopts-usage                  | [x] | [x] | [x] |
+| w5-02-idempotent-flock               | [x] | [x] | [x] |
+| w5-03-shellcheck-bats                | [x] | [x] | [x] |
+| w5-04-proc-strace-lsof               | [x] | [x] | [x] |
+| w5-05-perf-triage                    | [x] | [x] | [x] |
+| w5-06-network-debug                  | [x] | [x] | [x] |
+| w5-07-ssh-hardening                  | [x] | [x] | [x] |
+| w5-08-tmux-git-make                  | [x] | [x] | [x] |
 | w5-09-namespaces-optional (optional) | [ ] | [ ] | [ ] |
-| w5-10-boss-prod-is-down              | [ ] | [ ] | [ ] |
+| w5-10-boss-prod-is-down              | [x] | [x] | [x] |
+
+**T10.5 batch verification.** `pnpm levels:lint` reported 67 levels and zero problems. `pnpm levels:test --world 5 --seeds 3 --expect-levels 9` passed all nine levels with zero failures. The optional namespace exercise was skipped under the plan’s safety exception (D-063).
 
 ---
 
@@ -254,9 +260,9 @@ _Every stub, skipped test, simplification, or unfinished edge goes here. Nothing
 
 | Date       | Area                | Gap                                                                                     | Planned resolution                                         |
 | ---------- | ------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| 2026-10-06 | skills.yaml prereqs | Worlds 1 and 2 and the new sudo skill have prerequisite edges. Remaining unauthored Worlds 3–5 skills still have empty `prereqs`. | Author remaining edges as their levels land |
+| 2026-11-19 | Optional namespace lesson | `w5-09` was omitted because its planned exercise requires `SYS_ADMIN`, outside the admin capability policy. | The curriculum skips order 9 under the plan’s safety exception (D-063). |
 | 2026-11-11 | Production validation | T9.1 repository audit, T9.2 WSL capacity and T9.3 fresh-WSL deployment rehearsal are complete. The eventual public host, public DNS/ACME, internet ingress and off-device backup transport remain unverified. WSL systemd services do not keep a distro alive. | Verify the actual production host and external services before public deployment (D-054/D-058). Local WSL evidence does not establish a future host's capacity or always-on availability. |
-| 2026-11-11 | Security audit scope | LAN and specialty script/login/cron execution semantics are not certified by the basic/no-network release audit. Optional `LOG_COMMANDS=1` command persistence is deliberately unimplemented; commands/answers/terminal streams are not persisted. | D-054 documents waivers; verify M10 features before enabling them. Any future command logging needs validated opt-in, writer-side 200-character truncation and privacy regressions. |
+| 2026-11-18 | Security audit scope | T10.2 verified LAN isolation on the local Docker engine (D-060). Specialty script/login/cron execution semantics remain outside the basic release audit. Optional `LOG_COMMANDS=1` command persistence is unimplemented. | D-054 documents the remaining waivers. Any future command logging needs validated opt-in, writer-side 200-character truncation, and privacy regressions. |
 
 ## Blockers
 

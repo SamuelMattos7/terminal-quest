@@ -38,6 +38,11 @@ RUN rm -f /etc/dpkg/dpkg.cfg.d/excludes /etc/dpkg/dpkg.cfg.d/docker \
     jq cron rsync tmux git sudo lsof strace shellcheck bats file tree \
     ncurses-term locales python3 python3-croniter \
   && rm -rf /var/lib/apt/lists/*
+# Offline tools for the automation and diagnostics lessons.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    patch logrotate iptables tcpdump make \
+  && rm -rf /var/lib/apt/lists/*
+
 # /opt/tq helpers: root-owned, player can read and execute, never write.
 COPY tq/ /opt/tq/
 RUN chown -R root:root /opt/tq \

@@ -291,6 +291,7 @@ const ExecCheckSchema = z
     type: z.literal('exec'),
     script: z.string().min(1).optional(),
     inline: z.string().min(1).optional(),
+    sidecar: z.literal('ssh').optional(),
     expect_exit: z.number().int().default(0),
     stdout_matches: regexSource().optional(),
   })
@@ -301,6 +302,13 @@ const ExecCheckSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'exec needs exactly one of script, inline',
+      });
+    }
+    if (v.sidecar !== undefined && v.inline === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['sidecar'],
+        message: 'sidecar exec requires an inline check',
       });
     }
   });

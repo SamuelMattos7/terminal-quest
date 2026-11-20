@@ -1,0 +1,53 @@
+id: 'w3-03-chown-special-bits'
+world: 3
+order: 3
+title: 'Ownership & Special Bits'
+kind: 'lesson'
+difficulty: 2
+estimated_minutes: 8
+story: 'Tux-9000: "You are on the dev team. Create a queue where new entries inherit dev ownership and members can remove only entries they own. Configure the shared directory."'
+teaches:
+  - 'chown'
+  - 'special-bits'
+par_commands: 7
+xp: 110
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+setup:
+  commands:
+    - 'groupadd dev'
+    - 'usermod -aG dev player'
+    - 'mkdir /home/player/shared'
+    - 'chown player:player /home/player/shared'
+objectives:
+  - id: 'assign-group'
+    text: 'Set the group on ~/shared to dev.'
+    check:
+      type: 'file_owner'
+      path: '/home/player/shared'
+      group: 'dev'
+  - id: 'protect-directory'
+    text: 'Set the directory mode to 3770 (setgid, sticky, owner and group rwx).'
+    check:
+      type: 'file_mode'
+      path: '/home/player/shared'
+      mode: '3770'
+hints:
+  - 'The special mode digit combines setgid (2) and sticky (1).'
+  - 'A directory needs execute access to traverse it. Set the group with chgrp.'
+  - 'Run chgrp dev ~/shared, then chmod 3770 ~/shared. Check with ls -ld and id.'
+explain:
+  - command: 'chmod 3770 DIRECTORY'
+    parts:
+      - token: 'chmod'
+        meaning: 'Inherit the directory group and restrict removal of entries to their owners.'
+cheatsheet:
+  - skill: 'chown'
+    syntax: 'chmod 3770 DIRECTORY'
+    note: 'Inherit the directory group and restrict removal of entries to their owners.'
+success_message: 'The shared queue now inherits dev ownership and protects team files.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/missing-sticky.sh'

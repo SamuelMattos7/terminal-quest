@@ -1,0 +1,84 @@
+id: 'w5-07-ssh-hardening'
+world: 5
+order: 7
+title: 'Lock It Down'
+kind: 'lesson'
+difficulty: 4
+estimated_minutes: 8
+story: 'Tux-9000: "Audit the SSH configuration draft before deployment. Require public-key authentication and disallow root, password, and keyboard-interactive logins. Copy the hardened draft to deploy on the training LAN. Audit the local tool and queue modes too."'
+teaches:
+  - 'ssh-hardening'
+  - 'chmod'
+par_commands: 7
+xp: 150
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+  network: 'lan'
+  sidecars:
+    - 'ssh'
+setup:
+  dirs:
+    - path: '/home/player/audit'
+  files:
+    - path: '/home/player/sshd_config'
+      content: "PermitRootLogin yes\nPasswordAuthentication yes\nKbdInteractiveAuthentication yes\nPubkeyAuthentication yes\nAuthenticationMethods any\n"
+      mode: '644'
+      owner: 'player'
+    - path: '/home/player/audit/health-tool.txt'
+      content: "Local operator utility manifest\n"
+      mode: '4755'
+      owner: 'player'
+    - path: '/home/player/audit/queue.txt'
+      content: "Queue checksum\n"
+      mode: '666'
+      owner: 'player'
+  sidecar_setup:
+    ssh_authorized_key: '/home/player/.ssh/bootstrap.pub'
+  generators:
+    - script: 'setup/gen.sh'
+objectives:
+  - id: 'validate-ssh-settings'
+    text: 'Export the hardened sshd_config to deploy@ssh.penguin.corp:hardening.conf for validation by sshd -T.'
+    check:
+      type: 'exec'
+      inline: "set -e\nsettings=$(/usr/sbin/sshd -T -f /home/deploy/hardening.conf)\nfor rule in 'permitrootlogin no' 'passwordauthentication no' 'kbdinteractiveauthentication no' 'pubkeyauthentication yes' 'authenticationmethods publickey'; do\n  grep -Fx \"$rule\" <<< \"$settings\"\ndone"
+      sidecar: 'ssh'
+    hold: true
+  - id: 'clear-setuid'
+    text: 'Remove the setuid bit from ~/audit/health-tool.txt and keep mode 755.'
+    check:
+      type: 'file_mode'
+      path: '/home/player/audit/health-tool.txt'
+      mode: '755'
+  - id: 'remove-public-write'
+    text: 'Set ~/audit/queue.txt to mode 644.'
+    check:
+      type: 'file_mode'
+      path: '/home/player/audit/queue.txt'
+      mode: '644'
+hints:
+  - 'Use find ~/audit -perm -4000 and -perm -0002 to identify permission issues.'
+  - 'Set PermitRootLogin, PasswordAuthentication, and KbdInteractiveAuthentication to no. Set AuthenticationMethods to publickey.'
+  - 'Use scp -i ~/.ssh/bootstrap sshd_config deploy@ssh.penguin.corp:hardening.conf. The remote parser checks the draft without applying it.'
+explain:
+  - command: 'sshd -T -f CONFIG'
+    parts:
+      - token: 'sshd'
+        meaning: 'Print effective SSH settings for a candidate configuration.'
+  - command: 'find DIR -perm -4000'
+    parts:
+      - token: 'find'
+        meaning: 'Find files whose setuid bit is set.'
+cheatsheet:
+  - skill: 'ssh-hardening'
+    syntax: 'sshd -T -f CONFIG'
+    note: 'Print effective SSH settings for a candidate configuration.'
+  - skill: 'chmod'
+    syntax: 'find DIR -perm -4000'
+    note: 'Find files whose setuid bit is set.'
+success_message: 'The draft enforces key-only SSH and the audited file modes are corrected.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/password-only.sh'

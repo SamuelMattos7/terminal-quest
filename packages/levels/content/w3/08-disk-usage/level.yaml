@@ -1,0 +1,48 @@
+id: 'w3-08-disk-usage'
+world: 3
+order: 8
+title: 'Where Did My Disk Go?'
+kind: 'lesson'
+difficulty: 2
+estimated_minutes: 8
+story: 'Tux-9000: "Storage is going fast. Find the largest directory directly under ~/storage and submit its basename. Then remove the largest .log file anywhere under storage. Keep the other logs."'
+teaches:
+  - 'disk-usage'
+par_commands: 7
+xp: 110
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+setup:
+  generators:
+    - script: 'setup/gen.sh'
+objectives:
+  - id: 'report-largest'
+    text: 'Submit the basename of the largest directory under ~/storage.'
+    check:
+      type: 'answer_equals'
+      from_file: '/opt/tq/secret/largest-dir'
+  - id: 'free-space'
+    text: 'Remove the largest log and retain the three smaller logs.'
+    check:
+      type: 'exec'
+      inline: 'path=$(cat /opt/tq/secret/largest-log); test ! -e "$path" && test ! -L "$path" && test "$(find /home/player/storage -type f -name ''*.log'' | wc -l)" -eq 3'
+    hold: true
+hints:
+  - 'du tells you how much space a directory uses. df summarizes whole filesystems.'
+  - 'Run du -sh ~/storage/* | sort -h. For individual files, use find -printf with sizes.'
+  - "Submit only the largest directory name. Use find ~/storage -name \"*.log\" -printf \"%s %p\\n\" | sort -nr to identify the largest log."
+explain:
+  - command: 'du -sh DIRECTORY/* | sort -h'
+    parts:
+      - token: 'du'
+        meaning: 'Compare per-directory disk use in human-readable size order.'
+cheatsheet:
+  - skill: 'disk-usage'
+    syntax: 'du -sh DIRECTORY/* | sort -h'
+    note: 'Compare per-directory disk use in human-readable size order.'
+success_message: 'The largest log is gone and the smaller logs survived.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/delete-smallest.sh'

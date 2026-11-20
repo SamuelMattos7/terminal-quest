@@ -1,0 +1,56 @@
+id: 'w4-02-variables-quoting'
+world: 4
+order: 2
+title: 'Say It Right'
+kind: 'lesson'
+difficulty: 3
+estimated_minutes: 8
+story: 'Tux-9000: "The visitor desk has two fields. Keep a guest name with spaces intact and uppercase the station. Build a script that formats both values on one line."'
+teaches:
+  - 'quoting'
+par_commands: 7
+xp: 130
+objectives:
+  - id: 'write-script'
+    text: 'Create executable ~/badge.sh NAME STATION. Print Guest: NAME | Station: STATION, with only the station uppercased.'
+    check:
+      type: 'script_tests'
+      path: '/home/player/badge.sh'
+      shellcheck: false
+      cases:
+        - name: 'spaces'
+          args:
+            - 'Maya Bell'
+            - 'south wing'
+          expect:
+            exit_code: 0
+            stdout_equals: 'Guest: Maya Bell | Station: SOUTH WING'
+          hidden: true
+        - name: 'literal-glob'
+          args:
+            - 'Guest *'
+            - 'ice-lab'
+          expect:
+            exit_code: 0
+            stdout_equals: 'Guest: Guest * | Station: ICE-LAB'
+          setup:
+            - 'touch decoy'
+          hidden: true
+hints:
+  - 'Quote expansions to keep whitespace and glob characters literal.'
+  - 'Pipe the station into tr "[:lower:]" "[:upper:]" and capture the output.'
+  - 'Pass "$1" and "$zone" to a printf format containing two %s placeholders.'
+explain:
+  - command: "printf \"%s\\n\" \"$value\""
+    parts:
+      - token: 'printf'
+        meaning: 'Pass the value as one literal argument, even when it contains whitespace.'
+cheatsheet:
+  - skill: 'quoting'
+    syntax: "printf \"%s\\n\" \"$value\""
+    note: 'Pass the value as one literal argument, even when it contains whitespace.'
+success_message: 'Names with spaces now arrive on one badge.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/word-splitting.sh'

@@ -1,0 +1,69 @@
+id: 'w5-05-perf-triage'
+world: 5
+order: 5
+title: "Who's Slow?"
+kind: 'lesson'
+difficulty: 4
+estimated_minutes: 8
+story: 'Tux-9000: "Three tq-load workers are competing for resources. Identify the CPU, memory, and write-heavy workers by name. Report them as CPU=name, MEM=name, and IO=name, then stop those workers without stopping the sentinel."'
+teaches:
+  - 'perf'
+par_commands: 7
+xp: 150
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+setup:
+  files:
+    - path: '/opt/tq/triage-load.py'
+      content_file: 'setup/load.py'
+      mode: '644'
+      owner: 'root'
+  generators:
+    - script: 'setup/gen.sh'
+objectives:
+  - id: 'report-cpu'
+    text: 'Submit CPU=<argv name> for the CPU-heavy worker.'
+    check:
+      type: 'answer_equals'
+      from_file: '/opt/tq/secret/triage-cpu'
+  - id: 'report-memory'
+    text: 'Submit MEM=<argv name> for the highest resident-memory worker.'
+    check:
+      type: 'answer_equals'
+      from_file: '/opt/tq/secret/triage-memory'
+  - id: 'report-io'
+    text: 'Submit IO=<argv name> for the worker with increasing write characters.'
+    check:
+      type: 'answer_equals'
+      from_file: '/opt/tq/secret/triage-io'
+  - id: 'stop-load'
+    text: 'Stop all three tq-load workers and keep tq-sentinel running.'
+    check:
+      type: 'all'
+      checks:
+        - type: 'process_absent'
+          cmdline_regex: '^tq-load-'
+          user: 'player'
+        - type: 'process_running'
+          cmdline_regex: '^tq-sentinel 600$'
+          user: 'player'
+    hold: true
+hints:
+  - 'Compare %CPU and RSS with ps. CPU counters in /proc/PID/stat also let you compare activity over an interval.'
+  - 'For each candidate, read wchar in /proc/PID/io twice. The I/O worker’s value keeps increasing.'
+  - 'Use ps -eo pcpu,rss,args and select only the tq-load commands. Submit the three labelled names before stopping them.'
+explain:
+  - command: 'ps -eo pid,pcpu,rss,args --sort=-pcpu'
+    parts:
+      - token: 'ps'
+        meaning: 'Rank processes by CPU while preserving PIDs, memory use, and labels.'
+cheatsheet:
+  - skill: 'perf'
+    syntax: 'ps -eo pid,pcpu,rss,args --sort=-pcpu'
+    note: 'Rank processes by CPU while preserving PIDs, memory use, and labels.'
+success_message: 'You separated the three bottlenecks and kept the sentinel online.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/swap-resources.sh'

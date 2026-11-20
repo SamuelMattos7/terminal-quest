@@ -1,4 +1,5 @@
 import type Docker from 'dockerode';
+import type { SandboxSidecar } from '@terminal-quest/shared';
 
 // Sandbox abstraction for plan.md §7.2. The only production implementation
 // is DockerProvider (T1.2); the interface keeps WASM/microVM providers
@@ -12,7 +13,8 @@ export interface SandboxSpec {
   profile: 'basic' | 'admin';
   capabilities?: ('NET_RAW' | 'NET_ADMIN')[];
   network: 'none' | 'lan';
-  sidecars: string[];
+  sidecars: SandboxSidecar[];
+  seed?: number;
   resources: { memoryMb: number; cpus: number; pids: number };
   startCwd: string;
   env: Record<string, string>;
@@ -36,9 +38,11 @@ export interface ShellStream {
 export interface SandboxHandle {
   id: string;
   spec: SandboxSpec;
+  networkId?: string;
+  sidecarIds?: Partial<Record<SandboxSidecar, string>>;
 }
 
-/** A failed acquisition still owns a container that must be reaped. */
+/** A failed acquisition still owns resources that must be reaped. */
 export class SandboxCreateError extends Error {
   constructor(
     readonly handle: SandboxHandle,
@@ -64,12 +68,15 @@ export interface ExecOptions {
   cwd?: string;
   timeoutMs?: number;
   stdin?: string;
+  sidecar?: 'ssh';
 }
 
 export interface ManagedSandbox {
   containerId: string;
   attemptId: string;
   createdAt: number;
+  networkId?: SandboxHandle['networkId'];
+  sidecarIds?: SandboxHandle['sidecarIds'];
 }
 
 export interface SandboxProvider {
@@ -88,4 +95,12 @@ export interface SandboxProvider {
 }
 
 /**subset of the dockerode client surface DockerProvider needs (for tests). */
-export type DockerClient = Pick<Docker, 'createContainer' | 'listContainers' | 'getContainer'>;
+export type DockerClient = Pick<
+  Docker,
+  | 'createContainer'
+  | 'listContainers'
+  | 'getContainer'
+  | 'createNetwork'
+  | 'listNetworks'
+  | 'getNetwork'
+>;

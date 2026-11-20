@@ -179,7 +179,11 @@ export function lintLevels(loaded: LoadedLevels): LintEntry[] {
     const contiguous =
       new Set(orders).size === orders.length &&
       orders[orders.length - 1]! - orders[0]! + 1 === orders.length;
-    if (!contiguous) {
+    const skipsOptionalNamespaceLesson =
+      world === 5 &&
+      orders.join(',') === '1,2,3,4,5,6,7,8,10' &&
+      levels.some((level) => level.id === 'w5-10-boss-prod-is-down' && level.order === 10);
+    if (!contiguous && !skipsOptionalNamespaceLesson) {
       result.push({
         levelId: `(world ${world} ordering)`,
         issues: [`orders must be unique and gap-free (got: ${orders.join(', ')})`],

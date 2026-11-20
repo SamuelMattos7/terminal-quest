@@ -1,0 +1,73 @@
+id: 'w3-07-environment'
+world: 3
+order: 7
+title: 'Make It Yours'
+kind: 'lesson'
+difficulty: 2
+estimated_minutes: 8
+story: 'Tux-9000: "Set EDITOR to nano, give ls -l the shortcut ll, and put ~/bin on PATH. Keep these changes in ~/.bashrc so a fresh shell can run penguin-status by name."'
+teaches:
+  - 'env-vars'
+  - 'path'
+  - 'bashrc'
+par_commands: 7
+xp: 110
+sandbox:
+  profile: 'admin'
+  needs_cron: false
+setup:
+  dirs:
+    - path: '/home/player/bin'
+  files:
+    - path: '/home/player/.bash_profile'
+      content: "source \"$HOME/.bashrc\"\n"
+      mode: '644'
+      owner: 'player'
+    - path: '/home/player/.bashrc'
+      content: "shopt -s expand_aliases\n"
+      mode: '644'
+      owner: 'player'
+    - path: '/home/player/bin/penguin-status'
+      content: "#!/bin/sh\nprintf \"%s\\n\" \"Engine room ready\"\n"
+      mode: '755'
+      owner: 'player'
+objectives:
+  - id: 'set-editor'
+    text: 'Export EDITOR=nano in new shells.'
+    check:
+      type: 'login_shell_eval'
+      user: 'player'
+      script: 'printenv EDITOR'
+      stdout_equals: 'nano'
+  - id: 'define-alias'
+    text: 'Define ll as an alias for ls -l.'
+    check:
+      type: 'login_shell_eval'
+      user: 'player'
+      script: 'alias ll'
+      stdout_matches: "^alias ll='ls -l[^']*'\\n?$"
+  - id: 'find-user-tool'
+    text: 'Make penguin-status run by name in a new shell.'
+    check:
+      type: 'login_shell_eval'
+      user: 'player'
+      script: 'penguin-status'
+      stdout_equals: 'Engine room ready'
+hints:
+  - 'Try printenv EDITOR and command -v penguin-status in a fresh login shell.'
+  - 'Put export EDITOR=nano and alias ll="ls -l" in ~/.bashrc.'
+  - 'Add export PATH="$HOME/bin:$PATH" to ~/.bashrc and source it for this shell.'
+explain:
+  - command: 'export PATH="$HOME/bin:$PATH"'
+    parts:
+      - token: 'export'
+        meaning: 'Add a directory to the executable search path while preserving existing entries.'
+cheatsheet:
+  - skill: 'env-vars'
+    syntax: 'export PATH="$HOME/bin:$PATH"'
+    note: 'Add a directory to the executable search path while preserving existing entries.'
+success_message: 'The new settings are available in fresh shells.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/current-shell-only.sh'

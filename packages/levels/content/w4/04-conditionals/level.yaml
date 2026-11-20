@@ -1,0 +1,63 @@
+id: 'w4-04-conditionals'
+world: 4
+order: 4
+title: 'If This Then That'
+kind: 'lesson'
+difficulty: 3
+estimated_minutes: 8
+story: 'Tux-9000: "Investigate a path without opening it. A script should report file, directory, or missing, one word per call."'
+teaches:
+  - 'conditionals'
+par_commands: 7
+xp: 130
+objectives:
+  - id: 'write-script'
+    text: 'Create executable ~/classify.sh PATH. Print exactly file, directory, or missing.'
+    check:
+      type: 'script_tests'
+      path: '/home/player/classify.sh'
+      shellcheck: false
+      cases:
+        - name: 'plain-file'
+          args:
+            - 'map notes'
+          expect:
+            exit_code: 0
+            stdout_equals: 'file'
+          setup:
+            - 'touch "map notes"'
+          hidden: true
+        - name: 'directory'
+          args:
+            - 'supply room'
+          expect:
+            exit_code: 0
+            stdout_equals: 'directory'
+          setup:
+            - 'mkdir "supply room"'
+          hidden: true
+        - name: 'missing'
+          args:
+            - 'absent'
+          expect:
+            exit_code: 0
+            stdout_equals: 'missing'
+          hidden: true
+hints:
+  - 'Bash file tests distinguish different file types.'
+  - 'Use [[ -f $1 ]] for a regular file and [[ -d $1 ]] for a directory.'
+  - 'Use if, elif, and else so only one branch prints a result.'
+explain:
+  - command: '[[ -d $path ]]'
+    parts:
+      - token: '[['
+        meaning: 'Check that the argument names an existing directory.'
+cheatsheet:
+  - skill: 'conditionals'
+    syntax: '[[ -d $path ]]'
+    note: 'Check that the argument names an existing directory.'
+success_message: 'The classifier can tell a file from a directory and an absent path.'
+solutions:
+  reference: 'solution.sh'
+  wrong:
+    - 'wrong/exists-means-file.sh'

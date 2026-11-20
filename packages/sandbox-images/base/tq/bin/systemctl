@@ -1,0 +1,30 @@
+#!/usr/bin/python3
+import json
+import socket
+import sys
+
+from tq_systemd_units import SOCKET
+
+
+def main(args):
+    if args in ([], ["--help"], ["-h"]):
+        print("Usage: systemctl daemon-reload | list-timers")
+        print("       systemctl start|stop|restart|status|enable|disable <unit>")
+        return 0 if args else 2
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+            connection.settimeout(3)
+            connection.connect(str(SOCKET))
+            connection.sendall(json.dumps(args).encode() + b"\n")
+            with connection.makefile("rb") as response:
+                code, message = json.loads(response.readline())
+    except (OSError, ValueError) as error:
+        print(f"systemctl: simulation unavailable ({error})", file=sys.stderr)
+        return 1
+    if message:
+        print(message, file=sys.stderr if code else sys.stdout)
+    return code
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
