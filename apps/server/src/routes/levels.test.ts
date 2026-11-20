@@ -53,6 +53,25 @@ describe('GET /api/levels/:id', () => {
     }
   });
 
+  it('exposes the simulation requirement for Units of Work through the public DTO', async () => {
+    const root = fileURLToPath(new URL('../../../../packages/levels/content/', import.meta.url));
+    const ctx = await makeTestContext([], { ENABLE_WORLDS: [1, 2, 4] }, root);
+    try {
+      const cookie = await guestCookie(ctx.app);
+      const response = await ctx.app.inject({
+        url: '/api/levels/w4-14-systemd-units',
+        headers: { cookie },
+      });
+      expect(response.statusCode).toBe(200);
+      expect(PublicLevelSchema.parse(response.json()).requires).toBe('systemd-shim');
+      for (const key of [...FORBIDDEN, 'sandbox']) {
+        expect(response.body).not.toContain('"' + key + '"');
+      }
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+
   it('returns the public DTO without answers or internals', async () => {
     const ctx = await makeTestContext([makeLevel('first', 1, 1)]);
     try {

@@ -12,6 +12,7 @@ export function countWords(text: string): number {
 }
 
 export const SandboxCapabilitySchema = z.enum(['NET_RAW', 'NET_ADMIN']);
+export const LevelRequirementSchema = z.literal('systemd-shim');
 // Only absolute commands and literal arguments: no sudoers directives, globs,
 // aliases, command separators, or line injection from level YAML.
 export const SudoCommandSchema = z
@@ -188,6 +189,7 @@ export const LevelSchema = z
     teaches: z.array(z.string().min(1)).min(1).max(3),
     par_commands: z.number().int().positive(),
     xp: z.number().int().positive(),
+    requires: LevelRequirementSchema.optional(),
     sandbox: SandboxSchema.default({}),
     setup: SetupSchema.optional(),
     objectives: z.array(ObjectiveSchema).min(1),
@@ -202,6 +204,13 @@ export const LevelSchema = z
   })
   .strict()
   .superRefine((v, ctx) => {
+    if (v.requires === 'systemd-shim' && v.sandbox.profile !== 'admin') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['requires'],
+        message: 'systemd-shim requires the admin profile',
+      });
+    }
     if (v.setup?.sidecar_setup && !v.sandbox.sidecars.includes('ssh')) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

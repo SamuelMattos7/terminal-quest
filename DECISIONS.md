@@ -88,7 +88,7 @@ Lightweight architecture decision log. Add an entry whenever you choose between 
 ### D-009 â€” Systemd is simulated with a shim (default)
 
 - **Date:** (project start)
-- **Status:** Open (pending SPIKE S2, T10.4)
+- **Status:** Accepted (T10.4, D-062)
 - **Context:** Real systemd needs privileges unsuited to untrusted users in containers.
 - **Decision:** Python `systemctl`/`journalctl` shim supporting a documented subset; disclosed to players on the level page.
 - **Consequences:** Behaviour diverges from real systemd in edge cases; keep the supported subset small and documented.
@@ -550,3 +550,12 @@ _Append below this line. Continue numbering from D-011._
 - **Outcome:** At 172,800× from 2026-01-02 UTC, install daily, weekday, and monthly entries as `player` after cron starts. In 20 real seconds (about 40 simulated days at that rate), the player jobs recorded 24 daily runs, 26 weekday runs, and one monthly run. The daily count fell below the conservative minimum of 28. At 30×, advancing from January 2 to February 1 would take about 24 real hours.
 - **Decision:** Adopt the plan's fallback. Keep semantic `crontab_entry` and minimal-environment `cron_dry_run` for validation. Add `tux cron '*/5 * * * *'` to preview the next five UTC calendar times from the sandbox clock via `cronmatch.py`. The preview takes one schedule argument and prints timestamps locally. It rejects `@reboot` because startup has no calendar time.
 - **Validation:** Rebuilt `tq-base` and ran ShellCheck on Tux. `pnpm verify` passed 543 tests. `pnpm test:docker` passed 107 tests, including previews as `player`, semantic matching, cron-like dry runs, real admin cron startup, and the release playthrough. The `w3-01-sudo-and-id` matrix passed all 12 cases across three seeds. `pnpm levels:lint` found 31 levels and zero problems. No managed Docker containers or networks remained.
+
+### D-062 — Simulate systemd for Units of Work
+
+- **Date:** 2026-11-19
+- **Status:** Accepted
+- **Experiment:** Timebox S2 to five minutes. Install Debian systemd 252.39-1~deb12u2 in a disposable `tq-base` derivative on Docker Engine 29.8.1. Give real systemd the opportunity to run as PID 1 with the normal admin capabilities and resource limits, private cgroups, network isolation, and no host mounts. After the eight-second observation window, the container had exited with code 255. A separate mount inspection confirmed Docker exposed a read-only cgroup v2 mount. The real manager could not serve the lesson under these constraints.
+- **Decision:** Use the Python `systemctl` and `journalctl` shim. The normal admin setup starts its per-attempt manager for levels declaring `requires: systemd-shim`. Docker settings stay within the existing admin profile. Add only `w4-14-systemd-units` to teach service and timer files, starting and enabling the timer, and inspecting a service's journal. The public level DTO carries the simulation requirement so the level page can disclose the differences.
+- **Consequences:** Services default to `player`. `User` selects an ordinary sandbox account (UID 1000 or higher and a non-root primary group). The manager starts it with that UID and primary GID, a minimal environment, and cwd `/`. The player's unit directory is writable inside this lesson. The control socket is available to root and the player group. UTC timers start separately from enabling. Enabled state is scoped to the attempt and has no boot behavior. Journals capture service stdout and stderr as text. Plan §7.8 documents the remaining differences.
+- **Validation:** Rebuilt `tq-base` and ran ShellCheck on the startup script. `pnpm verify` passed 547 tests and covered the public DTO and level page disclosure. `pnpm test:docker` passed 112 tests, including live UTC timer firing and rearming, restart-on-failure, account handling, and sandbox isolation. Level lint found 32 levels and zero problems. Across three Docker seeds for Units of Work, each baseline and hourly timer attempt stayed incomplete and each daily reference completed. No managed Docker containers or networks remained.

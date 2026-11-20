@@ -35,6 +35,8 @@ export const strings = {
   levelLoadError: "Couldn't start this level.",
   levelRetry: 'Try again',
   levelBackToMap: 'Back to map',
+  levelSystemdSimulation:
+    'In this sandbox, systemd is simulated. Services default to player and require a non-root account. Timers use UTC. Enabling a unit records its state for this attempt.',
   terminalLabel: 'Terminal',
   terminalLeave: 'Leave terminal',
   connectionLive: 'Connected',

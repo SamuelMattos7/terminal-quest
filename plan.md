@@ -261,13 +261,15 @@ events(                                         -- telemetry, no PII
 
 All JSON. Base path `/api`. Authentication: httpOnly, SameSite=Lax cookie `tq_session` containing a random 32-byte token (store only its sha256 in `auth_tokens`). Guest accounts are created on first call to `POST /api/guest`.
 
+**2026-11-19 (T10.4, D-062).** The public level DTO includes the optional `requires` field for the simulation notice.
+
 | Method & path | Purpose | Response (shape in `packages/shared/src/api.ts`) |
 |---|---|---|
 | `GET /healthz` | liveness + docker reachable | `{ ok, docker: boolean }` |
 | `POST /api/guest` | create guest + set cookie (idempotent if cookie valid) | `{ user }` |
 | `GET /api/me` | current user, player level, xp, streak, badges | `{ user, playerLevel, xpToNext, badges[] }` |
 | `GET /api/worlds` | worlds with levels and per-level state | `{ worlds: [{ id, title, blurb, levels: [{ id, title, kind, difficulty, estimatedMinutes, state: 'locked'|'available'|'completed', bestRank? }] }] }` |
-| `GET /api/levels/:id` | public level info (NO checks, setup, solutions) | `{ id, title, story, kind, objectives:[{id,text,optional,bonus}], teaches[], parCommands, xp, hintCount }` |
+| `GET /api/levels/:id` | public level info (NO checks, setup, solutions) | `{ id, title, story, kind, objectives:[{id,text,optional,bonus}], teaches[], parCommands, xp, hintCount, requires? }` |
 | `POST /api/levels/:id/start` | start attempt | `{ sessionId, wsPath }` (429 if capacity reached with `Retry-After`) |
 | `DELETE /api/sessions/:id` | end attempt (abandon) | `{ ok }` |
 | `POST /api/sessions/:id/reset` | destroy & recreate sandbox with a **new seed**, same attempt row marked abandoned, new attempt created | `{ sessionId, wsPath }` |
@@ -446,6 +448,16 @@ Server watches `/run/tq/inbox` via `watchFile` and handles each line (`submit` s
   - `dns` → alias `dns.penguin.corp` (dnsmasq with records like `db.penguin.corp`), and the player container's resolver points at it.
 - Sidecar definitions live in `apps/server/src/sandbox/sidecars.ts`.
 
+### 7.8 Simulated systemd (M10)
+
+**2026-11-19 (T10.4, D-062).** The admin lesson `w4-14-systemd-units` declares `requires: systemd-shim`. Setup starts a manager inside its sandbox, and the level page states that systemd is simulated.
+
+- Write named `.service` and `.timer` files under `/etc/systemd/system`. The lesson lets `player` author files there and use the shim without sudo. `systemctl daemon-reload` loads changes. An invalid file leaves the previous definitions loaded.
+- Services support `Type=simple`, an absolute `ExecStart` command with quoted arguments, `User`, and `Restart=no|on-failure`. The default account is `player`. Services require a non-root account with UID at least 1000 and a non-root primary group. Commands execute directly from `/` with a minimal environment. Restart-on-failure retries after one second.
+- Timers support `OnCalendar=daily`, `hourly`, and `*-*-* HH:MM:SS` in UTC. `Unit` defaults to the matching `.service`. `systemctl start` schedules the next occurrence, `stop` cancels it, and `list-timers` shows active timers. The manager schedules future occurrences without replaying missed ones.
+- `systemctl status` shows whether a unit is loaded, enabled, and active. `restart` stops and starts the unit. `enable` and `disable` record state for the attempt. Every new attempt starts from fresh state.
+- `journalctl -u <unit>` reads service stdout and stderr as plain text from the attempt's `/var/log/tq-journal/<unit>.log`.
+
 ---
 
 ## 8. Level Definition Format
@@ -461,6 +473,8 @@ checks/           # custom check scripts referenced by `exec` checks
 `id` = `w<N>-<NN>-<slug>` (e.g. `w1-03-moving-around`). The zod schema lives in `packages/shared/src/level.ts`; `levels:lint` enforces it.
 
 ### 8.1 `level.yaml` schema
+
+**2026-11-19 (T10.4, D-062).** Admin levels can declare the optional top-level `requires: systemd-shim` field to start the simulator and show its disclosure on the level page.
 
 ```yaml
 id: w2-06-grep-recursive-regex

@@ -1,0 +1,23 @@
+#!/bin/bash
+set -euo pipefail
+
+install -d -m 0755 -o player -g player /etc/systemd/system
+install -d -m 0755 -o root -g root /run/tq/systemd /var/log/tq-journal
+if /opt/tq/bin/systemctl list-timers >/dev/null 2>&1; then
+  exit 0
+fi
+
+rm -f /run/tq/systemd/control
+log=/var/log/tq-journal/manager.log
+/usr/bin/python3 /opt/tq/bin/tq_systemd_manager.py </dev/null >>"$log" 2>&1 &
+manager=$!
+for ((attempt = 0; attempt < 40; attempt++)); do
+  if [ -S /run/tq/systemd/control ] && /opt/tq/bin/systemctl list-timers >/dev/null; then
+    exit 0
+  fi
+  kill -0 "$manager" 2>/dev/null || break
+  sleep 0.05
+done
+
+cat "$log" >&2
+exit 1

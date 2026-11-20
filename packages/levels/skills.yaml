@@ -355,7 +355,7 @@
   title: 'systemd'
   group: automation
   world: 4
-  prereqs: []
+  prereqs: [cron]
 - id: logrotate
   title: 'logrotate'
   group: automation

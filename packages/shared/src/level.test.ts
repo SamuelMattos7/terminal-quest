@@ -60,6 +60,14 @@ describe('LevelSchema', () => {
     expect(() => LevelSchema.parse(withOverrides({ id: 'level-one' }))).toThrow();
   });
 
+  it('requires the admin profile for the systemd simulation', () => {
+    expect(LevelSchema.safeParse(withOverrides({ requires: 'systemd-shim' })).success).toBe(false);
+    expect(
+      LevelSchema.parse(withOverrides({ requires: 'systemd-shim', sandbox: { profile: 'admin' } }))
+        .requires,
+    ).toBe('systemd-shim');
+  });
+
   it.each([
     { sandbox: { sidecars: ['web'] } },
     { sandbox: { network: 'lan', sidecars: ['dns', 'dns'] } },

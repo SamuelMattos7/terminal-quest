@@ -43,6 +43,7 @@ export function adminSetupCommands(level: Level): string[] {
     'chown root:root /etc/sudoers.d/tq',
     'chmod 0440 /etc/sudoers.d/tq',
     '/usr/sbin/visudo -cf /etc/sudoers.d/tq',
+    ...(level.requires === 'systemd-shim' ? ['/opt/tq/bin/tq-systemd-start'] : []),
     ...(level.sandbox.needs_cron ? ['/usr/sbin/cron', 'pgrep -x cron > /dev/null'] : []),
   ];
 }

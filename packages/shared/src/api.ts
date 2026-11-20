@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Level } from './level.js';
+import { LevelRequirementSchema, type Level } from './level.js';
 
 // Whitelisted public DTO for `GET /api/levels/:id` (plan.md §6). Checks,
 // setup, secrets, solutions, and hint text must never reach the client —
@@ -24,6 +24,7 @@ export const PublicLevelSchema = z
     parCommands: z.number().int().positive(),
     xp: z.number().int().positive(),
     hintCount: z.number().int().positive(),
+    requires: LevelRequirementSchema.optional(),
   })
   .strict();
 
@@ -46,6 +47,7 @@ export function toPublicLevel(level: Level): PublicLevel {
     parCommands: level.par_commands,
     xp: level.xp,
     hintCount: level.hints.length,
+    ...(level.requires === undefined ? {} : { requires: level.requires }),
   });
 }
 

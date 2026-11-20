@@ -139,6 +139,11 @@ export function LevelPage() {
     <div className="flex min-h-screen flex-col bg-bg">
       <main className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 gap-4 p-4 lg:grid-cols-[65%_35%]">
         <div className="flex min-h-0 flex-col gap-2">
+          {level.requires === 'systemd-shim' && (
+            <p className="rounded-md border border-border px-3 py-2 text-sm text-muted">
+              {strings.levelSystemdSimulation}
+            </p>
+          )}
           <TerminalView
             onLeaveTerminal={() => {
               document.getElementById('quest-panel')?.focus();

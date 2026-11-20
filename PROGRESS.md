@@ -78,7 +78,7 @@ T9.2 WSL correction evidence (D-057): the first target ramp on `e7246c7` failed 
 - [x] T10.1 `admin` profile (sudo allow-list, cron daemon, capability mapping) ✅ `pnpm verify`: build/lint + 531 tests; `pnpm levels:lint`: 28 levels, zero problems; `pnpm levels:test --level w3-01-sudo-and-id --seeds 3`: all 12 baseline/wrong/reference cases passed. `pnpm test:docker`: 94 tests passed (93 server + 1 runner), including six admin regressions (real player cron job, cron opt-out, sudo boundaries/default tools, kernel capability mapping), basic security and the complete 27-level progression playthrough. D-059 records policy and accepted in-container authority.
 - [x] T10.2 Sidecars + `lan` networks ✅ All 33 acceptance cases for `w3-10` through `w3-12` passed across three seeds. Docker Desktop 29.8.1 verified blocked IPv4/IPv6 HTTPS, public DNS, and cross-attempt traffic from player containers. `pnpm verify`: 543 tests. `pnpm test:docker`: 101 tests. `pnpm levels:lint`: 31 levels, zero problems. Zero managed containers or networks remained.
 - [x] T10.3 SPIKE S1 cron timing ✅ D-061 records missed daily firings and the fallback. `tux cron '<schedule>'` previews five UTC runs. `pnpm verify` passed 543 tests, `pnpm test:docker` passed 107 tests (10 cron cases), and the `w3-01-sudo-and-id` Docker matrix passed all 12 cases across three seeds. `pnpm levels:lint` found 31 levels and zero problems.
-- [ ] T10.4 SPIKE S2 systemd shim — outcome logged in `DECISIONS.md`
+- [x] T10.4 SPIKE S2 systemd shim ✅ D-062 records the failed real-systemd boot and the shim fallback. Units of Work displays the simulation notice. `pnpm verify` passed 547 tests, `pnpm test:docker` passed 112 tests (five shim cases), and `pnpm levels:lint` found 32 levels and zero problems. `w4-14-systemd-units` passed all nine baseline, wrong, and reference cases across three seeds.
 - [ ] T10.5 Author World 3, 4, 5 content
 - [ ] T10.6 (Optional) OAuth / classroom mode
 
@@ -189,7 +189,7 @@ Batch verification for w2-10 through w2-12 passed `pnpm levels:lint` (24 levels,
 | w4-11-heredocs-diff       | [ ] | [ ] | [ ] |
 | w4-12-cron-basics         | [ ] | [ ] | [ ] |
 | w4-13-cron-pitfalls       | [ ] | [ ] | [ ] |
-| w4-14-systemd-units       | [ ] | [ ] | [ ] |
+| w4-14-systemd-units       | [x] | [x] | [x] |
 | w4-15-logs-logrotate      | [ ] | [ ] | [ ] |
 | w4-16-boss-nightly-backup | [ ] | [ ] | [ ] |
 

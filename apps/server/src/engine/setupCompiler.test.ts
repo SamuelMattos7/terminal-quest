@@ -177,4 +177,12 @@ describe('admin setup compilation (T10.1)', () => {
     expect(basic.files.some((f) => f.path === '/etc/sudoers.d/tq')).toBe(false);
     expect(basic.script).not.toContain('/usr/sbin/cron');
   });
+
+  it('starts the systemd simulation only for a level that requires it', () => {
+    const admin = makeLevel({ sandbox: { profile: 'admin' } });
+    expect(compileSetup(admin, '.', 1).script).not.toContain('tq-systemd-start');
+    expect(compileSetup({ ...admin, requires: 'systemd-shim' }, '.', 1).script).toContain(
+      '/opt/tq/bin/tq-systemd-start',
+    );
+  });
 });

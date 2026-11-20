@@ -220,6 +220,21 @@ describe('LevelPage', () => {
     expect(screen.getByText('Find yourself.')).not.toBeNull();
     expect(screen.getByTestId('objective-o1')).not.toBeNull();
     expect(screen.getByTestId('hint-button')).not.toBeNull();
+    expect(screen.queryByText(strings.levelSystemdSimulation)).toBeNull();
+  });
+
+  it('discloses the systemd simulation alongside the terminal for marked levels', async () => {
+    renderPage();
+    const socket = await openLiveSession();
+    const message = sessionStateMessage();
+    act(() => {
+      socket.handler({
+        kind: 'message',
+        message: { ...message, level: { ...message.level, requires: 'systemd-shim' } },
+      });
+    });
+    expect(await screen.findByText(strings.levelSystemdSimulation)).not.toBeNull();
+    expect(screen.getByTestId('terminal-container')).not.toBeNull();
   });
 
   it('shows an error with retry when starting fails', async () => {
